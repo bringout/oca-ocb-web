@@ -2,5 +2,5 @@
 
 This addon depends on:
 
-- [bus](../../../../../oca-ocb-core/odoo-bringout-oca-ocb-bus)
-- [web](../../../../../oca-ocb-core/odoo-bringout-oca-ocb-web)
+- [bus](https://github.com/bringout/oca-ocb-core)
+- [web](https://github.com/bringout/oca-ocb-core)
