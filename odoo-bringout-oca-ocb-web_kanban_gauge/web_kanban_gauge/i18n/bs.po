@@ -17,16 +17,14 @@ msgstr ""
 
 #. module: web_kanban_gauge
 #. odoo-javascript
-#: code:addons/web_kanban_gauge/static/src/gauge_field.js:0
-#: code:addons/web_kanban_gauge/static/src/js/kanban_gauge.js:0
+#: code:addons/web_kanban_gauge/static/src/gauge_field.js
 #, python-format
 msgid "Max: "
 msgstr "Maksimalno: "
 
 #. module: web_kanban_gauge
 #. odoo-javascript
-#: code:addons/web_kanban_gauge/static/src/gauge_field.js:0
-#: code:addons/web_kanban_gauge/static/src/js/kanban_gauge.js:0
+#: code:addons/web_kanban_gauge/static/src/gauge_field.js
 #, python-format
 msgid "Value: "
 msgstr "Vrijednost: "
