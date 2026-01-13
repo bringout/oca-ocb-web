@@ -73,7 +73,7 @@ msgstr "ID"
 #. module: web_tour
 #: model:ir.model.fields,field_description:web_tour.field_web_tour_tour____last_update
 msgid "Last Modified on"
-msgstr "Zadnje mijenjano"
+msgstr "Zadnja izmjena na"
 
 # taken from hr.po
 #. module: web_tour
