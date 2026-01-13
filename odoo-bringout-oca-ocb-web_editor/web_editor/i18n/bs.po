@@ -622,7 +622,7 @@ msgstr "Gumb"
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js
 #, python-format
 msgid "Cancel"
-msgstr "Otkaži"
+msgstr "Odustani"
 
 #. module: web_editor
 #. odoo-javascript
@@ -1724,19 +1724,19 @@ msgstr "Veliko"
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub____last_update
 msgid "Last Modified on"
-msgstr "Zadnja izmjena na"
+msgstr "Zadnje mijenjano"
 
 # taken from hr.po
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub__write_uid
 msgid "Last Updated by"
-msgstr "Zadnje ažuriranje izvršio"
+msgstr "Zadnji ažurirao"
 
 # taken from hr.po
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub__write_date
 msgid "Last Updated on"
-msgstr "Zadnje ažuriranje na"
+msgstr "Zadnje ažurirano"
 
 # taken from hr.po
 #. module: web_editor
@@ -2345,7 +2345,7 @@ msgstr "Zamijeni medij"
 #: code:addons/web_editor/static/src/xml/ace.xml
 #, python-format
 msgid "Reset"
-msgstr "Poništi"
+msgstr "Resetuj"
 
 #. module: web_editor
 #. odoo-javascript
