@@ -2317,7 +2317,7 @@ msgstr "Ukloni stil fonta"
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js
 #, python-format
 msgid "Rename %s"
-msgstr "Ukloni sliku"
+msgstr "Rename %s"
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
