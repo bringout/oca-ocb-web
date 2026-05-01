@@ -1,0 +1,7 @@
+2026-03-09 22:31:52.643 CET [561217] LOG:  starting PostgreSQL 16.9 on x86_64-pc-linux-gnu, compiled by clang version 19.1.7, 64-bit
+2026-03-09 22:31:52.644 CET [561217] LOG:  could not bind IPv4 address "127.0.0.1": Address already in use
+2026-03-09 22:31:52.644 CET [561217] HINT:  Is another postmaster already running on port 54320? If not, wait a few seconds and retry.
+2026-03-09 22:31:52.644 CET [561217] LOG:  could not bind IPv6 address "::1": Cannot assign requested address
+2026-03-09 22:31:52.644 CET [561217] WARNING:  could not create listen socket for "localhost"
+2026-03-09 22:31:52.644 CET [561217] FATAL:  could not create any TCP/IP sockets
+2026-03-09 22:31:52.645 CET [561217] LOG:  database system is shut down
