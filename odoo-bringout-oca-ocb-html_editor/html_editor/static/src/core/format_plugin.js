@@ -6,18 +6,24 @@ import { Plugin } from "../plugin";
 import { closestBlock, isBlock } from "../utils/blocks";
 import { cleanTextNode, fillEmpty, removeClass, splitTextNode, unwrapContents } from "../utils/dom";
 import {
-    areSimilarElements,
+    hasPseudoElementContent,
+    hasSameClasses,
+    hasSameStyleAttributes,
+    hasVisibleContent,
     isContentEditable,
     isElement,
     isEmptyBlock,
     isEmptyTextNode,
-    isParagraphRelatedElement,
+    isPhrasingContent,
     isSelfClosingElement,
+    isStylable,
     isTextNode,
+    isVisible,
     isVisibleTextNode,
     isZwnbsp,
     isZWS,
     previousLeaf,
+    PROTECTED_QWEB_SELECTOR,
 } from "../utils/dom_info";
 import { isFakeLineBreak } from "../utils/dom_state";
 import {
@@ -32,6 +38,7 @@ import { boundariesIn, boundariesOut, DIRECTIONS, leftPos, rightPos } from "../u
 import { isHtmlContentSupported } from "@html_editor/core/selection_plugin";
 
 const allWhitespaceRegex = /^[\s\u200b]*$/;
+const NOT_A_NUMBER = /[^\d]/g;
 
 function isFormatted(formatPlugin, format) {
     return (sel, nodes) => formatPlugin.isSelectionFormat(format, nodes);
@@ -45,16 +52,39 @@ function isFormatted(formatPlugin, format) {
  * @property { FormatPlugin['formatSelection'] } formatSelection
  */
 
+/**
+ * @typedef {((formatName: string, options: {
+ *      formatProps: object,
+ *      applyStyle: boolean,
+ * }) => void | boolean)[]} format_selection_overrides
+ * @typedef {(() => void)[]} on_all_formats_removed_handlers
+ * @typedef {((root: Node) => void)[]} on_will_merge_adjacent_siblings_handlers
+ * @typedef {((root: Node) => void)[]} on_merged_adjacent_siblings_handlers
+ *
+ * @typedef {((className: string) => boolean | undefined)[]} is_format_class_predicates
+ * @typedef {((node: Node) => boolean | undefined)[]} has_format_predicates
+ *
+ * @typedef {(({
+ *      node: Node,
+ *      nodeStyle: CSSStyleProperties,
+ *      node2: Node,
+ *      node2Style: CSSStyleProperties,
+ * }) => void | true)[]} are_similar_elements_overrides
+ */
+
 export class FormatPlugin extends Plugin {
     static id = "format";
-    static dependencies = ["selection", "history", "input", "split"];
+    static dependencies = ["selection", "history", "input", "split", "delete"];
     // TODO ABD: refactor to handle Knowledge comments inside this plugin without sharing mergeAdjacentInlines.
     static shared = [
+        "areSimilarElements",
         "isSelectionFormat",
         "insertAndSelectZws",
         "mergeAdjacentInlines",
         "formatSelection",
+        "removeFormats",
     ];
+    /** @type {import("plugins").EditorResources} */
     resources = {
         user_commands: [
             {
@@ -62,28 +92,28 @@ export class FormatPlugin extends Plugin {
                 description: _t("Toggle bold"),
                 icon: "fa-bold",
                 run: this.formatSelection.bind(this, "bold"),
-                isAvailable: isHtmlContentSupported,
+                isAvailable: this.canFormatContent.bind(this),
             },
             {
                 id: "formatItalic",
                 description: _t("Toggle italic"),
                 icon: "fa-italic",
                 run: this.formatSelection.bind(this, "italic"),
-                isAvailable: isHtmlContentSupported,
+                isAvailable: this.canFormatContent.bind(this),
             },
             {
                 id: "formatUnderline",
                 description: _t("Toggle underline"),
                 icon: "fa-underline",
                 run: this.formatSelection.bind(this, "underline"),
-                isAvailable: isHtmlContentSupported,
+                isAvailable: this.canFormatContent.bind(this),
             },
             {
                 id: "formatStrikethrough",
                 description: _t("Toggle strikethrough"),
                 icon: "fa-strikethrough",
                 run: this.formatSelection.bind(this, "strikeThrough"),
-                isAvailable: isHtmlContentSupported,
+                isAvailable: this.canFormatContent.bind(this),
             },
             {
                 id: "formatFontSize",
@@ -92,7 +122,7 @@ export class FormatPlugin extends Plugin {
                         applyStyle: true,
                         formatProps: { size },
                     }),
-                isAvailable: isHtmlContentSupported,
+                isAvailable: this.canFormatContent.bind(this),
             },
             {
                 id: "formatFontSizeClassName",
@@ -101,7 +131,7 @@ export class FormatPlugin extends Plugin {
                         applyStyle: true,
                         formatProps: { className },
                     }),
-                isAvailable: isHtmlContentSupported,
+                isAvailable: this.canFormatContent.bind(this),
             },
             {
                 id: "removeFormat",
@@ -125,47 +155,63 @@ export class FormatPlugin extends Plugin {
         toolbar_items: [
             {
                 id: "bold",
+                description: _t("Bold (Ctrl + B)"),
                 groupId: "decoration",
                 namespaces: ["compact", "expanded"],
                 commandId: "formatBold",
                 isActive: isFormatted(this, "bold"),
+                isDisabled: (sel, nodes) => nodes.some((node) => !isStylable(node)),
             },
             {
                 id: "italic",
+                description: _t("Italic (Ctrl + I)"),
                 groupId: "decoration",
                 namespaces: ["compact", "expanded"],
                 commandId: "formatItalic",
                 isActive: isFormatted(this, "italic"),
+                isDisabled: (sel, nodes) => nodes.some((node) => !isStylable(node)),
             },
             {
                 id: "underline",
+                description: _t("Underline (Ctrl + U)"),
                 groupId: "decoration",
                 namespaces: ["compact", "expanded"],
                 commandId: "formatUnderline",
                 isActive: isFormatted(this, "underline"),
+                isDisabled: (sel, nodes) => nodes.some((node) => !isStylable(node)),
             },
             {
                 id: "strikethrough",
+                description: _t("Strikethrough (Ctrl + 5)"),
                 groupId: "decoration",
                 commandId: "formatStrikethrough",
                 isActive: isFormatted(this, "strikeThrough"),
+                isDisabled: (sel, nodes) => nodes.some((node) => !isStylable(node)),
             },
             withSequence(20, {
                 id: "remove_format",
                 groupId: "decoration",
                 commandId: "removeFormat",
-                isDisabled: (sel, nodes) => !this.hasAnyFormat(nodes),
+                isDisabled: (sel, nodes) =>
+                    !this.hasAnyFormat(nodes) || nodes.some((node) => !isStylable(node)),
             }),
         ],
         /** Handlers */
-        beforeinput_handlers: withSequence(20, this.onBeforeInput.bind(this)),
-        clean_for_save_handlers: this.cleanForSave.bind(this),
-        normalize_handlers: this.normalize.bind(this),
-        selectionchange_handlers: this.removeEmptyInlineElement.bind(this),
-        set_tag_handlers: this.removeFontSizeFormat.bind(this),
+        on_beforeinput_handlers: withSequence(20, this.onBeforeInput.bind(this)),
+        on_selectionchange_handlers: this.removeEmptyInlineElement.bind(this),
+        on_will_set_tag_handlers: this.removeFontSizeFormat.bind(this),
         before_insert_processors: this.unwrapEmptyFormat.bind(this),
 
-        intangible_char_for_keyboard_navigation_predicates: (_, char) => char === "\u200b",
+        /** Processors */
+        clean_for_save_processors: this.cleanForSave.bind(this),
+        normalize_processors: this.normalize.bind(this),
+
+        /** Predicates */
+        is_char_tangible_for_keyboard_navigation_predicates: (_, char) => {
+            if (char === "\u200b") {
+                return false;
+            }
+        },
     };
 
     /**
@@ -173,10 +219,13 @@ export class FormatPlugin extends Plugin {
      * @param {Node[]} targetedNodes
      */
     removeFormats(formats, targetedNodes) {
+        const editableTargetedNodes = targetedNodes.filter(
+            this.dependencies.selection.isNodeEditable
+        );
         for (const format of formats) {
             if (
                 !formatsSpecs[format].removeStyle ||
-                !this.hasSelectionFormat(format, targetedNodes)
+                !this.hasSelectionFormat(format, editableTargetedNodes)
             ) {
                 continue;
             }
@@ -184,16 +233,16 @@ export class FormatPlugin extends Plugin {
         }
     }
 
-    unwrapEmptyFormat(insertedNode, block) {
+    unwrapEmptyFormat(insertedNode) {
         const anchorNode = this.dependencies.selection.getEditableSelection().anchorNode;
-        if (!block.contains(anchorNode)) {
+        if (!allWhitespaceRegex.test(insertedNode.textContent)) {
             return insertedNode;
         }
         const emptyZWS = closestElement(anchorNode, "[data-oe-zws-empty-inline]");
         if (
             !emptyZWS ||
             !emptyZWS.parentElement.isContentEditable ||
-            this.getResource("unremovable_node_predicates").some((p) => p(emptyZWS))
+            this.dependencies.delete.isUnremovable(emptyZWS)
         ) {
             return insertedNode;
         }
@@ -207,16 +256,12 @@ export class FormatPlugin extends Plugin {
     removeAllFormats() {
         const targetedNodes = this.dependencies.selection.getTargetedNodes();
         this.removeFormats(Object.keys(formatsSpecs), targetedNodes);
-        this.dispatchTo("remove_all_formats_handlers");
+        this.trigger("on_all_formats_removed_handlers");
         this.dependencies.history.addStep();
     }
 
-    removeFontSizeFormat(els) {
-        if (els.every((el) => isParagraphRelatedElement(el))) {
-            const targetedNodes = this.dependencies.selection.getTargetedNodes();
-            this.removeFormats(["fontSize", "setFontSizeClassName"], targetedNodes);
-            this.dependencies.history.addStep();
-        }
+    removeFontSizeFormat(el) {
+        this.removeFormats(["fontSize", "setFontSizeClassName"], [el, ...descendants(el)]);
     }
 
     /**
@@ -228,7 +273,11 @@ export class FormatPlugin extends Plugin {
      * @returns {boolean}
      */
     hasSelectionFormat(format, targetedNodes = this.dependencies.selection.getTargetedNodes()) {
-        const targetedTextNodes = targetedNodes.filter(isTextNode);
+        const targetedTextNodes = targetedNodes.filter(
+            (node) =>
+                node.matches?.(PROTECTED_QWEB_SELECTOR) ||
+                (isTextNode(node) && (isVisibleTextNode(node) || isZWS(node)))
+        );
         const isFormatted = formatsSpecs[format].isFormatted;
         return targetedTextNodes.some((n) => isFormatted(n, { editable: this.editable }));
     }
@@ -242,8 +291,15 @@ export class FormatPlugin extends Plugin {
      * @returns {boolean}
      */
     isSelectionFormat(format, targetedNodes = this.dependencies.selection.getTargetedNodes()) {
-        const targetedTextNodes = targetedNodes.filter(isTextNode);
         const isFormatted = formatsSpecs[format].isFormatted;
+        const isNonFormattedWhiteSpaces = (node) =>
+            /^(\s|\n)+$/.test(node.nodeValue) && !isFormatted(node, { editable: this.editable });
+        const targetedTextNodes = targetedNodes.filter(
+            (node) =>
+                isTextNode(node) &&
+                !isNonFormattedWhiteSpaces(node) &&
+                this.dependencies.selection.isNodeEditable(node)
+        );
         return (
             targetedTextNodes.length &&
             targetedTextNodes.every(
@@ -256,21 +312,23 @@ export class FormatPlugin extends Plugin {
     }
 
     hasAnyFormat(targetedNodes) {
+        const editableTargetedNodes = targetedNodes.filter(
+            this.dependencies.selection.isNodeEditable
+        );
         for (const format of Object.keys(formatsSpecs)) {
             if (
                 formatsSpecs[format].removeStyle &&
-                this.hasSelectionFormat(format, targetedNodes)
+                this.hasSelectionFormat(format, editableTargetedNodes)
             ) {
                 return true;
             }
         }
-        return targetedNodes.some((node) =>
-            this.getResource("has_format_predicates").some((predicate) => predicate(node))
+        return editableTargetedNodes.some(
+            (node) => this.checkPredicates("has_format_predicates", node) ?? false
         );
     }
 
     formatSelection(formatName, options) {
-        this.dispatchTo("format_selection_handlers", formatName, options);
         if (this._formatSelection(formatName, options) && !options?.removeFormat) {
             this.dependencies.history.addStep();
         }
@@ -278,11 +336,31 @@ export class FormatPlugin extends Plugin {
 
     // @todo phoenix: refactor this method.
     _formatSelection(formatName, { applyStyle, formatProps } = {}) {
+        const deepSelection = this.dependencies.selection.getSelectionData().deepEditableSelection;
+        const anchorElement = deepSelection.anchorNode;
+        const focusElement = deepSelection.focusNode;
+        if (
+            anchorElement === focusElement &&
+            !isContentEditable(anchorElement) &&
+            !closestElement(anchorElement, PROTECTED_QWEB_SELECTOR)
+        ) {
+            return;
+        }
         this.dependencies.selection.selectAroundNonEditable();
         // note: does it work if selection is in opposite direction?
         const selection = this.dependencies.split.splitSelection();
         if (typeof applyStyle === "undefined") {
             applyStyle = !this.isSelectionFormat(formatName);
+        }
+
+        const formattedNodes = new Set();
+        if (
+            this.delegateTo("format_selection_overrides", formatName, formattedNodes, {
+                applyStyle,
+                formatProps,
+            })
+        ) {
+            return;
         }
 
         let zws;
@@ -300,11 +378,13 @@ export class FormatPlugin extends Plugin {
             }
         }
 
+        const systemNodesSelector = this.getResource("system_node_selectors").join(", ");
         const selectedTextNodes = /** @type { Text[] } **/ (
             this.dependencies.selection
                 .getTargetedNodes()
                 .filter(
                     (n) =>
+                        (!systemNodesSelector || !closestElement(n, systemNodesSelector)) &&
                         this.dependencies.selection.areNodeContentsFullySelected(n) &&
                         ((isTextNode(n) && (isVisibleTextNode(n) || isZWS(n))) ||
                             (n.nodeName === "BR" &&
@@ -313,23 +393,10 @@ export class FormatPlugin extends Plugin {
                         isContentEditable(n)
                 )
         );
-        const unformattedTextNodes = selectedTextNodes.filter((n) => {
-            const listItem = closestElement(n, "li");
-            if (listItem && this.dependencies.selection.areNodeContentsFullySelected(listItem)) {
-                const hasFontSizeStyle =
-                    formatName === "setFontSizeClassName"
-                        ? listItem.classList.contains(formatProps?.className)
-                        : listItem.style.fontSize;
-                return !hasFontSizeStyle;
-            }
-            return true;
-        });
-
-        const tagetedFieldNodes = new Set(
-            this.dependencies.selection
-                .getTargetedNodes()
-                .map((n) => closestElement(n, "*[t-field],*[t-out],*[t-esc]"))
-                .filter(Boolean)
+        const unformattedTextNodes = selectedTextNodes.filter(
+            (n) =>
+                !formattedNodes.has(n) &&
+                (this.checkPredicates("is_formattable_node_predicates", n) ?? true)
         );
         const formatSpec = formatsSpecs[formatName];
         for (const node of unformattedTextNodes) {
@@ -341,14 +408,27 @@ export class FormatPlugin extends Plugin {
             // Remove the format on all inline ancestors until a block or an element
             // with a class that is not indicated as splittable.
             const isClassListSplittable = (classList) =>
-                [...classList].every((className) =>
-                    this.getResource("format_class_predicates").some((cb) => cb(className))
+                [...classList].every(
+                    (className) =>
+                        this.checkPredicates("is_format_class_predicates", className) ?? false
                 );
+
+            // Special case: if the parent node is unsplittable and fully selected,
+            // we should make sure the span is applied outside of it.
+            if (
+                parentNode &&
+                !isBlock(parentNode) &&
+                this.dependencies.split.isUnsplittable(parentNode) &&
+                this.dependencies.selection.areNodeContentsFullySelected(parentNode)
+            ) {
+                inlineAncestors.push(parentNode);
+            }
 
             while (
                 parentNode &&
                 !isBlock(parentNode) &&
-                !this.dependencies.split.isUnsplittable(parentNode) &&
+                (!this.dependencies.split.isUnsplittable(parentNode) ||
+                    parentNode.dataset.textEffect) &&
                 (parentNode.classList.length === 0 || isClassListSplittable(parentNode.classList))
             ) {
                 const isUselessZws =
@@ -378,8 +458,20 @@ export class FormatPlugin extends Plugin {
 
             const firstBlockOrClassHasFormat = formatSpec.isFormatted(parentNode, formatProps);
             if (firstBlockOrClassHasFormat && !applyStyle) {
-                formatSpec.addNeutralStyle &&
-                    formatSpec.addNeutralStyle(getOrCreateSpan(node, inlineAncestors));
+                const isParentNodeBlockAndCompletelySelected =
+                    isBlock(parentNode) &&
+                    this.dependencies.selection.areNodeContentsFullySelected(parentNode);
+                if (
+                    isParentNodeBlockAndCompletelySelected &&
+                    formatName === "setFontSizeClassName"
+                ) {
+                    for (const node of [parentNode, ...descendants(parentNode).filter(isElement)]) {
+                        removeFormat(node, formatSpec);
+                    }
+                } else {
+                    formatSpec.addNeutralStyle &&
+                        formatSpec.addNeutralStyle(getOrCreateSpan(node, inlineAncestors));
+                }
             } else if (
                 (!firstBlockOrClassHasFormat || parentNode.nodeName === "LI") &&
                 applyStyle
@@ -397,14 +489,6 @@ export class FormatPlugin extends Plugin {
                 } else if (formatName !== "fontSize" || formatProps.size !== undefined) {
                     formatSpec.addStyle(getOrCreateSpan(node, inlineAncestors), formatProps);
                 }
-            }
-        }
-
-        for (const targetedFieldNode of tagetedFieldNodes) {
-            if (applyStyle) {
-                formatSpec.addStyle(targetedFieldNode, formatProps);
-            } else {
-                formatSpec.removeStyle(targetedFieldNode);
             }
         }
 
@@ -429,7 +513,7 @@ export class FormatPlugin extends Plugin {
             unformattedTextNodes[0] &&
             unformattedTextNodes[0].textContent === "\u200B"
         ) {
-            this.dependencies.selection.setCursorStart(unformattedTextNodes[0]);
+            this.dependencies.selection.setCursorEnd(unformattedTextNodes[0]);
         } else if (selectedTextNodes.length) {
             const firstNode = selectedTextNodes[0];
             const lastNode = selectedTextNodes[selectedTextNodes.length - 1];
@@ -452,9 +536,9 @@ export class FormatPlugin extends Plugin {
             this.dependencies.selection.setSelection(newSelection, { normalize: false });
             return true;
         }
-        if (tagetedFieldNodes.size > 0) {
-            return true;
-        }
+        // To ensure history step is added when overrides apply formatting.
+        // @see formatSelection
+        return !!formattedNodes.size;
     }
 
     normalize(root) {
@@ -476,7 +560,7 @@ export class FormatPlugin extends Plugin {
         this.mergeAdjacentInlines(root);
     }
 
-    cleanForSave({ root, preserveSelection = false } = {}) {
+    cleanForSave(root, { preserveSelection = false } = {}) {
         for (const element of root.querySelectorAll("[data-oe-zws-empty-inline]")) {
             let currentElement = element.parentElement;
             this.cleanElement(element, { preserveSelection });
@@ -499,10 +583,13 @@ export class FormatPlugin extends Plugin {
     removeEmptyInlineElement(selectionData) {
         const { anchorNode } = selectionData.editableSelection;
         const blockEl = closestBlock(anchorNode);
+        if (!blockEl) {
+            return;
+        }
         const inlineElement = findFurthest(
             closestElement(anchorNode),
             blockEl,
-            (e) => !isBlock(e) && e.textContent === "\u200b"
+            (e) => isPhrasingContent(e) && !isVisible(e) && !hasVisibleContent(e)
         );
         if (
             this.lastEmptyInlineElement?.isConnected &&
@@ -526,12 +613,12 @@ export class FormatPlugin extends Plugin {
             this.cleanZWS(element, { preserveSelection });
             return;
         }
-        if (this.getResource("unremovable_node_predicates").some((p) => p(element))) {
+        if (this.dependencies.delete.isUnremovable(element)) {
             return;
         }
         if (
-            ![...element.classList].every((c) =>
-                this.getResource("format_class_predicates").some((p) => p(c))
+            ![...element.classList].every(
+                (c) => this.checkPredicates("is_format_class_predicates", c) ?? false
             )
         ) {
             // Original comment from web_editor:
@@ -606,7 +693,10 @@ export class FormatPlugin extends Plugin {
             if (!selection.isCollapsed) {
                 return;
             }
-            const element = closestElement(selection.anchorNode);
+            // Links are a special case here. When typing, link
+            // element gets removed automatically whereas
+            // other inline tags would be preserved.
+            const element = closestElement(selection.anchorNode, ":not(a)");
             if (element.hasAttribute("data-oe-zws-empty-inline")) {
                 // Select its ZWS content to make sure the text will be
                 // inserted inside the element, and not before (outside) it.
@@ -629,6 +719,7 @@ export class FormatPlugin extends Plugin {
      * @param {boolean} [options.preserveSelection=true]
      */
     mergeAdjacentInlines(root, { preserveSelection = true } = {}) {
+        this.trigger("on_will_merge_adjacent_siblings_handlers", root);
         let selectionToRestore = null;
         for (const node of [root, ...descendants(root)].filter(isElement)) {
             if (this.shouldBeMergedWithPreviousSibling(node)) {
@@ -641,23 +732,81 @@ export class FormatPlugin extends Plugin {
             }
         }
         selectionToRestore?.restore();
+        this.trigger("on_merged_adjacent_siblings_handlers", root);
     }
 
     shouldBeMergedWithPreviousSibling(node) {
         const isMergeable = (node) =>
             FORMATTABLE_TAGS.includes(node.nodeName) &&
-            !this.getResource("unsplittable_node_predicates").some((predicate) => predicate(node));
+            (this.checkPredicates("is_node_splittable_predicates", node) ?? true);
+        const previousSibling = node.previousSibling;
         return (
             !isSelfClosingElement(node) &&
-            areSimilarElements(node, node.previousSibling) &&
-            isMergeable(node)
+            isMergeable(node) &&
+            this.areSimilarElements(node, previousSibling)
+        );
+    }
+
+    areSimilarElements(node, node2) {
+        if (![node, node2].every((n) => n?.nodeType === Node.ELEMENT_NODE)) {
+            return false; // The nodes don't both exist or aren't both elements.
+        }
+        if (node.nodeName !== node2.nodeName) {
+            return false; // The nodes aren't the same type of element.
+        }
+        for (const name of new Set([...node.getAttributeNames(), ...node2.getAttributeNames()])) {
+            if (name === "style") {
+                if (!hasSameStyleAttributes(node, node2)) {
+                    return false;
+                }
+            } else if (name === "class") {
+                if (!hasSameClasses(node, node2)) {
+                    return false; // The nodes don't have the same classes.
+                }
+            } else if (node.getAttribute(name) !== node2.getAttribute(name)) {
+                return false; // The nodes don't have the same attributes.
+            }
+        }
+        if (
+            [node, node2].some(
+                (n) => hasPseudoElementContent(n, ":before") || hasPseudoElementContent(n, ":after")
+            )
+        ) {
+            return false; // The nodes have pseudo elements with content.
+        }
+        if (isBlock(node)) {
+            return false;
+        }
+        const nodeStyle = getComputedStyle(node);
+        const node2Style = getComputedStyle(node2);
+        for (const override of this.getResource("are_similar_elements_overrides")) {
+            const overrideResult = override({ node, nodeStyle, node2, node2Style });
+            if (overrideResult !== undefined) {
+                return overrideResult;
+            }
+        }
+        return (
+            !+nodeStyle.padding.replace(NOT_A_NUMBER, "") &&
+            !+node2Style.padding.replace(NOT_A_NUMBER, "") &&
+            !+nodeStyle.margin.replace(NOT_A_NUMBER, "") &&
+            !+node2Style.margin.replace(NOT_A_NUMBER, "")
+        );
+    }
+
+    canFormatContent(selection) {
+        return (
+            isHtmlContentSupported(selection) &&
+            this.dependencies.selection.getTargetedNodes().every((node) => isStylable(node))
         );
     }
 }
 
 function getOrCreateSpan(node, ancestors) {
     const document = node.ownerDocument;
-    const span = ancestors.find((element) => element.tagName === "SPAN" && element.isConnected);
+    const span = ancestors.find(
+        (element) =>
+            element.tagName === "SPAN" && element.isConnected && !element.dataset.textEffect
+    );
     const lastInlineAncestor = ancestors.findLast(
         (element) => !isBlock(element) && element.isConnected
     );

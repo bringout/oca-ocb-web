@@ -1,5 +1,6 @@
-import { Img } from "@html_builder/core/img";
-import { Component, useState, useRef } from "@odoo/owl";
+import { useRef, useState } from "@web/owl2/utils";
+import { Image } from "@html_builder/core/img";
+import { Component } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import { useAutofocus } from "@web/core/utils/hooks";
 
@@ -11,7 +12,7 @@ export class CustomInnerSnippet extends Component {
         onClickHandler: { type: Function },
         disabledTooltip: { type: String },
     };
-    static components = { Img };
+    static components = { Image };
 
     setup() {
         this.renameInputRef = useRef("rename-input");

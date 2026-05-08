@@ -1,4 +1,5 @@
-import { Component, onMounted, useRef, useSubEnv, xml } from "@odoo/owl";
+import { useRef, useSubEnv } from "@web/owl2/utils";
+import { Component, onMounted, xml } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import {
@@ -29,6 +30,7 @@ export class BuilderSelect extends Component {
         ...basicContainerBuilderComponentProps,
         className: { type: String, optional: true },
         dropdownContainerClass: { type: String, optional: true },
+        disabled: { type: Boolean, optional: true },
         slots: {
             type: Object,
             shape: {
@@ -36,7 +38,9 @@ export class BuilderSelect extends Component {
                 fixedButton: { type: Object, optional: true },
             },
         },
+        dropdownClass: { type: String, optional: true },
     };
+    static defaultProps = { dropdownClass: "o-hb-select-dropdown" };
     static components = {
         Dropdown,
         BuilderComponent,

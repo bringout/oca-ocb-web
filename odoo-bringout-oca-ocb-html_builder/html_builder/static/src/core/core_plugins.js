@@ -8,9 +8,12 @@ import { BuilderActionsPlugin } from "./builder_actions_plugin";
 import { BuilderComponentPlugin } from "./builder_component_plugin";
 import { BuilderOptionsPlugin } from "./builder_options_plugin";
 import { BuilderOverlayPlugin } from "./builder_overlay/builder_overlay_plugin";
+import { BuilderSelectionRestrictionPlugin } from "./builder_selection_restriction_plugin";
 import { CachedModelPlugin } from "./cached_model_plugin";
 import { ClonePlugin } from "./clone_plugin";
 import { ColorUIPlugin } from "./color_ui_plugin";
+import { ImagePlugin } from "./image_plugin";
+import { IconPlugin } from "./icon_plugin";
 import { CoreBuilderActionPlugin } from "./core_builder_action_plugin";
 import { CompositeActionPlugin } from "./composite_action_plugin";
 import { CustomizeTabPlugin } from "./customize_tab_plugin";
@@ -33,6 +36,7 @@ import { BuilderContentEditablePlugin } from "./builder_content_editable_plugin"
 import { ImageFieldPlugin } from "@html_builder/plugins/image_field_plugin";
 import { MonetaryFieldPlugin } from "@html_builder/plugins/monetary_field_plugin";
 import { Many2OneOptionPlugin } from "@html_builder/plugins/many2one_option_plugin";
+import { VersionErrorPlugin } from "./version_error_plugin";
 
 const mainEditorPluginsToRemove = [
     "PowerButtonsPlugin",
@@ -42,8 +46,11 @@ const mainEditorPluginsToRemove = [
     "BannerPlugin",
     "MoveNodePlugin",
     "FontFamilyPlugin",
+    "SelectionPlaceholderPlugin",
     // Replaced plugins:
     "ColorUIPlugin",
+    "ImagePlugin",
+    "IconPlugin",
 ];
 
 export const MAIN_PLUGINS = [
@@ -51,17 +58,35 @@ export const MAIN_PLUGINS = [
         [...MAIN_EDITOR_PLUGINS, ...NO_EMBEDDED_COMPONENTS_FALLBACK_PLUGINS],
         mainEditorPluginsToRemove
     ),
+    BuilderActionsPlugin,
+    BuilderComponentPlugin,
+    BuilderContentEditablePlugin,
+    BuilderOptionsPlugin,
+    BuilderOverlayPlugin,
+    BuilderSelectionRestrictionPlugin,
+    CachedModelPlugin,
     ColorUIPlugin,
+    ImagePlugin,
+    IconPlugin,
+    CompositeActionPlugin,
+    CoreBuilderActionPlugin,
+    CustomizeTabPlugin,
+    DisableSnippetsPlugin,
+    DropZonePlugin,
+    DropZoneSelectorPlugin,
+    FieldChangeReplicationPlugin,
+    ImageFieldPlugin,
+    Many2OneOptionPlugin,
+    MonetaryFieldPlugin,
+    OperationPlugin,
+    OverlayButtonsPlugin,
+    SavePlugin,
+    SetupEditorPlugin,
+    VisibilityPlugin,
 ];
 
 export const CORE_PLUGINS = [
     ...MAIN_PLUGINS,
-    BuilderOptionsPlugin,
-    BuilderActionsPlugin,
-    BuilderComponentPlugin,
-    OperationPlugin,
-    BuilderOverlayPlugin,
-    OverlayButtonsPlugin,
     MovePlugin,
     GridLayoutPlugin,
     DragAndDropPlugin,
@@ -69,20 +94,6 @@ export const CORE_PLUGINS = [
     ClonePlugin,
     SaveSnippetPlugin,
     AnchorPlugin,
-    DropZonePlugin,
-    DisableSnippetsPlugin,
     MediaWebsitePlugin,
-    SetupEditorPlugin,
-    SavePlugin,
-    VisibilityPlugin,
-    DropZoneSelectorPlugin,
-    CachedModelPlugin,
-    CoreBuilderActionPlugin,
-    CompositeActionPlugin,
-    CustomizeTabPlugin,
-    FieldChangeReplicationPlugin,
-    BuilderContentEditablePlugin,
-    ImageFieldPlugin,
-    MonetaryFieldPlugin,
-    Many2OneOptionPlugin,
+    VersionErrorPlugin,
 ];

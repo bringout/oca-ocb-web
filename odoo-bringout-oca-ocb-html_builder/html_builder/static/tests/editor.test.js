@@ -1,8 +1,9 @@
-import { setupHTMLBuilder } from "@html_builder/../tests/helpers";
+import { dummyBase64Img, setupHTMLBuilder } from "@html_builder/../tests/helpers";
 import { setSelection } from "@html_editor/../tests/_helpers/selection";
 import { expandToolbar } from "@html_editor/../tests/_helpers/toolbar";
+import { expectElementCount } from "@html_editor/../tests/_helpers/ui_expectations";
 import { insertText, pasteHtml } from "@html_editor/../tests/_helpers/user_actions";
-import { FontPlugin } from "@html_editor/main/font/font_plugin";
+import { FontSizePlugin } from "@html_editor/main/font/font_size_plugin";
 import { isTextNode } from "@html_editor/utils/dom_info";
 import { parseHTML } from "@html_editor/utils/html";
 import { expect, test, describe } from "@odoo/hoot";
@@ -14,7 +15,7 @@ import {
     waitForNone,
 } from "@odoo/hoot-dom";
 import { animationFrame } from "@odoo/hoot-mock";
-import { contains, patchWithCleanup } from "@web/../tests/web_test_helpers";
+import { contains, onRpc, patchWithCleanup } from "@web/../tests/web_test_helpers";
 
 describe.current.tags("desktop");
 
@@ -32,7 +33,7 @@ test("should add an icon from the media modal dialog", async () => {
     await insertText(editor, "/image");
     await animationFrame();
     await contains(".o-we-command").click();
-    await contains(".modal .modal-body .nav-item:nth-child(3) a").click();
+    await contains(".modal .modal-body .nav-item:nth-child(3) button").click();
     await contains(".modal .modal-body .fa-heart").click();
     expect(p).toHaveInnerHTML(`x<span class="fa fa-heart" contenteditable="false">\u200b</span>`);
 });
@@ -60,7 +61,7 @@ test("unsplittable node predicates should not crash when called with text node a
     const textNode = editor.editable.querySelector("p").firstChild;
     expect(isTextNode(textNode)).toBe(true);
     expect(() =>
-        editor.resources.unsplittable_node_predicates.forEach((p) => p(textNode))
+        editor.resources.is_node_splittable_predicates.forEach((p) => p(textNode))
     ).not.toThrow();
 });
 
@@ -109,15 +110,15 @@ test("should preserve iframe in the toolbar's font size input", async () => {
         focusNode: p2.firstChild,
         focusOffset: 9,
     });
-    await waitFor(".o-we-toolbar");
+    await waitFor(".o-we-toolbar [name='font_size'] iframe");
     // Get the font size selector input.
-    let iframeEl = queryOne(".o-we-toolbar [name='font_size_selector'] iframe");
+    let iframeEl = queryOne(".o-we-toolbar [name='font_size'] iframe");
     let inputEl = iframeEl.contentWindow.document?.querySelector("input");
     // Change the font style from paragraph to paragraph.
-    await contains(".o-we-toolbar .btn[name='font'].dropdown-toggle").click();
-    await waitFor(".btn[name='font'].dropdown-toggle.show");
+    await contains(".o-we-toolbar .btn[name='font_type'].dropdown-toggle").click();
+    await waitFor(".btn[name='font_type'].dropdown-toggle.show");
     await contains(".dropdown-menu [name='p']").click();
-    iframeEl = queryOne(".o-we-toolbar [name='font_size_selector'] iframe");
+    iframeEl = queryOne(".o-we-toolbar [name='font_size'] iframe");
     let newInputEl = iframeEl.contentWindow.document?.querySelector("input");
     expect(newInputEl).toBe(inputEl); // The input shouldn't have been changed.
 
@@ -130,13 +131,13 @@ test("should preserve iframe in the toolbar's font size input", async () => {
     });
     await waitFor(".o-we-toolbar");
     // Get the font size selector input.
-    iframeEl = queryOne(".o-we-toolbar [name='font_size_selector'] iframe");
+    iframeEl = queryOne(".o-we-toolbar [name='font_size'] iframe");
     inputEl = iframeEl.contentWindow.document?.querySelector("input");
     // Change the font style from paragraph to header 1.
-    await contains(".o-we-toolbar .btn[name='font'].dropdown-toggle").click();
-    await waitFor(".btn[name='font'].dropdown-toggle.show");
+    await contains(".o-we-toolbar .btn[name='font_type'].dropdown-toggle").click();
+    await waitFor(".btn[name='font_type'].dropdown-toggle.show");
     await contains(".dropdown-menu [name='h2']").click();
-    iframeEl = queryOne(".o-we-toolbar [name='font_size_selector'] iframe");
+    iframeEl = queryOne(".o-we-toolbar [name='font_size'] iframe");
     newInputEl = iframeEl.contentWindow.document?.querySelector("input");
     expect(newInputEl).toBe(inputEl); // The input shouldn't have been changed.
 });
@@ -151,7 +152,45 @@ test("should apply default table classes on paste", async () => {
         anchorOffset: 0,
     });
     pasteHtml(editor, `<table><tr><td>1234</td></tr></table>`);
-    expect(editor.document.querySelector("table")).toHaveClass("table table-bordered");
+    expect(editor.document.querySelector("table")).toHaveClass("table table-bordered o_table");
+});
+
+test("Reset transform button should appear after transforming image", async () => {
+    onRpc("/html_editor/get_image_info", async () => ({}));
+
+    const { getEditor } = await setupHTMLBuilder(`
+        <section>
+            <div class="o_not_editable">
+                <img style="width: 20%;" class="o_editable_media" src="${dummyBase64Img}"/>
+            </div>
+        </section>
+    `);
+    const editor = getEditor();
+    const img = editor.editable.querySelector("img");
+    await click(img);
+    await expectElementCount("[data-action-id=transformImage]", 1);
+    await animationFrame();
+    await click("[data-action-id=transformImage]");
+    await expectElementCount(".transfo-container", 1);
+    const rotateBtn = queryOne(".transfo-controls .fa-repeat");
+    const btnRect = rotateBtn.getBoundingClientRect(rotateBtn);
+    await manuallyDispatchProgrammaticEvent(rotateBtn, "mousedown", {
+        clientX: btnRect.left + 5,
+        clientY: btnRect.top + 5,
+    });
+    await manuallyDispatchProgrammaticEvent(rotateBtn, "mousemove", {
+        clientX: btnRect.left + 50,
+        clientY: btnRect.top + 50,
+    });
+    await manuallyDispatchProgrammaticEvent(rotateBtn, "mouseup", {
+        clientX: btnRect.left + 50,
+        clientY: btnRect.top + 50,
+    });
+    expect(img.style.transform).not.toEqual("");
+    await expectElementCount("[data-action-id=resetTransformImage]", 1);
+    await animationFrame();
+    await click("button.fa-undo");
+    expect(img.style.transform).toEqual("");
 });
 
 describe("toolbar dropdowns", () => {
@@ -202,20 +241,20 @@ describe("toolbar dropdowns", () => {
 
     test("font style dropdown should close only after click", async () => {
         const { editor } = await setup();
-        click(".o-we-toolbar .btn[name='font']");
+        click(".o-we-toolbar .btn[name='font_type']");
         await focusAndClick(".dropdown-menu .dropdown-item[name='h2']");
         await animationFrame();
         expect(!!editor.editable.querySelector("h2")).toBe(true);
     });
 
     test("font size dropdown should close only after click", async () => {
-        patchWithCleanup(FontPlugin.prototype, {
+        patchWithCleanup(FontSizePlugin.prototype, {
             get fontSizeItems() {
                 return [{ name: "test", className: "test-font-size" }];
             },
         });
         const { p } = await setup();
-        click(".o-we-toolbar .btn[name='font_size_selector']");
+        click(".o-we-toolbar .btn[name='font_size']");
         await focusAndClick(".dropdown-menu .dropdown-item");
         await animationFrame();
         expect(p.firstChild).toHaveClass("test-font-size");
@@ -223,9 +262,9 @@ describe("toolbar dropdowns", () => {
 
     test("font selector dropdown should not have normal as an option", async () => {
         await setup();
-        click(".o-we-toolbar .btn[name='font']");
+        click(".o-we-toolbar .btn[name='font_type']");
         await animationFrame();
-        expect(".o_font_selector_menu .o-dropdown-item[name='div']").toHaveCount(0);
+        expect(".o_font_type_selector_menu .o-dropdown-item[name='div']").toHaveCount(0);
     });
 });
 
@@ -236,8 +275,8 @@ describe("font types", () => {
         const p = editor.editable.querySelector("p");
         setSelection({ anchorNode: p, anchorOffset: 0, focusOffset: 1 });
         await waitFor(".o-we-toolbar");
-        click(".o-we-toolbar .btn[name='font']");
-        await waitFor(".o_font_selector_menu");
+        click(".o-we-toolbar .btn[name='font_type']");
+        await waitFor(".o_font_type_selector_menu");
         const expectedButtons = [
             "Header 1 Display 1",
             "Header 1 Display 2",
@@ -245,7 +284,9 @@ describe("font types", () => {
             "Header 1 Display 4",
         ];
         expectedButtons.forEach((button) => {
-            expect(`.o_font_selector_menu .o-dropdown-item:contains('${button}')`).toHaveCount(1);
+            expect(`.o_font_type_selector_menu .o-dropdown-item:contains('${button}')`).toHaveCount(
+                1
+            );
         });
     });
     test("'Light' is available", async () => {
@@ -254,12 +295,12 @@ describe("font types", () => {
         const p = editor.editable.querySelector("p");
         setSelection({ anchorNode: p, anchorOffset: 0, focusOffset: 1 });
         await waitFor(".o-we-toolbar");
-        click(".o-we-toolbar .btn[name='font']");
-        await waitFor(".o_font_selector_menu");
-        expect(`.o_font_selector_menu .o-dropdown-item:contains('Light')`).toHaveCount(1);
-        click(".o_font_selector_menu .o-dropdown-item:contains('Light')");
-        await waitForNone(".o_font_selector_menu");
-        expect(".o-we-toolbar .btn[name='font']").toHaveText("Light");
+        click(".o-we-toolbar .btn[name='font_type']");
+        await waitFor(".o_font_type_selector_menu");
+        expect(`.o_font_type_selector_menu .o-dropdown-item:contains('Light')`).toHaveCount(1);
+        click(".o_font_type_selector_menu .o-dropdown-item:contains('Light')");
+        await waitForNone(".o_font_type_selector_menu");
+        expect(".o-we-toolbar .btn[name='font_type']").toHaveText("Light");
         expect(editor.editable.querySelector("p")).toHaveClass("lead");
     });
     test("'Small' is available", async () => {
@@ -268,12 +309,46 @@ describe("font types", () => {
         const p = editor.editable.querySelector("p");
         setSelection({ anchorNode: p, anchorOffset: 0, focusOffset: 1 });
         await waitFor(".o-we-toolbar");
-        click(".o-we-toolbar .btn[name='font']");
-        await waitFor(".o_font_selector_menu");
-        expect(`.o_font_selector_menu .o-dropdown-item:contains('Small')`).toHaveCount(1);
-        click(".o_font_selector_menu .o-dropdown-item:contains('Small')");
-        await waitForNone(".o_font_selector_menu");
-        expect(".o-we-toolbar .btn[name='font']").toHaveText("Small");
+        click(".o-we-toolbar .btn[name='font_type']");
+        await waitFor(".o_font_type_selector_menu");
+        expect(`.o_font_type_selector_menu .o-dropdown-item:contains('Small')`).toHaveCount(1);
+        click(".o_font_type_selector_menu .o-dropdown-item:contains('Small')");
+        await waitForNone(".o_font_type_selector_menu");
+        expect(".o-we-toolbar .btn[name='font_type']").toHaveText("Small");
         expect(editor.editable.querySelector("p")).toHaveClass("small");
     });
+
+    test("Should not be able to change tag of `o_savable` element", async () => {
+        const { getEditor } = await setupHTMLBuilder(`<h1 class="o_savable">abcd</h1>`);
+        const editor = getEditor();
+        const h1 = editor.editable.querySelector("h1");
+        setSelection({ anchorNode: h1, anchorOffset: 0, focusOffset: 1 });
+        await waitFor(".o-we-toolbar");
+        await expandToolbar();
+        expect(".o-we-toolbar .btn[name='font']").toHaveCount(0);
+    });
+
+    test("should cleanup whitespace after last element removal", async () => {
+        const { getEditor } = await setupHTMLBuilder(`
+            <section class="test_snippet" data-snippet="s_test" data-name="Test">
+                <p>Content to remove</p>
+            </section>
+        `);
+        const editor = getEditor();
+        const emptyStructureEl = editor.editable.querySelector(".oe_empty");
+        // The snippet is surrounded by new line text nodes.
+        expect(emptyStructureEl.childNodes.length).toBe(3);
+        await contains(":iframe .test_snippet").click();
+        await contains(".overlay .oe_snippet_remove").click();
+        expect(emptyStructureEl.childNodes.length).toBe(0);
+    });
+});
+
+test("should not insert block element at root editable span", async () => {
+    const { getEditor } = await setupHTMLBuilder("", {
+        headerContent: `<span style="display: block" contenteditable="true" class="test-target">Hello</span>`,
+    });
+    setSelection({ anchorNode: queryOne(":iframe .test-target"), anchorOffset: 1 });
+    pasteHtml(getEditor(), `!`);
+    expect(":iframe .test-target").toHaveInnerHTML("Hello!");
 });

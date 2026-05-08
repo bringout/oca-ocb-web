@@ -1,5 +1,4 @@
-import { containsAnyInline } from "./dom_info";
-import { wrapInlinesInBlocks } from "./dom";
+import { containsAnyInline, selfClosingHtmlTags } from "./dom_info";
 import { markup } from "@odoo/owl";
 import { htmlReplace } from "@web/core/utils/html";
 
@@ -12,7 +11,7 @@ export function initElementForEdition(element, options = {}) {
         // No matter the inline content, it will be wrapped in a DIV to try
         // and match the current style of the content as much as possible.
         // (P has a margin-bottom, DIV does not).
-        wrapInlinesInBlocks(element, {
+        options.wrapInlinesInBlocks(element, {
             baseContainerNodeName: "DIV",
         });
     }
@@ -32,8 +31,8 @@ export function initElementForEdition(element, options = {}) {
 }
 
 /**
- * Properly close common XML-like self-closing elements to avoid HTML parsing
- * issues.
+ * Converts XML-style self-closing tags (e.g., <div/> <span/> <t/>) into proper
+ * HTML start/end tag pairs, except for true HTML void elements.
  *
  * @param {string | ReturnType<markup>} content
  * @returns {ReturnType<markup>}
@@ -42,8 +41,19 @@ export function fixInvalidHTML(content) {
     if (!content) {
         return content;
     }
-    const regex =
-        /<\s*(a|strong|t|span)\s*((?:(?:\s+[\w:-]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*))\s*\/>/g;
+    // Match self-closing tags EXCEPT HTML void elements.
+    // We use selfClosingHtmlTags over selfClosingElementTags because the
+    // latter includes XML-only tags such as <t>, which must not be treated as
+    // void in HTML.
+    const voidPattern = selfClosingHtmlTags.map((t) => `${t.toLowerCase()}\\b`).join("|");
+    const regex = new RegExp(
+        `<\\s*(?!${voidPattern})` +
+            `([a-zA-Z0-9:-]+)` + // tag name
+            `\\s*` +
+            `((?:(?:\\s+[\\w:-]+(?:\\s*=\\s*(?:"[^"]*"|'[^']*'|[^\\s"'=<>\\\`]+))?)*))` + // attributes
+            `\\s*\\/>`,
+        "g"
+    );
     return htmlReplace(content, regex, (match, tag, attributes) => {
         // markup: content is either already markup or escaped in htmlReplace
         attributes = markup(attributes);

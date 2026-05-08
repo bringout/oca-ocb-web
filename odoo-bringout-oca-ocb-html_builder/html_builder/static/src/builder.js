@@ -1,3 +1,4 @@
+import { useRef, useState, useSubEnv } from "@web/owl2/utils";
 import { Editor } from "@html_editor/editor";
 import {
     Component,
@@ -6,11 +7,7 @@ import {
     onWillDestroy,
     onWillStart,
     onWillUnmount,
-    onWillUpdateProps,
     status,
-    useRef,
-    useState,
-    useSubEnv,
 } from "@odoo/owl";
 import { useHotkey } from "@web/core/hotkeys/hotkey_hook";
 import { _t } from "@web/core/l10n/translation";
@@ -26,6 +23,21 @@ import { withSequence } from "@html_editor/utils/resource";
 import { getHtmlStyle } from "@html_editor/utils/formatting";
 import { isVisible } from "@html_builder/utils/utils";
 
+// These elements should only have inline content (even if they have a `block`
+// display style, for example if they are in a flex)
+// NOTE: h1, h2, ..., p, pre already prevents wrapping their children into block
+const ONLY_ALLOW_INLINE_TAGS = new Set([
+    ...["a", "em", "strong", "small", "s", "cite", "q", "abbr", "data", "time", "code"],
+    ...["samp", "sub", "sup", "i", "b", "u", "mark", "bdi", "span", "label", "button"],
+]);
+
+/**
+ * @typedef {((args: {isMobileView: boolean}) => ())[]} on_mobile_view_switched_handlers
+ * called when the screen size switches between mobile and desktop view
+ * @typedef {(() => void)[]} on_dom_updated_handlers
+ * @typedef {{ Component: Component; props: object; }[]} lower_panel_entries
+ */
+
 export class Builder extends Component {
     static template = "html_builder.Builder";
     static components = { BlockTab, CustomizeTab };
@@ -33,6 +45,7 @@ export class Builder extends Component {
         closeEditor: { type: Function, optional: true },
         reloadEditor: { type: Function, optional: true },
         onEditorLoad: { type: Function, optional: true },
+        newInstalledModule: { type: String, optional: true },
         installSnippetModule: { type: Function, optional: true },
         snippetsName: { type: String },
         toggleMobile: { type: Function },
@@ -40,32 +53,36 @@ export class Builder extends Component {
         iframeLoaded: { type: Object },
         isMobile: { type: Boolean },
         Plugins: { type: Array, optional: true },
+        // This fragment of config will be passed to the Editor and be
+        // available to the plugins in `config`
         config: { type: Object, optional: true },
         getThemeTab: { type: Function, optional: true },
         editableSelector: { type: String },
         themeTabDisplayName: { type: String, optional: true },
         slots: { type: Object, optional: true },
-        getCustomizeTranslationTab: { type: Function, optional: true },
+        initialTab: { type: String, optional: true },
+        onlyCustomizeTab: { type: Boolean, optional: true },
     };
     static defaultProps = {
+        reloadEditor: () => {},
         config: {},
         themeTabDisplayName: _t("Theme"),
+        initialTab: "blocks",
+        onlyCustomizeTab: false,
     };
 
     setup() {
         this.ThemeTab = this.props.getThemeTab?.();
-        this.CustomizeTranslationTab = this.props.getCustomizeTranslationTab?.();
-        // const actionService = useService("action");
         this.builder_sidebarRef = useRef("builder_sidebar");
         this.state = useState({
             canUndo: false,
             canRedo: false,
-            activeTab: this.props.config.initialTab || "blocks",
+            activeTab: this.props.onlyCustomizeTab ? "customize" : this.props.initialTab,
             currentOptionsContainers: undefined,
         });
         this.invisibleElementsPanelState = useState({
             invisibleEls: [],
-            invisibleSelector: this.getInvisibleSelector(),
+            invisibleSelector: "",
         });
         useHotkey("control+z", () => this.undo());
         useHotkey("control+y", () => this.redo());
@@ -79,11 +96,13 @@ export class Builder extends Component {
         this.lastTrigerUpdateId = 0;
         this.editorBus = new EventBus();
         this.colorPresetToShow = null;
+        this.shadowSizeToShow = null;
         this.activeTargetEl = null;
         const mobileBreakpoint = this.props.config.mobileBreakpoint ?? "lg";
 
         // TODO: maybe do a different config for the translate mode and the
         // "regular" mode.
+        /** @type {Editor} */
         this.editor = new Editor(
             {
                 Plugins: this.props.Plugins,
@@ -107,24 +126,25 @@ export class Builder extends Component {
                         this.props.config.onChange?.();
                     }
                 },
-                reloadEditor: async (param = {}) => {
-                    await this.props.reloadEditor?.({
-                        initialTab: this.state.activeTab,
-                        ...param,
-                    });
-                },
+                reloadEditor: ({ url, editingElement } = {}) =>
+                    this.props.reloadEditor(
+                        url,
+                        this.editor.processThrough("reload_context_processors", {}, editingElement)
+                    ),
                 closeEditor: async () => {
                     await this.props.closeEditor?.();
                 },
                 installSnippetModule: (snippet) => this.props.installSnippetModule?.(snippet),
+                /** @type {import("plugins").BuilderResources} */
                 resources: {
-                    trigger_dom_updated: () => {
+                    on_dom_updated_handlers: () => {
                         this.triggerDomUpdated();
                     },
-                    on_mobile_preview_clicked: withSequence(20, () => {
+                    on_mobile_view_switched_handlers: withSequence(20, () => {
                         this.triggerDomUpdated();
+                        this.updateInvisibleEls();
                     }),
-                    before_save_handlers: () => {
+                    on_will_save_handlers: () => {
                         const snippetMenuEl = this.builder_sidebarRef.el;
                         const saveButton = snippetMenuEl.querySelector("[data-action='save']");
                         delete this.removeLoadingEffect;
@@ -139,7 +159,7 @@ export class Builder extends Component {
                             actionButtonEl.disabled = true;
                         }
                     },
-                    after_save_handlers: () => {
+                    on_saved_handlers: () => {
                         for (const actionButtonEl of this.actionButtonEls) {
                             actionButtonEl.removeAttribute("disabled");
                         }
@@ -148,47 +168,53 @@ export class Builder extends Component {
                     on_snippet_dropped_handlers: () => {
                         this.activeTargetEl = null;
                     },
-                    change_current_options_containers_listeners: (currentOptionsContainers) => {
+                    on_current_options_containers_changed_handlers: (currentOptionsContainers) => {
                         this.state.currentOptionsContainers = currentOptionsContainers;
-                        if (!currentOptionsContainers.length) {
-                            // If there is no option, fallback on the current
-                            // fallback tab.
-                            this.setTab(this.noSelectionTab);
-                            return;
+                        if (currentOptionsContainers.length || this.props.onlyCustomizeTab) {
+                            this.activeTargetEl = null;
+                            this.setTab("customize");
+                        } else if (this.state.activeTab === "customize") {
+                            // If there is no option, go to add blocks
+                            this.setTab("blocks");
                         }
-                        this.activeTargetEl = null;
-                        this.setTab("customize");
                     },
+                    reload_context_processors: (context) => ({
+                        ...context,
+                        initialTab: this.state.activeTab,
+                    }),
                     lower_panel_entries: withSequence(20, {
                         Component: InvisibleElementsPanel,
                         props: this.invisibleElementsPanelState,
                     }),
-                    unsplittable_node_predicates: (/** @type {Node} */ node) =>
-                        node.querySelector?.("[data-oe-translation-source-sha]"),
-                    can_display_toolbar: (namespace) => !["image", "icon"].includes(namespace),
-
-                    // disable the toolbar for images and icons
+                    is_node_splittable_predicates: (/** @type {Node} */ node) => {
+                        if (node.querySelector?.("[data-oe-translation-source-sha]")) {
+                            return false;
+                        }
+                    },
+                    are_inlines_allowed_at_root_predicates: (el) =>
+                        ONLY_ALLOW_INLINE_TAGS.has(el.tagName.toLowerCase()) || undefined,
                 },
                 localOverlayContainers: {
                     key: this.env.localOverlayContainerKey,
                     ref: this.props.overlayRef,
                 },
-                saveSnippet: (snippetEl, cleanForSaveHandlers, wrapWithSaveSnippetHandlers) =>
+                saveSnippet: (snippetEl, cleanForSaveProcessors, wrapWithSaveSnippetHandlers) =>
                     this.snippetModel.saveSnippet(
                         snippetEl,
-                        cleanForSaveHandlers,
+                        cleanForSaveProcessors,
                         wrapWithSaveSnippetHandlers
                     ),
                 snippetModel: this.snippetModel,
-                getShared: () => this.editor.shared,
                 updateInvisibleElementsPanel: () => this.updateInvisibleEls(),
-                allowCustomStyle: true,
+                hideStylingInLinkPopover: true,
                 allowTargetBlank: true,
                 dropImageAsAttachment: true,
                 getAnimateTextConfig: () => ({ editor: this.editor, editorBus: this.editorBus }),
                 baseContainers: ["P"],
                 cleanEmptyStructuralContainers: false,
                 isEditableRTL: false,
+                publicAttachments: true,
+                direction: "ltr",
             },
             this.env.services
         );
@@ -209,6 +235,7 @@ export class Builder extends Component {
 
             if (this.editableEl.matches(".o_rtl")) {
                 this.editor.config.isEditableRTL = true;
+                this.editor.config.direction = "rtl";
             }
 
             // Prevent image dragging in the website builder. Not via css because
@@ -220,6 +247,19 @@ export class Builder extends Component {
                     ev.stopPropagation();
                 }
             };
+
+            // Use a resize observer to trigger `on_mobile_view_switched_handlers`
+            // when the view size switches between desktop and mobile view
+            let isMobileView = this.editor.config.isMobileView(this.editableEl);
+            this.resizeObserver = new ResizeObserver(() => {
+                const wasMobileView = isMobileView;
+                isMobileView = this.editor.config.isMobileView(this.editableEl);
+                if (wasMobileView !== isMobileView) {
+                    this.editor.trigger("on_mobile_view_switched_handlers", { isMobileView });
+                }
+            });
+            this.resizeObserver.observe(this.editableEl);
+
             this.editor.attachTo(this.editableEl);
         });
 
@@ -228,8 +268,10 @@ export class Builder extends Component {
             editorBus: this.editorBus,
             triggerDomUpdated: this.triggerDomUpdated.bind(this),
             editColorCombination: this.editColorCombination.bind(this),
+            editShadow: this.editShadow.bind(this),
         });
         onWillDestroy(() => {
+            this.resizeObserver.disconnect();
             this.editor.destroy();
         });
 
@@ -243,16 +285,6 @@ export class Builder extends Component {
         onWillUnmount(() => {
             this.editableEl.removeEventListener("dragstart", this.onDragStart);
         });
-        onWillUpdateProps((nextProps) => {
-            if (nextProps.isMobile !== this.props.isMobile) {
-                this.updateInvisibleEls(nextProps.isMobile);
-                this.invisibleElementsPanelState.invisibleSelector = this.getInvisibleSelector(
-                    nextProps.isMobile
-                );
-            }
-        });
-        // Fallback tab when no option is active.
-        this.noSelectionTab = "blocks";
     }
     async triggerDomUpdated() {
         this.lastTrigerUpdateId++;
@@ -260,19 +292,9 @@ export class Builder extends Component {
         const getStatePromises = [];
         const { promise: updatePromise, resolve } = Promise.withResolvers();
         this.editorBus.trigger("DOM_UPDATED", { getStatePromises, updatePromise });
-        await Promise.all(getStatePromises);
+        await Promise.allSettled(getStatePromises);
         const isLastTriggerId = this.lastTrigerUpdateId === currentTriggerId;
         resolve(isLastTriggerId);
-    }
-
-    get displayOnlyCustomizeTab() {
-        return this.props.config.isTranslationMode;
-    }
-
-    getInvisibleSelector(isMobile = this.props.isMobile) {
-        return `.o_snippet_invisible, ${
-            isMobile ? ".o_snippet_mobile_invisible" : ".o_snippet_desktop_invisible"
-        }`;
     }
 
     /**
@@ -282,7 +304,7 @@ export class Builder extends Component {
      * @param {Number | null} presetId the color preset expanding on "theme" tab
      * open.
      */
-    onTabClick(tab, presetId = null) {
+    onTabClick(tab, { presetId = null, shadowSize = null } = {}) {
         if (this.state.activeTab === tab) {
             // If the tab is already active, do nothing.
             return;
@@ -291,12 +313,13 @@ export class Builder extends Component {
         // Deactivate the options when clicking on the "BLOCKS" or "THEME" tabs.
         if (tab === "theme" || tab === "blocks") {
             this.colorPresetToShow = presetId;
+            this.shadowSizeToShow = shadowSize;
             this.activeTargetEl = this.activeTargetEl || this.getActiveTarget();
-            this.editor.shared["builderOptions"].deactivateContainers();
+            this.editor.shared.builderOptions.deactivateContainers();
         } else if (this.activeTargetEl) {
             if (isVisible(this.activeTargetEl)) {
                 // Reactivate the previously active element.
-                this.editor.shared["builderOptions"].updateContainers(this.activeTargetEl);
+                this.editor.shared.builderOptions.updateContainers(this.activeTargetEl);
             }
             this.activeTargetEl = null;
         }
@@ -304,26 +327,28 @@ export class Builder extends Component {
 
     setTab(tab) {
         this.state.activeTab = tab;
-        // Set the fallback tab on the "THEME" tab if it was selected.
-        this.noSelectionTab = tab === "theme" ? "theme" : "blocks";
     }
 
     undo() {
-        this.editor.shared.history.undo();
+        this.editor.shared.operation.next(() => this.editor.shared.history.undo());
     }
 
     redo() {
-        this.editor.shared.history.redo();
+        this.editor.shared.operation.next(() => this.editor.shared.history.redo());
     }
 
     onMobilePreviewClick() {
         this.props.toggleMobile();
-        this.editor.resources["on_mobile_preview_clicked"].forEach((handler) => handler());
     }
 
-    updateInvisibleEls(isMobile = this.props.isMobile) {
+    updateInvisibleEls() {
+        const isMobile = this.editor.config.isMobileView(this.editor.editable);
+        const invisibleSelector = `.o_snippet_invisible, ${
+            isMobile ? ".o_snippet_mobile_invisible" : ".o_snippet_desktop_invisible"
+        }`;
+        this.invisibleElementsPanelState.invisibleSelector = invisibleSelector;
         this.invisibleElementsPanelState.invisibleEls = [
-            ...this.editor.editable.querySelectorAll(this.getInvisibleSelector(isMobile)),
+            ...this.editor.editable.querySelectorAll(invisibleSelector),
         ];
     }
 
@@ -332,7 +357,11 @@ export class Builder extends Component {
     }
 
     editColorCombination(presetId) {
-        this.onTabClick("theme", presetId);
+        this.onTabClick("theme", { presetId });
+    }
+
+    editShadow(shadowSize) {
+        this.onTabClick("theme", { shadowSize });
     }
 
     getActiveTarget() {

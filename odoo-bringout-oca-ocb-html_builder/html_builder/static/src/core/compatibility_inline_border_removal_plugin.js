@@ -15,20 +15,23 @@ const OLD_STYLES = ["border-width", "border-radius"];
 
 export class CompatibilityInlineBorderRemovalPlugin extends Plugin {
     static id = "compatibilityInlineBorderRemoval";
+    /** @type {import("plugins").BuilderResources} */
     resources = {
-        apply_custom_css_style: withSequence(20, this.removeInlineBorderIfNecessary.bind(this)),
+        apply_custom_css_style_overrides: withSequence(
+            20,
+            this.removeInlineBorderIfNecessary.bind(this)
+        ),
     };
 
     // The border-width/radius calculation using --box-border-width/radius
     // variables is done at class level using "border" and "rounded" classes, so
     // eventual border-width/radius styles must be removed because they would
     // otherwise take precedence.
-    removeInlineBorderIfNecessary({ editingElement, params }) {
-        const newStyleBeingEdited = NEW_STYLES.find(style => {
-            return params.mainParam === style
-                || CSS_SHORTHANDS[style].includes(params.mainParam);
-        });
-        if (newStyleBeingEdited && OLD_STYLES.some(style => editingElement.style[style])) {
+    removeInlineBorderIfNecessary({ editingElement, styleName }) {
+        const newStyleBeingEdited = NEW_STYLES.find(
+            (style) => styleName === style || CSS_SHORTHANDS[style].includes(styleName)
+        );
+        if (newStyleBeingEdited && OLD_STYLES.some((style) => editingElement.style[style])) {
             // Remove all old inline styles related to border-width/radius as
             // the new CSS rules + variables rely on both being right, i.e. not
             // messed up by any inline style...
@@ -44,7 +47,11 @@ export class CompatibilityInlineBorderRemovalPlugin extends Plugin {
             // children with %o-we-background-layer classes too (note: the code
             // that handled adding inline style on child nodes only handled
             // those specific ones here after).
-            const compatLayerSelectors = [".o_we_bg_filter", ".o_bg_video_container", ".s_parallax_bg"];
+            const compatLayerSelectors = [
+                ".o_we_bg_filter",
+                ".o_bg_video_container",
+                ".s_parallax_bg",
+            ];
             const selector = `:scope > ${compatLayerSelectors.join(", :scope > ")}`;
             for (const childNode of editingElement.querySelectorAll(selector)) {
                 childNode.style.setProperty("border-radius", "");
@@ -54,5 +61,6 @@ export class CompatibilityInlineBorderRemovalPlugin extends Plugin {
     }
 }
 
-registry.category("builder-plugins")
+registry
+    .category("builder-plugins")
     .add(CompatibilityInlineBorderRemovalPlugin.id, CompatibilityInlineBorderRemovalPlugin);

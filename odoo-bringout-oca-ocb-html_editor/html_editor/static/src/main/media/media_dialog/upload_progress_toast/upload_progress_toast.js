@@ -1,6 +1,7 @@
+import { useState } from "@web/owl2/utils";
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
-import { Component, useState } from "@odoo/owl";
+import { Component } from "@odoo/owl";
 
 export class ProgressBar extends Component {
     static template = "html_editor.ProgressBar";
@@ -11,6 +12,8 @@ export class ProgressBar extends Component {
         name: String,
         size: { type: String, optional: true },
         errorMessage: { type: String, optional: true },
+        mimetype: { type: String, optional: true },
+        cancelUpload: { type: Function, optional: true },
     };
     static defaultProps = {
         progress: 0,
@@ -18,6 +21,8 @@ export class ProgressBar extends Component {
         uploaded: false,
         size: "",
         errorMessage: "",
+        mimetype: "",
+        cancelUpload: () => {},
     };
 
     get errorMessage() {

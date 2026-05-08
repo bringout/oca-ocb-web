@@ -7,6 +7,15 @@ import { _t } from "@web/core/l10n/translation";
 import { baseContainerGlobalSelector } from "@html_editor/utils/base_container";
 import { getDeepestPosition, isContentEditable } from "@html_editor/utils/dom_info";
 
+/** @typedef {import("plugins").CSSSelector} CSSSelector */
+
+/**
+ * @typedef {CSSSelector[]} move_node_blacklist_selectors
+ * @typedef {CSSSelector[]} move_node_whitelist_selectors
+ * @typedef {((movableElement: HTMLElement) => void)[]} on_movable_element_set_handlers
+ * @typedef {(() => void)[]} on_will_unset_movable_element_handlers
+ */
+
 const WIDGET_CONTAINER_WIDTH = 25;
 const WIDGET_MOVE_SIZE = 20;
 
@@ -15,8 +24,9 @@ const ALLOWED_ELEMENTS = "h1, h2, h3, p, hr, pre, blockquote, li";
 export class MoveNodePlugin extends Plugin {
     static id = "movenode";
     static dependencies = ["baseContainer", "selection", "history", "position", "localOverlay"];
+    /** @type {import("plugins").EditorResources} */
     resources = {
-        layout_geometry_change_handlers: () => {
+        on_layout_geometry_change_handlers: () => {
             if (this.currentMovableElement) {
                 this.setMovableElement(this.currentMovableElement);
             }
@@ -151,16 +161,22 @@ export class MoveNodePlugin extends Plugin {
         }
 
         const visibleElements = [...this.visibleMovableElements];
-        // Prevent layout thrashing by computing all the rects in advance.
+        // Prevent layout thrashing by computing all the rects and styles in
+        // advance.
         const elementRects = visibleElements.map((element) => element.getBoundingClientRect());
+        const elementStyles = visibleElements.map((element) => {
+            const style = getComputedStyle(element);
+            return {
+                marginTop: parseInt(style.marginTop, 10) || 0,
+                marginBottom: parseInt(style.marginBottom, 10) || 0,
+            };
+        });
         for (const index in visibleElements) {
             const element = visibleElements[index];
             const elementRect = elementRects[index];
             const hookElement = this.elementHookMap.get(element);
 
-            const style = getComputedStyle(element);
-            const marginTop = parseInt(style.marginTop, 10) || 0;
-            const marginBottom = parseInt(style.marginBottom, 10) || 0;
+            const { marginTop, marginBottom } = elementStyles[index];
             let hookBox;
             if (element.tagName === "HR") {
                 hookBox = new DOMRect(
@@ -237,7 +253,7 @@ export class MoveNodePlugin extends Plugin {
     setMovableElement(movableElement) {
         this.removeMoveWidget();
         this.currentMovableElement = movableElement;
-        this.dispatchTo("set_movable_element_handlers", movableElement);
+        this.trigger("on_movable_element_set_handlers", movableElement);
 
         const containerRect = this.widgetContainer.getBoundingClientRect();
         const anchorBlockRect = this.currentMovableElement.getBoundingClientRect();
@@ -252,6 +268,24 @@ export class MoveNodePlugin extends Plugin {
 
         this.moveWidget = this.document.createElement("div");
         this.moveWidget.className = "oe-sidewidget-move oi oi-draggable";
+        const formSheet = this.widgetContainer.closest(".o_form_sheet");
+        // Calculate moveWidget's left pos in advance to avoid layout trashing
+        let moveWidgetLeftPos = anchorX - WIDGET_CONTAINER_WIDTH;
+        if (formSheet) {
+            const formSheetRect = formSheet.getBoundingClientRect();
+            if (formSheetRect.left > moveWidgetLeftPos) {
+                this.moveWidget.classList.toggle("oe_movewidget_border", true);
+                // Set moveWidget postion with respect to form sheet border
+                const MOVE_WIDGET_OFFSET_FROM_SHEET_BORDER = 5.5;
+                moveWidgetLeftPos = formSheetRect.left - MOVE_WIDGET_OFFSET_FROM_SHEET_BORDER;
+                // Set ::after element width same as offset so the border
+                // perfectly bridges the gap between the widget and the sheet border.
+                this.moveWidget.style.setProperty(
+                    "--after-element-width",
+                    `${MOVE_WIDGET_OFFSET_FROM_SHEET_BORDER}px`
+                );
+            }
+        }
         this.widgetContainer.append(this.moveWidget);
 
         let moveWidgetOffsetTop = 0;
@@ -263,7 +297,7 @@ export class MoveNodePlugin extends Plugin {
         this.moveWidget.style.width = `${WIDGET_MOVE_SIZE}px`;
         this.moveWidget.style.height = `${WIDGET_MOVE_SIZE}px`;
         this.moveWidget.style.top = `${anchorY - containerRect.y - moveWidgetOffsetTop}px`;
-        this.moveWidget.style.left = `${anchorX - containerRect.x - WIDGET_CONTAINER_WIDTH}px`;
+        this.moveWidget.style.left = `${moveWidgetLeftPos - containerRect.x}px`;
 
         this.services.tooltip.add(this.moveWidget, {
             template: xml`
@@ -322,7 +356,7 @@ export class MoveNodePlugin extends Plugin {
         }
     }
     removeMoveWidget() {
-        this.dispatchTo("unset_movable_element_handlers");
+        this.trigger("on_will_unset_movable_element_handlers");
         this.moveWidget?.remove();
         this.moveWidget = undefined;
         this.currentMovableElement = undefined;
@@ -462,8 +496,6 @@ export class MoveNodePlugin extends Plugin {
                     previousParent.remove();
                 } else {
                     const baseContainer = this.dependencies.baseContainer.createBaseContainer();
-                    const br = document.createElement("br");
-                    baseContainer.append(br);
                     previousParent.append(baseContainer);
                 }
             }

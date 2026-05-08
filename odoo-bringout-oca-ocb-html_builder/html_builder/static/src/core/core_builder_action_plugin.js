@@ -9,6 +9,17 @@ import {
 import { BuilderAction } from "@html_builder/core/builder_action";
 import { getValueFromVar } from "@html_builder/utils/utils";
 
+/** @typedef {import("@html_builder/core/builder_action").ActionParams} ActionParams */
+/** @typedef {import("@html_builder/core/builder_action").ActionValue} ActionValue */
+/**
+ * @typedef {((
+ *      editingElement: HTMLElement,
+ *      styleName: string,
+ *      value: ActionValue,
+ *      params?: ActionParams,
+ * ) => boolean)[]} apply_custom_css_style_overrides
+ */
+
 export function withoutTransition(editingElement, callback) {
     if (editingElement.classList.contains("o_we_force_no_transition")) {
         return callback();
@@ -23,6 +34,7 @@ export function withoutTransition(editingElement, callback) {
 
 export class CoreBuilderActionPlugin extends Plugin {
     static id = "coreBuilderAction";
+    /** @type {import("plugins").BuilderResources} */
     resources = {
         builder_actions: {
             ClassAction,
@@ -142,7 +154,7 @@ export class ClassAction extends BuilderAction {
     }
 }
 
-class AttributeAction extends BuilderAction {
+export class AttributeAction extends BuilderAction {
     static id = "attributeAction";
     getValue({ editingElement, params: { mainParam: attributeName } = {} }) {
         return editingElement.getAttribute(attributeName);
@@ -169,7 +181,7 @@ class AttributeAction extends BuilderAction {
     }
 }
 
-class DataAttributeAction extends BuilderAction {
+export class DataAttributeAction extends BuilderAction {
     static id = "dataAttributeAction";
     getValue({ editingElement, params: { mainParam: attributeName } = {} }) {
         if (!/(^color|Color)($|(?=[A-Z]))/.test(attributeName)) {
@@ -203,7 +215,7 @@ class DataAttributeAction extends BuilderAction {
 }
 
 // TODO maybe find a better place for this
-class SetClassRangeAction extends BuilderAction {
+export class SetClassRangeAction extends BuilderAction {
     static id = "setClassRange";
     getValue({ editingElement, params: { mainParam: classNames } }) {
         for (const index in classNames) {
@@ -227,10 +239,12 @@ export class StyleAction extends BuilderAction {
     static id = "styleAction";
     static dependencies = ["color"];
     getValue({ editingElement: el, params: { mainParam: styleName } }) {
-        if (styleName === "--box-border-width"
-                || CSS_SHORTHANDS["--box-border-width"].includes(styleName)
-                || styleName === "--box-border-radius"
-                || CSS_SHORTHANDS["--box-border-radius"].includes(styleName)) {
+        if (
+            styleName === "--box-border-width" ||
+            CSS_SHORTHANDS["--box-border-width"].includes(styleName) ||
+            styleName === "--box-border-radius" ||
+            CSS_SHORTHANDS["--box-border-radius"].includes(styleName)
+        ) {
             // When reading a CSS variable, we need to get the computed value
             // of the actual property it controls, ideally. Not only because the
             // panel should reflect what the user actually sees but also because
@@ -288,21 +302,23 @@ export class StyleAction extends BuilderAction {
         return currentValue === value;
     }
     apply({ editingElement, params = {}, value }) {
-        if (!this.delegateTo("apply_custom_css_style", { editingElement, params, value })) {
-            this.applyCssStyle({ editingElement, params, value });
-        }
-    }
-    applyCssStyle({ editingElement, params = {}, value }) {
-        params = { ...params };
-        const styleName = params.mainParam;
-        delete params.mainParam;
         // Disable all transitions for the duration of the method as many
         // comparisons will be done on the element to know if applying a
         // property has an effect or not. Also, changing a css property via the
         // editor should not show any transition as previews would not be done
         // immediately, which is not good for the user experience.
         withoutTransition(editingElement, () => {
-            setStyle(editingElement, styleName, value, params);
+            const { mainParam: styleName, ...styleParams } = params;
+            if (
+                !this.delegateTo("apply_custom_css_style_overrides", {
+                    editingElement,
+                    styleName,
+                    value,
+                    params: styleParams,
+                })
+            ) {
+                setStyle(editingElement, styleName, value, styleParams);
+            }
         });
     }
     _getValueWithoutTransition(el, styleName) {

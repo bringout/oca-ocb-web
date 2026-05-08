@@ -1,14 +1,5 @@
-import {
-    onMounted,
-    onRendered,
-    onPatched,
-    onWillDestroy,
-    reactive,
-    toRaw,
-    useComponent,
-    useRef,
-    useState,
-} from "@odoo/owl";
+import { onRendered, reactive, useComponent, useRef, useState } from "@web/owl2/utils";
+import { onMounted, onPatched, onWillDestroy, toRaw } from "@odoo/owl";
 
 /**
  * @typedef {HTMLElement} HostElement host element for an embedded component
@@ -43,6 +34,43 @@ import {
  * @property {function(StateChangeManagerConfig):StateChangeManager} [getStateChangeManager]
  *           @see useEmbeddedState
  */
+
+/**
+ * Mount an Owl root component on a host element, patching the mount fiber to
+ * synchronously clear the host's children just before the component's rendered
+ * HTML is inserted (i.e., just before the original `fiber.complete` runs).
+ *
+ * @param {import("@odoo/owl").App} app
+ * @param {typeof import("@odoo/owl").Component} Component
+ * @param {HTMLElement} host
+ * @param {Object} props
+ * @param {Object} env
+ * @param {Object} [options]
+ * @param {function(): boolean|undefined} [options.onBeforeComplete] called
+ *   before clearing host children; return `false` to abort the complete call
+ *   entirely (skips both `replaceChildren` and the original `fiberComplete`).
+ * @param {function()} [options.onAfterComplete] called after the original
+ *   `fiber.complete`.
+ * @returns {{ root: object, mountPromise: Promise }}
+ */
+export function mountComponent(app, Component, host, props, env, { onBeforeComplete, onAfterComplete } = {}) {
+    const root = app.createRoot(Component, { props, env });
+    const mountPromise = root.mount(host);
+    // Patch mount fiber to hook into the exact call stack where root is
+    // mounted (but before). This will remove host children synchronously
+    // just before adding the root rendered html.
+    const fiber = root.node.fiber;
+    const fiberComplete = fiber.complete;
+    fiber.complete = function () {
+        if (onBeforeComplete?.() === false) {
+            return;
+        }
+        host.replaceChildren();
+        fiberComplete.call(this);
+        onAfterComplete?.();
+    };
+    return { root, mountPromise };
+}
 
 /**
  * Get all element children with `data-embedded-editable` attribute which are
@@ -100,9 +128,9 @@ export function useEditableDescendants(host) {
             _restoreSelection = undefined;
         }
     };
-    if (component.env.editorShared?.preserveSelection) {
+    if (component.env.editorShared?.selection) {
         onRendered(() => {
-            _restoreSelection = component.env.editorShared.preserveSelection().restore;
+            _restoreSelection = component.env.editorShared.selection.preserveSelection().restore;
         });
     }
     onMounted(() => {

@@ -6,9 +6,9 @@ import {
 import { Builder } from "@html_builder/builder";
 import { BuilderAction } from "@html_builder/core/builder_action";
 import { SavePlugin } from "@html_builder/core/save_plugin";
-import { BaseOptionComponent } from "@html_builder/core/utils";
+import { BaseOptionComponent } from "@html_builder/core/base_option_component";
 import { beforeEach, describe, expect, test } from "@odoo/hoot";
-import { animationFrame, Deferred } from "@odoo/hoot-dom";
+import { advanceTime, animationFrame, tick } from "@odoo/hoot-dom";
 import { useState, xml } from "@odoo/owl";
 import {
     contains,
@@ -68,15 +68,15 @@ test("custom action and shorthand action: clean actions are independent, apply i
 });
 
 test("Prepare is triggered on props updated", async () => {
-    const newPropDeferred = new Deferred();
-    let prepareDeferred = new Promise((r) => r());
+    const newPropDeferred = Promise.withResolvers();
+    let prepareDeferred = Promise.withResolvers();
+    prepareDeferred.resolve();
     class TestOption extends BaseOptionComponent {
-        static template = xml`<BuilderCheckbox action="'customAction'" actionParam="state.param"/>`;
-        static props = {};
+        static template = xml`<BuilderCheckbox action="'customAction'" actionParam="this.state.param"/>`;
         setup() {
             super.setup();
             this.state = useState({ param: "old param" });
-            newPropDeferred.then(() => {
+            newPropDeferred.promise.then(() => {
                 this.state.param = "new param";
             });
         }
@@ -84,7 +84,7 @@ test("Prepare is triggered on props updated", async () => {
     class CustomAction extends BuilderAction {
         static id = "customAction";
         async prepare() {
-            await prepareDeferred;
+            await prepareDeferred.promise;
             expect.step("prepare");
         }
         apply() {}
@@ -93,13 +93,13 @@ test("Prepare is triggered on props updated", async () => {
         CustomAction,
     });
     addBuilderOption({
-        Component: TestOption,
         selector: ".test-options-target",
+        Component: TestOption,
     });
     await setupHTMLBuilder(`<section class="test-options-target">Homepage</section>`);
     await contains(":iframe .test-options-target").click();
     expect.verifySteps(["prepare"]);
-    prepareDeferred = new Deferred();
+    prepareDeferred = Promise.withResolvers();
     // Update prop
     newPropDeferred.resolve();
     await animationFrame();
@@ -268,13 +268,13 @@ test("reload action: apply, clean save and reload are called in the right order 
             }
             async apply({ editingElement }) {
                 expect.step("apply sync");
-                await applyDef;
+                await applyDef.promise;
                 expect.step("apply async");
                 editingElement.dataset.applied = "true";
             }
             async clean({ editingElement }) {
                 expect.step("clean sync");
-                await cleanDef;
+                await cleanDef.promise;
                 expect.step("clean async");
                 editingElement.dataset.applied = "false";
             }
@@ -289,20 +289,48 @@ test("reload action: apply, clean save and reload are called in the right order 
     await contains(":iframe .test-options-target").click();
 
     // Apply
-    reloadDef = new Deferred();
-    applyDef = new Deferred();
+    reloadDef = Promise.withResolvers();
+    applyDef = Promise.withResolvers();
     await contains("[data-action-id='testReload']").click();
     expect.verifySteps(["apply sync"]);
     applyDef.resolve();
-    await reloadDef;
+    await reloadDef.promise;
     expect.verifySteps(["apply async", "save sync", "save async", "reload"]);
 
     // Clean
-    reloadDef = new Deferred();
-    cleanDef = new Deferred();
+    reloadDef = Promise.withResolvers();
+    cleanDef = Promise.withResolvers();
     await contains("[data-action-id='testReload']").click();
     expect.verifySteps(["clean sync"]);
     cleanDef.resolve();
-    await reloadDef;
+    await reloadDef.promise;
     expect.verifySteps(["clean async", "save sync", "save async", "reload"]);
+});
+
+test("shows notification when a BuilderAction.apply times out", async () => {
+    addBuilderAction({
+        timeoutAction: class extends BuilderAction {
+            static id = "timeoutAction";
+
+            async apply() {
+                expect.step("apply start");
+                await new Promise((resolve) => setTimeout(resolve, 15000));
+                expect.step("apply end");
+            }
+        },
+    });
+    addBuilderOption({
+        selector: ".test-options-target",
+        template: xml`<BuilderButton action="'timeoutAction'"/>`,
+    });
+
+    await setupHTMLBuilder(`<div class="test-options-target">TEST</div>`);
+    await contains(":iframe .test-options-target").click();
+    await contains("[data-action-id='timeoutAction']").click();
+
+    await advanceTime(15000);
+    await tick();
+
+    expect(".o_notification").toHaveCount(1);
+    expect.verifySteps(["apply start", "apply end"]);
 });

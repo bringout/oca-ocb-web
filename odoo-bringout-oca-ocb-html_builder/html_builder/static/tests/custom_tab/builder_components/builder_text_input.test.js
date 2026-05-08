@@ -4,8 +4,9 @@ import {
     setupHTMLBuilder,
 } from "@html_builder/../tests/helpers";
 import { BuilderAction } from "@html_builder/core/builder_action";
+import { BaseOptionComponent } from "@html_builder/core/base_option_component";
 import { expect, test, describe } from "@odoo/hoot";
-import { xml } from "@odoo/owl";
+import { reactive, useState, xml } from "@odoo/owl";
 import { contains } from "@web/../tests/web_test_helpers";
 
 describe.current.tags("desktop");
@@ -34,16 +35,50 @@ test("hide/display base on applyTo", async () => {
     const editableContent = getEditableContent();
     await contains(":iframe .parent-target").click();
     expect(editableContent).toHaveInnerHTML(
-        `<div class="parent-target"><div class="child-target o-paragraph">b</div></div>`
+        `<div class="parent-target"><div class="child-target">b</div></div>`
     );
     expect("[data-class-action='my-custom-class']").not.toHaveClass("active");
     expect("[data-action-id='customAction']").toHaveCount(0);
 
     await contains("[data-class-action='my-custom-class']").click();
     expect(editableContent).toHaveInnerHTML(
-        `<div class="parent-target"><div class="child-target o-paragraph my-custom-class">b</div></div>`
+        `<div class="parent-target"><div class="child-target my-custom-class">b</div></div>`
     );
     expect("[data-class-action='my-custom-class']").toHaveClass("active");
     expect("[data-action-id='customAction']").toHaveCount(1);
     expect("[data-action-id='customAction'] input").toHaveValue("customValue");
+});
+
+test("update default prop", async () => {
+    const defaultValueA = "Default Value A";
+    const defaultValueB = "Default Value B";
+    const state = reactive({ default: defaultValueA });
+    addBuilderOption({
+        selector: ".parent-target",
+        Component: class extends BaseOptionComponent {
+            static template = xml`<BuilderTextInput action="'customAction'" default="this.state.default"/>`;
+
+            setup() {
+                this.state = useState(state);
+            }
+        },
+    });
+    addBuilderAction({
+        customAction: class extends BuilderAction {
+            static id = "customAction";
+            apply({ editingElement: el, value }) {
+                el.textContent = value;
+            }
+            getValue({ editingElement: el }) {
+                return el.textContent;
+            }
+        },
+    });
+    await setupHTMLBuilder(`<div class="parent-target">${defaultValueA}</div>`);
+    await contains(":iframe .parent-target").click();
+    await contains("[data-action-id='customAction'] input").edit("");
+    expect("[data-action-id='customAction'] input").toHaveValue(defaultValueA);
+    state.default = defaultValueB;
+    await contains("[data-action-id='customAction'] input").edit("");
+    expect("[data-action-id='customAction'] input").toHaveValue(defaultValueB);
 });

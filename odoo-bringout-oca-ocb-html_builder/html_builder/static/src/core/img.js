@@ -1,12 +1,5 @@
-import {
-    Component,
-    onWillStart,
-    onWillUpdateProps,
-    useEffect,
-    useRef,
-    useState,
-    xml,
-} from "@odoo/owl";
+import { useLayoutEffect, useRef, useState } from "@web/owl2/utils";
+import { Component, onWillStart, onWillUpdateProps, xml } from "@odoo/owl";
 import { Cache } from "@web/core/utils/cache";
 
 const svgCache = new Cache(async (src) => {
@@ -29,7 +22,7 @@ const svgCache = new Cache(async (src) => {
     return xmlDoc.getElementsByTagName("svg")[0];
 }, JSON.stringify);
 
-export class Img extends Component {
+export class Image extends Component {
     static props = {
         src: String,
         class: { type: String, optional: true },
@@ -42,22 +35,21 @@ export class Img extends Component {
         svgCheck: true,
     };
     static template = xml`
-        <t t-if="state.loaded">
-            <svg t-if="isSvg(props.src)" t-ref="svg"
-                xmlns="http://www.w3.org/2000/svg"
-                t-att-width="svg.width"
-                t-att-viewBox="svg.viewBox"
-                t-att-fill="svg.fill"
+        <t t-if="this.state.loaded">
+            <svg xmlns="http://www.w3.org/2000/svg" t-if="this.isSvg(this.props.src)" t-custom-ref="svg"
+                t-att-width="this.svg.width"
+                t-att-viewBox="this.svg.viewBox"
+                t-att-fill="this.svg.fill"
                 class="hb-svg d-flex m-auto"
-                t-att-class="props.class"
-                t-att-style="props.style"
-                t-att="props.attrs"/>
+                t-att-class="this.props.class"
+                t-att-style="this.props.style"
+                t-att="this.props.attrs"/>
             <img t-else=""
-                t-att-src="props.src"
-                t-att-class="props.class"
-                t-att-style="props.style"
-                t-att-alt="props.alt"
-                t-att="props.attrs"/>
+                t-att-src="this.props.src"
+                t-att-class="this.props.class"
+                t-att-style="this.props.style"
+                t-att-alt="this.props.alt"
+                t-att="this.props.attrs"/>
         </t>
         `;
 
@@ -72,7 +64,7 @@ export class Img extends Component {
                 await this.handleImgLoad(nextProps.src);
             }
         });
-        useEffect(
+        useLayoutEffect(
             (imgLoaded) => {
                 if (imgLoaded && this.isSvg(this.props.src) && this.svg.children.length) {
                     // We can't use t-out with markup because it is parsed as HTML,
@@ -108,7 +100,7 @@ export class Img extends Component {
 
     loadImage() {
         return new Promise((resolve, reject) => {
-            const img = new Image();
+            const img = new window.Image();
             img.onload = () => resolve({ status: "loaded" });
             img.onerror = () => resolve({ status: "error" });
             img.src = this.props.src;

@@ -1,17 +1,13 @@
 {
     'name': "HTML Editor",
-    'summary': """
-        A Html Editor component and plugin system
-    """,
+    'summary': "A Html Editor component and plugin system.",
     'description': """
 Html Editor
 ==========================
 This addon provides an extensible, maintainable editor.
     """,
 
-    'author': "odoo",
-    'website': "https://www.odoo.com",
-    'version': '1.0',
+    'author': 'Odoo S.A.',
     'category': 'Hidden',
     'depends': ['base', 'bus', 'web'],
     'data': [
@@ -29,10 +25,10 @@ This addon provides an extensible, maintainable editor.
             'html_editor/static/src/scss/html_editor.common.scss',
             'html_editor/static/src/scss/html_editor.frontend.scss',
             'html_editor/static/src/scss/base_style.scss',
+            'html_editor/static/src/main/selection_placeholder_plugin.scss',
         ],
         'web.assets_backend': [
             ('include', 'html_editor.assets_editor'),
-            'html_editor/static/src/others/dynamic_placeholder_plugin.js',
             'html_editor/static/src/backend/**/*',
             'html_editor/static/src/fields/**/*',
             'html_editor/static/lib/vkbeautify/**/*',
@@ -46,6 +42,7 @@ This addon provides an extensible, maintainable editor.
             ('include', 'html_editor.assets_readonly'),
             'html_editor/static/src/*',
             'html_editor/static/src/components/history_dialog/**/*',
+            'html_editor/static/src/components/suggestion/**/*',
             'html_editor/static/src/core/**/*',
             'html_editor/static/src/main/**/*',
             'html_editor/static/src/others/collaboration/**/*',
@@ -76,6 +73,7 @@ This addon provides an extensible, maintainable editor.
             'html_editor/static/src/others/embedded_component_utils.js',
             'html_editor/static/src/others/embedded_components/core/**/*',
             'html_editor/static/src/utils/**/*',
+            'html_editor/static/src/others/qweb_plugin.scss',
         ],
         "web.assets_web_dark": [
             'html_editor/static/src/**/*.dark.scss',
@@ -111,7 +109,12 @@ This addon provides an extensible, maintainable editor.
         ],
         'html_editor.assets_prism': [
             'web/static/lib/prismjs/prism.js',
+            'web/static/lib/prismjs/themes/default.css',
         ],
+        'html_editor.assets_prism_dark': [
+            'web/static/lib/prismjs/prism.js',
+            'web/static/lib/prismjs/themes/okaida.css',
+        ]
     },
     'license': 'LGPL-3'
 }

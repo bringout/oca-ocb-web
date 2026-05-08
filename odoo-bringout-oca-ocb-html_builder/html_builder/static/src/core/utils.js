@@ -1,43 +1,60 @@
-import { isElement, isTextNode } from "@html_editor/utils/dom_info";
 import {
-    Component,
-    onMounted,
-    onWillDestroy,
-    onWillStart,
-    onWillUpdateProps,
     reactive,
-    toRaw,
     useComponent,
-    useEffect,
     useEnv,
+    useLayoutEffect,
     useRef,
     useState,
     useSubEnv,
-} from "@odoo/owl";
+} from "@web/owl2/utils";
+import { isElement, isTextNode } from "@html_editor/utils/dom_info";
+import { onMounted, onWillDestroy, onWillStart, onWillUpdateProps, status, toRaw } from "@odoo/owl";
+import { convertNumericToUnit, getHtmlStyle } from "@html_editor/utils/formatting";
+import { localization } from "@web/core/l10n/localization";
 import { useBus } from "@web/core/utils/hooks";
 import { effect } from "@web/core/utils/reactive";
 import { useDebounced } from "@web/core/utils/timing";
+import { BuilderAction } from "./builder_action";
+
+// Selectors for special cases where snippet options are bound to parent
+// containers instead of the snippet itself.
+export const BLOCKQUOTE_PARENT_HANDLERS = ".s_reviews_wall .row > div";
+export const CARD_PARENT_HANDLERS =
+    ".s_three_columns .row > div, .s_comparisons .row > div, .s_cards_grid .row > div, .s_cards_soft .row > div, .s_product_list .row > div, .s_newsletter_centered .row > div, .s_company_team_spotlight .row > div, .s_comparisons_horizontal .row > div, .s_company_team_grid .row > div, .s_company_team_card .row > div, .s_carousel_cards_item";
+
+/**
+ * @typedef {((reload_context: Object, editingElement: HTMLElement) => reload_context)[]} reload_context_processors
+ * @typedef { import("../../../../html_editor/static/src/editor").EditorContext } EditorContext
+ */
 
 function isConnectedElement(el) {
     return el && el.isConnected && !!el.ownerDocument.defaultView;
 }
 
 export function useDomState(getState, { checkEditingElement = true } = {}) {
+    const component = useComponent();
     const env = useEnv();
     const isValid = (el) => (!el && !checkEditingElement) || isConnectedElement(el);
     const handler = async (ev) => {
         const editingElement = env.getEditingElement();
         if (isValid(editingElement)) {
-            const newStatePromise = getState(editingElement);
-            if (ev) {
-                ev.detail.getStatePromises.push(newStatePromise);
-                const newState = await newStatePromise;
-                const shouldApply = await ev.detail.updatePromise;
-                if (shouldApply) {
-                    Object.assign(state, newState);
+            try {
+                const newStatePromise = getState(editingElement);
+                if (ev) {
+                    ev.detail.getStatePromises.push(newStatePromise);
+                    const newState = await newStatePromise;
+                    const shouldApply = await ev.detail.updatePromise;
+                    if (shouldApply) {
+                        Object.assign(state, newState);
+                    }
+                } else {
+                    Object.assign(state, await newStatePromise);
                 }
-            } else {
-                Object.assign(state, await newStatePromise);
+            } catch (e) {
+                if (!isValid(editingElement) || status(component) === "destroyed") {
+                    return;
+                }
+                throw e;
             }
         }
     };
@@ -47,13 +64,13 @@ export function useDomState(getState, { checkEditingElement = true } = {}) {
     return state;
 }
 
-export function useActionInfo() {
+export function useActionInfo({ stringify = true } = {}) {
     const comp = useComponent();
 
     const getParam = (paramName) => {
         let param = comp.props[paramName];
         param = param === undefined ? comp.env.weContext[paramName] : param;
-        if (typeof param === "object") {
+        if (stringify && typeof param === "object") {
             param = JSON.stringify(param);
         }
         return param;
@@ -70,6 +87,8 @@ export function useActionInfo() {
         styleActionValue: comp.props.styleActionValue,
         attributeAction: getParam("attributeAction"),
         attributeActionValue: comp.props.attributeActionValue,
+        dataAttributeAction: getParam("dataAttributeAction"),
+        dataAttributeActionValue: comp.props.dataAttributeActionValue,
     };
 }
 
@@ -117,6 +136,13 @@ export function useBuilderComponent() {
     if (Object.keys(weContext).length) {
         newEnv.weContext = { ...comp.env.weContext, ...weContext };
     }
+    if (!oldEnv.langDir) {
+        newEnv.langDir = {
+            content: oldEnv.editor.config.isEditableRTL ? "rtl" : "ltr",
+            builder: localization.direction,
+        };
+    }
+
     useSubEnv(newEnv);
 }
 export function useDependencyDefinition(id, item, { onReady } = {}) {
@@ -152,43 +178,6 @@ export function useDependencies(dependencies) {
         });
     };
     return isDependenciesVisible;
-}
-
-function useIsActiveItem() {
-    const env = useEnv();
-    const listenedKeys = new Set();
-
-    function isActive(itemId) {
-        const isActiveFn = env.dependencyManager.get(itemId)?.isActive;
-        if (!isActiveFn) {
-            return false;
-        }
-        return isActiveFn();
-    }
-
-    const getState = () => {
-        const newState = {};
-        for (const itemId of listenedKeys) {
-            newState[itemId] = isActive(itemId);
-        }
-        return newState;
-    };
-    const state = useDomState(getState);
-    const listener = () => {
-        const newState = getState();
-        Object.assign(state, newState);
-    };
-    env.dependencyManager.addEventListener("dependency-updated", listener);
-    onWillDestroy(() => {
-        env.dependencyManager.removeEventListener("dependency-updated", listener);
-    });
-    return function isActiveItem(itemId) {
-        listenedKeys.add(itemId);
-        if (state[itemId] === undefined) {
-            return isActive(itemId);
-        }
-        return state[itemId];
-    };
 }
 
 export function useGetItemValue() {
@@ -231,6 +220,7 @@ export function useGetItemValue() {
 export function useSelectableComponent(id, { onItemChange } = {}) {
     useBuilderComponent();
     const selectableItems = [];
+    const ltrRtlMappedItems = new Map();
     const refreshCurrentItemDebounced = useDebounced(refreshCurrentItem, 0, { immediate: true });
     const env = useEnv();
 
@@ -239,7 +229,7 @@ export function useSelectableComponent(id, { onItemChange } = {}) {
     });
 
     function refreshCurrentItem() {
-        if (env.editor.isDestroyed) {
+        if (env.editor.isDestroyed || env.editor.shared.history.getIsPreviewing()) {
             return;
         }
         let currentItem;
@@ -256,6 +246,70 @@ export function useSelectableComponent(id, { onItemChange } = {}) {
         }
         if (currentItem) {
             onItemChange?.(currentItem);
+        }
+    }
+
+    onMounted(() => {
+        for (const [ltrRtlMapping, mappedItems] of ltrRtlMappedItems.entries()) {
+            if (mappedItems.length === 1) {
+                throw new Error(
+                    `ltrRtlMapping "${ltrRtlMapping}" has been found only once. They should always come in pair and shouldn't have different render conditions.`
+                );
+            }
+        }
+    });
+
+    function handleLtrRtl({ ltrRtlMapping, isLabelLinkedToContent, langDir }) {
+        const mappedItems = ltrRtlMappedItems.get(ltrRtlMapping);
+        if (mappedItems.length === 2) {
+            const labelProps = ["title", "label", "slots"];
+            if (langDir.content === "ltr" && langDir.builder === "ltr") {
+                return;
+            }
+            if (langDir.builder === "rtl" && !isLabelLinkedToContent) {
+                revertItemPropsState(mappedItems, labelProps);
+            }
+            // The action depends on whether both builder and iframe have the
+            // same direction or not: if both are the same, the 1st button
+            // should have a "start" action (in English: left = start, in
+            // Arabic: right = start). If both are different, the 1st button
+            // should have an "end" action (builder in English with an iframe
+            // in Arabic: left = end, right = start).
+            if (langDir.content !== langDir.builder) {
+                const revertProps = [
+                    "className",
+                    "actionParam",
+                    "actionValue",
+                    "classAction",
+                    "styleAction",
+                    "styleActionValue",
+                    "attributeAction",
+                    "attributeActionValue",
+                    "dataAttributeAction",
+                    "dataAttributeActionValue",
+                ];
+                if (isLabelLinkedToContent) {
+                    revertProps.push(...labelProps);
+                }
+                revertItemPropsState(mappedItems, revertProps);
+            }
+        } else if (mappedItems.length > 2) {
+            throw new Error(
+                `ltrRtlMapping "${ltrRtlMapping}" has been found more than twice. They should always come in pair.`
+            );
+        }
+    }
+
+    function revertItemPropsState(items, propsState) {
+        const startItemState = items[0].getItemState();
+        const endItemState = items[1].getItemState();
+        for (const prop of propsState) {
+            if (startItemState[prop] !== undefined || endItemState[prop] !== undefined) {
+                [endItemState[prop], startItemState[prop]] = [
+                    startItemState[prop],
+                    endItemState[prop],
+                ];
+            }
         }
     }
 
@@ -290,6 +344,28 @@ export function useSelectableComponent(id, { onItemChange } = {}) {
             items: selectableItems,
             refreshCurrentItem: () => refreshCurrentItem(),
             getSelectableState: () => state,
+            addLtrRtlMappedItem: (item) => {
+                if (!ltrRtlMappedItems.has(item.ltrRtlMapping)) {
+                    ltrRtlMappedItems.set(item.ltrRtlMapping, [item]);
+                } else {
+                    ltrRtlMappedItems.get(item.ltrRtlMapping).push(item);
+                }
+            },
+            removeLtrRtlMappedItem: (item) => {
+                const mappedItems = ltrRtlMappedItems.get(item.ltrRtlMapping);
+                if (!mappedItems) {
+                    return;
+                }
+                if (mappedItems.length === 1) {
+                    ltrRtlMappedItems.delete(item.ltrRtlMapping);
+                    return;
+                }
+                const index = mappedItems.indexOf(item);
+                if (index !== -1) {
+                    mappedItems.splice(index, 1);
+                }
+            },
+            updateLtrRtlMappedItem: handleLtrRtl,
         },
     });
 }
@@ -360,6 +436,53 @@ export function useSelectableItemComponent(id, { getLabel = () => {} } = {}) {
 
     return { state, operation };
 }
+/**
+ * Registers selectable items to be able to switch their props if needed in some
+ * contexts with RTL languages.
+ *
+ * Many options are selectable components (BuilderButtonGroup or BuilderSelect)
+ * with at least a "Left" and a "Right" button, but their action actually
+ * depends on the start and end of the line (e.g. `flex-row` vs
+ * `flex-row-reverse`). They need some logic to work across all 4 possible
+ * combinations of LTR / RTL in the builder and the iframe (LTR-LTR, LTR-RTL,
+ * RTL-LTR, RTL-RTL).
+ *
+ * The place of the button (visually on the left or on the right) depends on the
+ * _backend language_: in English, the 1st button is on the left, the 2nd is on
+ * the right. In Arabic, the 1st button is on the right, the 2nd is on the left.
+ * Similarly, in a dropdown, LTR-speaking people will think of "left" as the 1st
+ * element: it comes at the top. But RTL-speaking people will think of "right"
+ * as the 1st element: it should come at the top.
+ * That is why we need to adapt each button's label, icon, and action.
+ *
+ * @param {{ ltrRtlMapping: string, isLabelLinkedToContent: boolean, getItemState: Function }}
+ */
+export function useSelectableLtrRtlComponent({
+    ltrRtlMapping,
+    isLabelLinkedToContent,
+    getItemState = () => {},
+}) {
+    const env = useEnv();
+    if (ltrRtlMapping && env.selectableContext) {
+        const ltrRtlMappedItem = {
+            ltrRtlMapping,
+            isLabelLinkedToContent,
+            getItemState,
+            langDir: env.langDir,
+        };
+        env.selectableContext.addLtrRtlMappedItem(ltrRtlMappedItem);
+
+        onWillStart(() => {
+            env.selectableContext.updateLtrRtlMappedItem(ltrRtlMappedItem);
+        });
+        onWillUpdateProps(async () => {
+            env.selectableContext.updateLtrRtlMappedItem(ltrRtlMappedItem);
+        });
+        onWillDestroy(() => {
+            env.selectableContext.removeLtrRtlMappedItem(ltrRtlMappedItem);
+        });
+    }
+}
 
 function usePrepareAction(getAllActions) {
     const env = useEnv();
@@ -403,7 +526,7 @@ function usePrepareAction(getAllActions) {
     return onReady;
 }
 
-function useReloadAction(getAllActions) {
+export function useReloadAction(getAllActions) {
     const env = useEnv();
     const getAction = env.editor.shared.builderActions.getAction;
     let reload = false;
@@ -455,6 +578,31 @@ function useWithLoadingEffect(getAllActions) {
     return withLoadingEffect;
 }
 
+function useCanTimeout(getAllActions) {
+    const env = useEnv();
+    const getAction = env.editor.shared.builderActions.getAction;
+    let canTimeout = true;
+    for (const descr of getAllActions()) {
+        if (descr.actionId) {
+            const action = getAction(descr.actionId);
+            if (action.canTimeout === false) {
+                canTimeout = false;
+            }
+        }
+    }
+
+    return canTimeout;
+}
+
+export function revertPreview(editor) {
+    if (editor.isDestroyed) {
+        return;
+    }
+    // The `next` will cancel the previous operation, which will revert
+    // the operation in case of a preview.
+    return editor.shared.operation.next();
+}
+
 export function useClickableBuilderComponent() {
     useBuilderComponent();
     const comp = useComponent();
@@ -472,17 +620,24 @@ export function useClickableBuilderComponent() {
     const operationWithReload = useOperationWithReload(callApply, reload);
 
     const withLoadingEffect = useWithLoadingEffect(getAllActions);
+    const canTimeout = useCanTimeout(getAllActions);
 
     let preventNextPreview = false;
     const operation = {
         commit: () => {
             preventNextPreview = false;
             if (reload) {
-                callOperation(operationWithReload);
+                callOperation(operationWithReload, {
+                    operationParams: {
+                        withLoadingEffect: withLoadingEffect,
+                        canTimeout: canTimeout,
+                    },
+                });
             } else {
                 callOperation(applyOperation.commit, {
                     operationParams: {
                         withLoadingEffect: withLoadingEffect,
+                        canTimeout: canTimeout,
                     },
                 });
             }
@@ -498,14 +653,13 @@ export function useClickableBuilderComponent() {
                 operationParams: {
                     cancellable: true,
                     cancelPrevious: () => applyOperation.revert(),
+                    canTimeout: canTimeout,
                 },
             });
         },
         revert: () => {
             preventNextPreview = false;
-            // The `next` will cancel the previous operation, which will revert
-            // the operation in case of a preview.
-            comp.env.editor.shared.operation.next();
+            revertPreview(comp.env.editor);
         },
     };
 
@@ -584,7 +738,7 @@ export function useClickableBuilderComponent() {
                 );
             }
         }
-        await Promise.all(cleanOrApplyProms);
+        return await Promise.all(cleanOrApplyProms);
     }
     function getPriority() {
         return (
@@ -609,16 +763,22 @@ export function useClickableBuilderComponent() {
         onReady,
     };
 }
-function useOperationWithReload(callApply, reload) {
+export function useOperationWithReload(callApply, reload) {
     const env = useEnv();
     return async (...args) => {
         const { editingElement } = args[0][0];
-        await callApply(...args);
-        env.editor.shared.history.addStep();
-        await env.editor.shared.savePlugin.save();
-        const target = env.editor.shared["builderOptions"].getReloadSelector(editingElement);
-        const url = reload.getReloadUrl?.();
-        await env.editor.config.reloadEditor({ target, url });
+        env.services.ui.block();
+        try {
+            const applyResults = await callApply(...args);
+            if (!applyResults.includes(BuilderAction.cancelReload)) {
+                env.editor.shared.history.addStep();
+                await env.editor.shared.savePlugin.save();
+                const url = reload.getReloadUrl?.();
+                await env.editor.config.reloadEditor({ url, editingElement });
+            }
+        } finally {
+            env.services.ui.unblock();
+        }
     };
 }
 
@@ -629,6 +789,125 @@ function getValueWithDefault(userInputValue, defaultValue, formatRawValue) {
         }
     }
     return userInputValue;
+}
+
+export function useBuilderNumberInputUnits() {
+    const comp = useComponent();
+    const env = useEnv();
+
+    /**
+     * @param {string | number} values - Values separated by spaces or a number
+     * @param {(string) => string} convertSingleValueFn - Convert a single value
+     */
+    const convertSpaceSplitValues = (values, convertSingleValueFn) => {
+        if (typeof values === "number") {
+            return convertSingleValueFn(values.toString());
+        }
+        if (values === null) {
+            return values;
+        }
+        if (!values) {
+            return "";
+        }
+        return values.trim().split(/\s+/g).map(convertSingleValueFn).join(" ");
+    };
+
+    const formatRawValue = (rawValue) =>
+        convertSpaceSplitValues(rawValue, (value) => {
+            const unit = comp.props.unit;
+            const { savedValue, savedUnit } = value.match(
+                /(?<savedValue>[\d.e+-]+)(?<savedUnit>\w*)/
+            ).groups;
+            if (savedUnit || comp.props.saveUnit) {
+                // Convert value from saveUnit to unit
+                value = convertNumericToUnit(
+                    parseFloat(savedValue),
+                    savedUnit || comp.props.saveUnit,
+                    unit,
+                    getHtmlStyle(env.getEditingElement().ownerDocument)
+                );
+            }
+            // Put *at most* 3 decimal digits
+            return parseFloat(parseFloat(value).toFixed(3)).toString();
+        });
+
+    const clampValue = (value) => {
+        if (comp.props.composable && !value && value !== 0) {
+            return value;
+        }
+        value = parseFloat(value);
+        if (value < comp.props.min) {
+            return `${comp.props.min}`;
+        }
+        if (value > comp.props.max) {
+            return `${comp.props.max}`;
+        }
+        return +value.toFixed(3);
+    };
+
+    const parseDisplayValue = (displayValue) => {
+        if (!displayValue) {
+            return displayValue;
+        }
+        if (comp.props.composable) {
+            displayValue = displayValue
+                .trim()
+                .replace(/,/g, ".")
+                .replace(/[^0-9.-\s]/g, "")
+                // Only accept "-" at the start or after a space
+                .replace(/(?<!^|\s)-/g, "");
+        }
+        displayValue =
+            displayValue.split(" ").map(clampValue.bind(this)).join(" ") || comp.props.default;
+        return convertSpaceSplitValues(displayValue, (value) => {
+            if (value === "") {
+                return value;
+            }
+            const unit = comp.props.unit;
+            const saveUnit = comp.props.saveUnit;
+            const applyWithUnit = comp.props.applyWithUnit;
+            if (unit && saveUnit) {
+                // Convert value from unit to saveUnit
+                value = convertNumericToUnit(
+                    value,
+                    unit,
+                    saveUnit,
+                    getHtmlStyle(env.getEditingElement().ownerDocument)
+                );
+            }
+            if (unit && applyWithUnit) {
+                if (saveUnit || saveUnit === "") {
+                    value = value + saveUnit;
+                } else {
+                    value = value + unit;
+                }
+            }
+            return value;
+        });
+    };
+    return { formatRawValue, parseDisplayValue, clampValue };
+}
+
+/**
+ * Handles errors during builder actions.
+ * Currently it only checks if the error was triggered on an outdated snippet,
+ * and in that case it suppresses the error and shows a notification instead.
+ * This function can potentially be extended in the future to handle additional
+ * errors and recovery strategies.
+ *
+ * @param {Error} error - The caught error
+ * @param {Element} editingElement - The element being edited
+ * @param {Component} comp -  The component
+ * @throws {Error} If editingElement is not an outdated snippet
+ */
+function handleBuilderActionError(error, editingElement, comp) {
+    // Check if editingElement belongs to an outdated snippet, and displays a
+    // warning notification if yes.
+    const isOutdated =
+        comp.env.editor.shared.versionError.checkNotifyOutdatedSnippet(editingElement);
+    if (!isOutdated) {
+        throw error;
+    }
 }
 
 export function useInputBuilderComponent({
@@ -646,6 +925,13 @@ export function useInputBuilderComponent({
     const { reload } = useReloadAction(getAllActions);
 
     const withLoadingEffect = useWithLoadingEffect(getAllActions);
+    const canTimeout = useCanTimeout(getAllActions);
+
+    onWillUpdateProps((nextProps) => {
+        if ("default" in nextProps) {
+            defaultValue = nextProps.default;
+        }
+    });
 
     async function callApply(applySpecs, isPreviewing) {
         const proms = [];
@@ -661,7 +947,7 @@ export function useInputBuilderComponent({
                 })
             );
         }
-        await Promise.all(proms);
+        return await Promise.all(proms);
     }
 
     const applyOperation = comp.env.editor.shared.history.makePreviewableAsyncOperation(callApply);
@@ -675,22 +961,37 @@ export function useInputBuilderComponent({
             ({ actionId }) => getAction(actionId).getValue
         );
         const { actionId, actionParam } = actionWithGetValue;
-        const actionValue =
-            getAction(actionId).getValue({ editingElement, params: actionParam }) || defaultValue;
-        return {
-            value: actionValue,
-        };
+        try {
+            let actionValue = getAction(actionId).getValue({ editingElement, params: actionParam });
+            if (actionValue === undefined) {
+                actionValue = defaultValue;
+            }
+            return {
+                value: actionValue,
+            };
+        } catch (error) {
+            handleBuilderActionError(error, editingElement, comp);
+        }
     }
 
     function commit(userInputValue) {
         userInputValue = getValueWithDefault(userInputValue, defaultValue, formatRawValue);
         const rawValue = parseDisplayValue(userInputValue);
         if (reload) {
-            callOperation(operationWithReload, { userInputValue: rawValue });
+            callOperation(operationWithReload, {
+                userInputValue: rawValue,
+                operationParams: {
+                    withLoadingEffect: withLoadingEffect,
+                    canTimeout: canTimeout,
+                },
+            });
         } else {
             callOperation(applyOperation.commit, {
                 userInputValue: rawValue,
-                withLoadingEffect: withLoadingEffect,
+                operationParams: {
+                    withLoadingEffect: withLoadingEffect,
+                    canTimeout: canTimeout,
+                },
             });
         }
         if (rawValue === null || (rawValue === defaultValue && rawValue === state.value)) {
@@ -712,6 +1013,7 @@ export function useInputBuilderComponent({
                 operationParams: {
                     cancellable: true,
                     cancelPrevious: () => applyOperation.revert(),
+                    canTimeout: canTimeout,
                 },
             });
         }
@@ -756,7 +1058,7 @@ export function useVisibilityObserver(contentName, callback) {
     };
 
     const observer = new MutationObserver(applyVisibility);
-    useEffect(
+    useLayoutEffect(
         (contentEl) => {
             if (!contentEl) {
                 return;
@@ -912,28 +1214,45 @@ export function getAllActionsAndOperations(comp) {
         const isPreviewing = !!params.preview;
         const actionsSpecs = getActionsSpecs(getAllActions(), params.userInputValue);
 
-        comp.env.editor.shared.operation.next(() => fn(actionsSpecs, isPreviewing), {
-            load: async () =>
-                Promise.all(
-                    actionsSpecs.map(async (applySpec) => {
-                        if (!applySpec.action.has("load")) {
-                            return;
-                        }
-                        const hasClean = !!applySpec.action.has("clean");
-                        if (!applySpec.loadOnClean && _shouldClean(comp, hasClean, isApplied())) {
-                            // The element will be cleaned, do not load
-                            return;
-                        }
-                        const result = await applySpec.action.load({
-                            editingElement: applySpec.editingElement,
-                            params: applySpec.actionParam,
-                            value: applySpec.actionValue,
-                        });
-                        applySpec.loadResult = result;
-                    })
-                ),
-            ...params.operationParams,
-        });
+        comp.env.editor.shared.operation.next(
+            async () => {
+                try {
+                    await fn(actionsSpecs, isPreviewing);
+                } catch (error) {
+                    handleBuilderActionError(error, comp.env.getEditingElement(), comp);
+                }
+            },
+            {
+                load: async () => {
+                    try {
+                        return await Promise.all(
+                            actionsSpecs.map(async (applySpec) => {
+                                if (!applySpec.action.has("load")) {
+                                    return;
+                                }
+                                const hasClean = !!applySpec.action.has("clean");
+                                if (
+                                    !applySpec.loadOnClean &&
+                                    _shouldClean(comp, hasClean, isApplied())
+                                ) {
+                                    // The element will be cleaned, do not load
+                                    return;
+                                }
+                                const result = await applySpec.action.load({
+                                    editingElement: applySpec.editingElement,
+                                    params: applySpec.actionParam,
+                                    value: applySpec.actionValue,
+                                });
+                                applySpec.loadResult = result;
+                            })
+                        );
+                    } catch (error) {
+                        handleBuilderActionError(error, comp.env.getEditingElement(), comp);
+                    }
+                },
+                ...params.operationParams,
+            }
+        );
     }
     function isApplied() {
         const getAction = comp.env.editor.shared.builderActions.getAction;
@@ -948,12 +1267,16 @@ export function getAllActionsAndOperations(comp) {
             if (!isConnectedElement(editingElement)) {
                 return false;
             }
-            const isApplied = getAction(actionId).isApplied?.({
-                editingElement,
-                params: actionParam,
-                value: actionValue,
-            });
-            return comp.props.inverseAction ? !isApplied : isApplied;
+            try {
+                const isApplied = getAction(actionId).isApplied?.({
+                    editingElement,
+                    params: actionParam,
+                    value: actionValue,
+                });
+                return comp.props.inverseAction ? !isApplied : isApplied;
+            } catch (error) {
+                handleBuilderActionError(error, editingElement, comp);
+            }
         });
         // If there is no `isApplied` method for the widget return false
         if (areActionsActiveTabs.every((el) => el === undefined)) {
@@ -989,31 +1312,4 @@ export function convertParamToObject(param) {
         };
     }
     return param;
-}
-export class BaseOptionComponent extends Component {
-    static components = {};
-    static props = {};
-    static template = "";
-
-    setup() {
-        this.isActiveItem = useIsActiveItem();
-        const comp = useComponent();
-        const editor = comp.env.editor;
-        if (!comp.constructor.components) {
-            comp.constructor.components = {};
-        }
-        const Components = editor.shared.builderComponents.getComponents();
-        Object.assign(comp.constructor.components, Components);
-    }
-    /**
-     * Check if the given items are active.
-     *
-     * Map over all items to listen for any reactive value changes.
-     *
-     * @param {string[]} itemIds - The IDs of the items to check.
-     * @returns {boolean} - True if the item is active, false otherwise.
-     */
-    isActiveItems(itemIds) {
-        return itemIds.map((i) => this.isActiveItem(i)).find(Boolean) || false;
-    }
 }

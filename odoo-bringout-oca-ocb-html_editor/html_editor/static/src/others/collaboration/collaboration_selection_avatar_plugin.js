@@ -1,5 +1,6 @@
 import { Plugin } from "@html_editor/plugin";
 import { closestBlock, isBlock } from "@html_editor/utils/blocks";
+import { isProtecting } from "@html_editor/utils/dom_info";
 import { closestElement } from "@html_editor/utils/dom_traversal";
 import { browser } from "@web/core/browser/browser";
 import { _t } from "@web/core/l10n/translation";
@@ -21,14 +22,15 @@ export const AVATAR_SIZE = 25;
 export class CollaborationSelectionAvatarPlugin extends Plugin {
     static id = "collaborationSelectionAvatar";
     static dependencies = ["history", "position", "localOverlay", "collaborationOdoo"];
+    /** @type {import("plugins").EditorResources} */
     resources = {
         /** Handlers */
-        collaboration_notification_handlers: this.handleCollaborationNotification.bind(this),
-        external_history_step_handlers: this.refreshSelection.bind(this),
-        layout_geometry_change_handlers: this.refreshSelection.bind(this),
-        set_movable_element_handlers: this.disableAvatarForElement.bind(this),
-        unset_movable_element_handlers: this.enableAvatars.bind(this),
-        collaborative_selection_update_handlers: this.updateSelection.bind(this),
+        on_collaboration_notification_handlers: this.handleCollaborationNotification.bind(this),
+        on_external_history_step_added_handlers: this.refreshSelection.bind(this),
+        on_layout_geometry_change_handlers: this.refreshSelection.bind(this),
+        on_movable_element_set_handlers: this.disableAvatarForElement.bind(this),
+        on_will_unset_movable_element_handlers: this.enableAvatars.bind(this),
+        on_collaborative_selection_updated_handlers: this.updateSelection.bind(this),
 
         collaboration_peer_metadata_providers: () => ({ avatarUrl: this.avatarUrl }),
     };
@@ -79,11 +81,18 @@ export class CollaborationSelectionAvatarPlugin extends Plugin {
         if (!anchorNode || !focusNode || !anchorNode.isConnected || !focusNode.isConnected) {
             return;
         }
-        const anchorBlock =
-            closestElement(anchorNode, (el) => isBlock(el) && el.parentElement === this.editable) ||
-            closestBlock(anchorNode);
+        let anchorBlock = closestBlock(anchorNode);
         if (!anchorBlock) {
             return;
+        }
+        if (isProtecting(anchorBlock)) {
+            const rootAnchorBlock = closestElement(
+                anchorNode,
+                (el) => isBlock(el) && el.parentElement === this.editable
+            );
+            if (rootAnchorBlock) {
+                anchorBlock = rootAnchorBlock;
+            }
         }
 
         const containerRect = this.avatarOverlay.getBoundingClientRect();
@@ -137,7 +146,7 @@ export class CollaborationSelectionAvatarPlugin extends Plugin {
                 div.className = "oe-overlapping-counter";
                 div.style.left = left + 10 + "px";
                 div.style.top = top + 10 + "px";
-                div.innerText = size;
+                div.textContent = size;
                 this.avatarsCountersOverlay.append(div);
             }
         }

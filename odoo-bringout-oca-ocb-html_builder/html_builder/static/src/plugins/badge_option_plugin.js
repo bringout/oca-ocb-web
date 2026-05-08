@@ -1,18 +1,16 @@
-import { ANIMATE, before } from "@html_builder/utils/option_sequence";
 import { Plugin } from "@html_editor/plugin";
-import { withSequence } from "@html_editor/utils/resource";
 import { registry } from "@web/core/registry";
 
-class BadgeOptionPlugin extends Plugin {
+export class BadgeOptionPlugin extends Plugin {
     static id = "badgeOption";
+    /** @type {import("plugins").BuilderResources} */
     resources = {
-        builder_options: [
-            withSequence(before(ANIMATE), {
-                template: "html_builder.BadgeOption",
-                selector: ".s_badge",
-            }),
-        ],
-        so_content_addition_selector: [".s_badge"],
+        so_content_addition_selectors: [".s_badge"],
+        is_node_splittable_predicates: (node) => {
+            if (node.classList?.contains("s_badge")) {
+                return false;
+            }
+        },
     };
 }
 registry.category("builder-plugins").add(BadgeOptionPlugin.id, BadgeOptionPlugin);

@@ -42,13 +42,13 @@ test("can call 2 separate actions with composite action", async () => {
         selector: ".s_test",
         template: xml`
             <BuilderButton
-                    action="'composite'"
-                    actionParam="[
-                        { action: 'action1', actionParam: { mainParam: 'class1' } },
-                        { action: 'action2', actionParam: { mainParam: 'class2' } },
-                    ]">
+                action="'composite'"
+                actionParam="[
+                    { action: 'action1', actionParam: { mainParam: 'class1' } },
+                    { action: 'action2', actionParam: { mainParam: 'class2' } },
+                ]">
                 Click
-            </BuilderButton>`,
+        </BuilderButton>`,
     });
     await setupHTMLBuilder(`<section class="s_test">Test</section>`);
     await contains(":iframe .s_test").click();
@@ -82,13 +82,13 @@ test("can call the same action twice with composite action", async () => {
         selector: ".s_test",
         template: xml`
             <BuilderButton
-                    action="'composite'"
-                    actionParam="[
-                        { action: 'action1', actionParam: { mainParam: 'class1' } },
-                        { action: 'action1', actionParam: { mainParam: 'class2' } },
-                    ]">
+                action="'composite'"
+                actionParam="[
+                    { action: 'action1', actionParam: { mainParam: 'class1' } },
+                    { action: 'action1', actionParam: { mainParam: 'class2' } },
+                ]">
                 Click
-            </BuilderButton>`,
+        </BuilderButton>`,
     });
     await setupHTMLBuilder(`<section class="s_test">Test</section>`);
     await contains(":iframe .s_test").click();
@@ -118,13 +118,13 @@ test("composite action's isApplied returns false if no action defined it", async
         selector: ".s_test",
         template: xml`
             <BuilderButton
-                    action="'composite'"
-                    actionParam="[
-                        { action: 'action1', actionParam: { mainParam: 'class1' } },
-                        { action: 'action1', actionParam: { mainParam: 'class2' } },
-                    ]">
+                action="'composite'"
+                actionParam="[
+                    { action: 'action1', actionParam: { mainParam: 'class1' } },
+                    { action: 'action1', actionParam: { mainParam: 'class2' } },
+                ]">
                 Click
-            </BuilderButton>`,
+        </BuilderButton>`,
     });
     await setupHTMLBuilder(`<section class="s_test">Test</section>`);
     await contains(":iframe .s_test").click();
@@ -161,13 +161,13 @@ test("composite action's isApplied returns true if at least one action defined i
         selector: ".s_test",
         template: xml`
             <BuilderButton
-                    action="'composite'"
-                    actionParam="[
-                        { action: 'action1', actionParam: { mainParam: 'class1' } },
-                        { action: 'action2', actionParam: { mainParam: 'class2' } },
-                    ]">
+                action="'composite'"
+                actionParam="[
+                    { action: 'action1', actionParam: { mainParam: 'class1' } },
+                    { action: 'action2', actionParam: { mainParam: 'class2' } },
+                ]">
                 Click
-            </BuilderButton>`,
+        </BuilderButton>`,
     });
     await setupHTMLBuilder(`<section class="s_test">Test</section>`);
     await contains(":iframe .s_test").click();

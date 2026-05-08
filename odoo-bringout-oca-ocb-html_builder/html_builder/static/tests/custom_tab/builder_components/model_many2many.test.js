@@ -32,11 +32,17 @@ describe.current.tags("desktop");
 defineModels([Test, TestBase]);
 
 test("model many2many: find tag, select tag, unselect tag", async () => {
-    onRpc("test", "name_search", () => [
-        [1, "First"],
-        [2, "Second"],
-        [3, "Third"],
-    ]);
+    let executeCount = 0;
+    onRpc("test", "name_search", ({ kwargs }) => {
+        expect.step("name_search");
+        executeCount++;
+        if (executeCount === 1) {
+            expect(kwargs.domain).toEqual([]);
+        }
+        if (executeCount === 2) {
+            expect(kwargs.domain).toEqual([["id", "not in", [1]]]);
+        }
+    });
     addBuilderOption({
         selector: ".test-options-target",
         template: xml`<ModelMany2Many baseModel="'test.base'" m2oField="'rel'" recordId="1"/>`,
@@ -84,4 +90,5 @@ test("model many2many: find tag, select tag, unselect tag", async () => {
     await contains(":iframe .test-options-target").click();
     expect("table tr").toHaveCount(1);
     expect("table input").toHaveValue("Second");
+    expect.verifySteps(["name_search", "name_search"]);
 });

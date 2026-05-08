@@ -1,10 +1,11 @@
 import { Plugin } from "@html_editor/plugin";
-import { cleanTextNode } from "@html_editor/utils/dom";
+import { cleanEmptyAncestors, cleanTextNode } from "@html_editor/utils/dom";
 import { isTextNode, isZwnbsp } from "@html_editor/utils/dom_info";
 import { prepareUpdate } from "@html_editor/utils/dom_state";
-import { descendants, selectElements } from "@html_editor/utils/dom_traversal";
+import { closestElement, descendants, selectElements } from "@html_editor/utils/dom_traversal";
 import { leftPos, rightPos } from "@html_editor/utils/position";
 import { callbacksForCursorUpdate } from "@html_editor/utils/selection";
+import { withSequence } from "../utils/resource";
 
 /** @typedef {import("../core/selection_plugin").Cursors} Cursors */
 
@@ -12,6 +13,12 @@ import { callbacksForCursorUpdate } from "@html_editor/utils/selection";
  * @typedef { Object } FeffShared
  * @property { FeffPlugin['addFeff'] } addFeff
  * @property { FeffPlugin['removeFeffs'] } removeFeffs
+ */
+
+/**
+ * @typedef {((node: Node) => boolean | undefined)[]} would_feff_be_legit_predicates
+ * @typedef {((root: EditorContext["editable"], cursors: Cursors) => Node[])[]} feff_providers
+ * @typedef {(() => string)[]} selectors_for_feff_providers
  */
 
 /**
@@ -24,26 +31,43 @@ import { callbacksForCursorUpdate } from "@html_editor/utils/selection";
 export class FeffPlugin extends Plugin {
     static id = "feff";
     static dependencies = ["selection"];
-    static shared = ["addFeff", "removeFeffs"];
+    static shared = ["addFeff", "removeFeffs", "surroundWithFeffs"];
 
+    /** @type {import("plugins").EditorResources} */
     resources = {
-        normalize_handlers: this.updateFeffs.bind(this),
-        clean_for_save_handlers: this.cleanForSave.bind(this),
-        intangible_char_for_keyboard_navigation_predicates: (ev, char, lastSkipped) =>
+        normalize_processors: withSequence(Infinity, this.updateFeffs.bind(this)),
+        // Must be after link selection plugin's clean for save
+        clean_for_save_processors: withSequence(20, this.cleanForSave.bind(this)),
+        on_will_merge_adjacent_siblings_handlers:
+            this.onWillMergeAdjacentSiblingsHandler.bind(this),
+        on_merged_adjacent_siblings_handlers: this.onMergedAdjacentSiblingsHandler.bind(this),
+        is_char_tangible_for_keyboard_navigation_predicates: (ev, char, lastSkipped) => {
             // Skip first FEFF, but not the second one (unless shift is pressed).
-            char === "\uFEFF" && (ev.shiftKey || lastSkipped !== "\uFEFF"),
+            if (char === "\uFEFF" && (ev.shiftKey || lastSkipped !== "\uFEFF")) {
+                return false;
+            }
+        },
         clipboard_content_processors: this.processContentForClipboard.bind(this),
         clipboard_text_processors: (text) => text.replace(/\ufeff/g, ""),
     };
 
-    cleanForSave({ root, preserveSelection = false }) {
+    cleanForSave(root, { preserveSelection = false } = {}) {
         if (preserveSelection) {
             const cursors = this.getCursors();
-            this.removeFeffs(root, cursors);
+            this.removeFeffs(root, cursors, { excludeLegit: false });
             cursors.restore();
         } else {
-            this.removeFeffs(root, null);
+            this.removeFeffs(root, null, { excludeLegit: false });
         }
+    }
+
+    onWillMergeAdjacentSiblingsHandler(root) {
+        const cursors = this.getCursors();
+        this.removeFeffs(root, cursors);
+        cursors.restore();
+    }
+    onMergedAdjacentSiblingsHandler(root) {
+        this.updateFeffs(root);
     }
 
     /**
@@ -51,16 +75,32 @@ export class FeffPlugin extends Plugin {
      * @param {Cursors} [cursors]
      * @param {Object} [options]
      */
-    removeFeffs(root, cursors, { exclude = () => false } = {}) {
+    removeFeffs(root, cursors, { exclude = () => false, excludeLegit = true } = {}) {
+        if (excludeLegit) {
+            const excludeParam = exclude;
+            exclude = (node) =>
+                excludeParam?.(node) ||
+                (this.checkPredicates("would_feff_be_legit_predicates", node) ?? false);
+        }
         const hasFeff = (node) => isTextNode(node) && node.textContent.includes("\ufeff");
         const isEditable = (node) => node.parentElement.isContentEditable;
-        const composedFilter = (node) => hasFeff(node) && isEditable(node) && !exclude(node);
+        const isFocusedLink = (node) => closestElement(node, "a.o_link_in_selection");
+        const composedFilter = (node) =>
+            hasFeff(node) && isEditable(node) && !exclude(node) && !isFocusedLink(node);
 
         for (const node of descendants(root).filter(composedFilter)) {
             // Remove all FEFF within a `prepareUpdate` to make sure to make <br>
             // nodes visible if needed.
             const restoreSpaces = prepareUpdate(...leftPos(node), ...rightPos(node));
+            const parent = node.parentNode;
             cleanTextNode(node, "\ufeff", cursors);
+            cleanEmptyAncestors(
+                parent,
+                cursors,
+                (node) =>
+                    node.hasAttribute("data-oe-zws-empty-inline") ||
+                    !(this.checkPredicates("is_node_removable_predicates", node) ?? true)
+            );
             restoreSpaces();
         }
     }
@@ -78,6 +118,31 @@ export class FeffPlugin extends Plugin {
         return feff;
     }
 
+    surroundWithFeffs(node, cursors) {
+        const addFeff = (position) => {
+            // skip cursor update for append, we want to keep it before
+            // the added FEFF
+            const c = position === "append" ? null : cursors;
+            return this.addFeff(node, position, c);
+        };
+
+        const zwnbspNodes = [];
+        for (const [position, relation] of [
+            ["before", "previousSibling"],
+            ["after", "nextSibling"],
+            ["prepend", "firstChild"],
+            ["append", "lastChild"],
+        ]) {
+            const candidate = node[relation];
+            const feff =
+                isZwnbsp(candidate) && !zwnbspNodes.includes(candidate)
+                    ? candidate
+                    : addFeff(position);
+            zwnbspNodes.push(feff);
+        }
+        return zwnbspNodes;
+    }
+
     /**
      * Adds a FEFF before and after each element that matches the selectors
      * provided by the registered providers.
@@ -93,7 +158,7 @@ export class FeffPlugin extends Plugin {
         if (!combinedSelector) {
             return [];
         }
-        const elements = [...selectElements(root, combinedSelector)];
+        const elements = selectElements(root, combinedSelector);
         const isEditable = (node) => node.parentElement?.isContentEditable;
         const feffNodes = elements
             .filter(isEditable)
@@ -119,9 +184,7 @@ export class FeffPlugin extends Plugin {
         const customFeffNodes = this.getResource("feff_providers").flatMap((p) => p(root, cursors));
         const feffNodesToKeep = new Set([...feffNodesBasedOnSelectors, ...customFeffNodes]);
         this.removeFeffs(root, cursors, {
-            exclude: (node) =>
-                feffNodesToKeep.has(node) ||
-                this.getResource("legit_feff_predicates").some((predicate) => predicate(node)),
+            exclude: (node) => feffNodesToKeep.has(node),
         });
         cursors.restore();
     }

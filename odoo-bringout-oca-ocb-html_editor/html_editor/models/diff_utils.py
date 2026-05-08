@@ -3,7 +3,6 @@
 import re
 
 from difflib import SequenceMatcher, unified_diff
-from bs4 import BeautifulSoup
 
 
 # ------------------------------------------------------------
@@ -201,6 +200,7 @@ def generate_comparison(new_content, old_content):
                     comparison.insert(start_index, addition_flagged_line)
                 elif (
                     line.split(">")[0] != comparison[start_index].split(">")[0]
+                    or line.startswith("/")
                 ):
                     comparison.insert(start_index, line)
 
@@ -323,6 +323,7 @@ def _indent(content):
     :return: string: the indented content
     """
     content = "<document>" + _remove_html_attribute(content, HTML_ATTRIBUTES_TO_REMOVE) + "</document>"
+    from bs4 import BeautifulSoup  # noqa: PLC0415
     soup = BeautifulSoup(content, 'html.parser')
     return soup.prettify()
 

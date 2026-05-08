@@ -16,6 +16,7 @@ import {
     isZWS,
     nextLeaf,
     previousLeaf,
+    isEmptyBlock,
 } from "../utils/dom_info";
 import { getState, isFakeLineBreak, observeMutations, prepareUpdate } from "../utils/dom_state";
 import {
@@ -62,17 +63,53 @@ import { normalizeDeepCursorPosition, normalizeFakeBR } from "@html_editor/utils
  * @property { DeletePlugin['deleteForward'] } deleteForward
  */
 
+/**
+ * @typedef {(() => void)[]} on_will_delete_handlers
+ * @typedef {(() => void)[]} on_deleted_handlers
+ *
+ * @typedef {((range: RangeLike) => void | true)[]} delete_backward_overrides
+ * @typedef {((range: RangeLike) => void | true)[]} delete_backward_word_overrides
+ * @typedef {((range: RangeLike) => void | true)[]} delete_backward_line_overrides
+ * @typedef {((range: RangeLike) => void | true)[]} delete_forward_overrides
+ * @typedef {((range: RangeLike) => void | true)[]} delete_forward_word_overrides
+ * @typedef {((range: RangeLike) => void | true)[]} delete_forward_line_overrides
+ * @typedef {((range: RangeLike) => void | true)[]} delete_range_overrides
+ *
+ * @typedef {((node: Node) => boolean | undefined)[]} is_functional_empty_node_predicates
+ * @typedef {((node: Node) => boolean | undefined)[]} is_node_empty_predicates
+ *
+ * @typedef {((node: Node) => Node[])[]} removable_descendants_providers
+ *
+ * @typedef {CSSSelector[]} system_node_selectors
+ */
+/**
+ * The `root` argument is used by some predicates in which a node is
+ * conditionally unremovable (e.g. a table cell is only removable if its
+ * ancestor table is also being removed).
+ * @typedef {((node: Node, root: HTMLElement) => boolean | undefined)[]} is_node_removable_predicates
+ */
+
 // @todo @phoenix: move these predicates to different plugins
-export const unremovableNodePredicates = [
-    (node) => node.classList?.contains("oe_unremovable"),
-    // Monetary field
-    (node) => node.matches?.("[data-oe-type='monetary'] > span"),
+export const removableNodePredicates = [
+    (node) => {
+        if (node.classList?.contains("oe_unremovable")) {
+            return false;
+        }
+    },
 ];
 
 export class DeletePlugin extends Plugin {
     static dependencies = ["baseContainer", "selection", "history", "input", "userCommand"];
     static id = "delete";
-    static shared = ["deleteBackward", "deleteForward", "deleteRange", "deleteSelection", "delete"];
+    static shared = [
+        "deleteBackward",
+        "deleteForward",
+        "deleteRange",
+        "deleteSelection",
+        "delete",
+        "isUnremovable",
+    ];
+    /** @type {import("plugins").EditorResources} */
     resources = {
         user_commands: [
             { id: "deleteBackward", run: () => this.delete("backward", "character") },
@@ -91,12 +128,12 @@ export class DeletePlugin extends Plugin {
             { hotkey: "control+shift+delete", commandId: "deleteForwardLine" },
         ],
         /** Handlers */
-        beforeinput_handlers: [
+        on_beforeinput_handlers: [
             withSequence(5, this.onBeforeInputInsertText.bind(this)),
             this.onBeforeInputDelete.bind(this),
         ],
-        input_handlers: (ev) => this.onAndroidChromeInput?.(ev),
-        selectionchange_handlers: withSequence(5, () => this.onAndroidChromeSelectionChange?.()),
+        on_input_handlers: (ev) => this.onAndroidChromeInput?.(ev),
+        on_selectionchange_handlers: withSequence(5, () => this.onAndroidChromeSelectionChange?.()),
         /** Overrides */
         delete_backward_overrides: withSequence(30, this.deleteBackwardUnmergeable.bind(this)),
         delete_backward_word_overrides: withSequence(20, this.deleteBackwardUnmergeable.bind(this)),
@@ -105,8 +142,12 @@ export class DeletePlugin extends Plugin {
         delete_forward_word_overrides: this.deleteForwardUnmergeable.bind(this),
         delete_forward_line_overrides: this.deleteForwardUnmergeable.bind(this),
 
-        unremovable_node_predicates: unremovableNodePredicates,
-        invalid_for_base_container_predicates: (node) => this.isUnremovable(node, this.editable),
+        is_node_removable_predicates: removableNodePredicates,
+        is_valid_for_base_container_predicates: (node) => {
+            if (this.isUnremovable(node, this.editable)) {
+                return false;
+            }
+        },
     };
 
     setup() {
@@ -210,7 +251,7 @@ export class DeletePlugin extends Plugin {
      */
     delete(direction, granularity) {
         const selection = this.dependencies.selection.getEditableSelection();
-        this.dispatchTo("before_delete_handlers");
+        this.trigger("on_will_delete_handlers");
 
         if (!selection.isCollapsed) {
             this.deleteSelection(selection);
@@ -221,8 +262,8 @@ export class DeletePlugin extends Plugin {
         } else {
             throw new Error("Invalid direction");
         }
-        this.dispatchTo("delete_handlers");
-        this.dependencies.history.addStep();
+        this.trigger("on_deleted_handlers");
+        this.dependencies.history.addStep({ batchable: true });
     }
 
     // --------------------------------------------------------------------------
@@ -344,7 +385,7 @@ export class DeletePlugin extends Plugin {
         <b>[abc]</b> -> <b>[]ZWS</b>
         <b>[abc</b> <b>d]ef</b> -> <b>[]ZWS</b> <b>ef</b>
         <b>[abc</b> <b>def]</b> -> <b>[]ZWS</b> <b>ZWS</b>
-        
+
     Block:
         Shrunk blocks get filled.
         <p>[abc]</p> -> <p>[]<br></p>
@@ -500,8 +541,7 @@ export class DeletePlugin extends Plugin {
             // @todo: mind Icons?
             // Probably need to get deepest position's element
             // @todo: update fillEmpty
-            // @todo: check if nodes does not already have a ZWS/ZWNBSP
-            if (!isBlock(node) && !isTangible(node)) {
+            if (!isBlock(node) && !isTangible(node) && !isZWS(node) && !isZwnbsp(node)) {
                 node.appendChild(this.document.createTextNode("\u200B"));
                 node.setAttribute("data-oe-zws-empty-inline", "");
             }
@@ -516,7 +556,6 @@ export class DeletePlugin extends Plugin {
             ) {
                 // @todo: not sure we want this when allowInlineAtRoot is true
                 const baseContainer = this.dependencies.baseContainer.createBaseContainer();
-                baseContainer.appendChild(this.document.createElement("br"));
                 block.appendChild(baseContainer);
             } else {
                 block.appendChild(this.document.createElement("br"));
@@ -602,7 +641,7 @@ export class DeletePlugin extends Plugin {
     // conditionally unremovable (e.g. a table cell is only removable if its
     // ancestor table is also being removed).
     isUnremovable(node, root = undefined) {
-        return this.getResource("unremovable_node_predicates").some((p) => p(node, root));
+        return !(this.checkPredicates("is_node_removable_predicates", node, root) ?? true);
     }
 
     // Returns true if the entire subtree rooted at node was removed.
@@ -632,10 +671,14 @@ export class DeletePlugin extends Plugin {
             for (const child of [...node.childNodes]) {
                 remove(child);
             }
-            if (this.isUnremovable(node, root)) {
+            if (
+                this.isUnremovable(node, root) ||
+                (!this.dependencies.selection.isNodeEditable(node) &&
+                    !node.parentElement?.isContentEditable)
+            ) {
                 return false;
             }
-            if (node.hasChildNodes()) {
+            if (node.hasChildNodes() && node.isContentEditable) {
                 node.before(...node.childNodes);
                 node.remove();
                 return false;
@@ -722,7 +765,7 @@ export class DeletePlugin extends Plugin {
      * merge are reverse operations from one another).
      */
     isUnmergeable(node) {
-        return this.getResource("unsplittable_node_predicates").some((p) => p(node));
+        return !(this.checkPredicates("is_node_splittable_predicates", node) ?? true);
     }
 
     joinBlocks(left, right, commonAncestor) {
@@ -1074,14 +1117,18 @@ export class DeletePlugin extends Plugin {
             const nodeClosestBlock = closestBlock(node);
             let leaf = adjacentLeafFromPos(node, offset, editableRoot);
             while (leaf) {
-                blockSwitch ||= closestBlock(leaf) !== nodeClosestBlock;
+                const leafClosestBlock = closestBlock(leaf);
+                blockSwitch ||= leafClosestBlock !== nodeClosestBlock;
 
                 if (this.shouldSkip(leaf, blockSwitch)) {
                     leaf = adjacentLeaf(leaf, editableRoot);
                     continue;
                 }
 
-                if (leaf.nodeType === Node.TEXT_NODE) {
+                if (
+                    leaf.nodeType === Node.TEXT_NODE &&
+                    !(blockSwitch && isEmptyBlock(leafClosestBlock))
+                ) {
                     const [char, index] = findVisibleChar(...textEdgePos(leaf));
                     if (char) {
                         const idx = (blockSwitch ? indexBeforeChar : indexAfterChar)(index, char);
@@ -1168,6 +1215,12 @@ export class DeletePlugin extends Plugin {
     }
 
     shouldSkip(leaf, blockSwitch) {
+        // A system node is a node that should be ignored by the editor. In
+        // other words, if the editor had a VDOM, it would be absent from it.
+        const systemNodeSelectors = this.getResource("system_node_selectors").join(",");
+        if (systemNodeSelectors && closestElement(leaf, systemNodeSelectors)) {
+            return true;
+        }
         if (leaf.nodeType === Node.TEXT_NODE) {
             return false;
         }
@@ -1178,11 +1231,7 @@ export class DeletePlugin extends Plugin {
         if (leaf.nodeName === "BR" && isFakeLineBreak(leaf)) {
             return true;
         }
-        if (
-            this.getResource("functional_empty_node_predicates").some((predicate) =>
-                predicate(leaf)
-            )
-        ) {
+        if (this.checkPredicates("is_functional_empty_node_predicates", leaf) ?? false) {
             return false;
         }
         if (isEmpty(leaf) || isZWS(leaf)) {
@@ -1276,9 +1325,9 @@ export class DeletePlugin extends Plugin {
         if (ev.inputType === "insertText") {
             const selection = this.dependencies.selection.getSelectionData().deepEditableSelection;
             if (!selection.isCollapsed) {
-                this.dispatchTo("before_delete_handlers");
+                this.trigger("on_will_delete_handlers");
                 this.deleteSelection(selection);
-                this.dispatchTo("delete_handlers");
+                this.trigger("on_deleted_handlers");
             }
             // Default behavior: insert text and trigger input event
         }
@@ -1345,10 +1394,11 @@ export class DeletePlugin extends Plugin {
 
         if (
             (isEmpty(closestUnmergeable) ||
-                this.getResource("is_empty_predicates").some((p) => p(closestUnmergeable))) &&
+                (this.checkPredicates("is_node_empty_predicates", closestUnmergeable) ?? false)) &&
             !this.isUnremovable(closestUnmergeable)
         ) {
             closestUnmergeable.remove();
+            this.fillShrunkBlocks(commonAncestor);
             this.dependencies.selection.setSelection({
                 anchorNode: destContainer,
                 anchorOffset: destOffset,

@@ -2,16 +2,12 @@ import { BuilderAction } from "@html_builder/core/builder_action";
 import { Plugin } from "@html_editor/plugin";
 import { registry } from "@web/core/registry";
 
-class RatingOptionPlugin extends Plugin {
+export class RatingOptionPlugin extends Plugin {
     static id = "ratingOption";
     static dependencies = ["history", "media"];
-    selector = ".s_rating";
+    /** @type {import("plugins").BuilderResources} */
     resources = {
-        builder_options: {
-            template: "html_builder.RatingOption",
-            selector: ".s_rating",
-        },
-        so_content_addition_selector: [".s_rating"],
+        so_content_addition_selectors: [".s_rating"],
         builder_actions: {
             SetIconsAction,
             CustomIconAction,

@@ -8,6 +8,27 @@ import { getImageSrc } from "./image";
 export const cropperDataFields = ["x", "y", "width", "height", "rotate", "scaleX", "scaleY"];
 export const cropperDataFieldsWithAspectRatio = [...cropperDataFields, "aspectRatio"];
 export const isGif = (mimetype) => mimetype === "image/gif";
+
+let _isWebGLEnabled;
+/**
+ * Cacheable check telling whether the current browser can allocate a WebGL context.
+ */
+export function isWebGLEnabled() {
+    if (_isWebGLEnabled !== undefined) {
+        return _isWebGLEnabled;
+    }
+    try {
+        const canvas = document.createElement("canvas");
+        _isWebGLEnabled = !!(
+            window.WebGLRenderingContext &&
+            (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
+        );
+    } catch {
+        _isWebGLEnabled = false;
+    }
+    return _isWebGLEnabled;
+}
+
 const modifierFields = [
     "filter",
     "quality",
@@ -174,36 +195,38 @@ export async function loadImageInfo(el, attachmentSrc = "") {
     if ((el.dataset.originalSrc && el.dataset.mimetypeBeforeConversion) || !src) {
         return newDataset;
     }
-    // In order to be robust to absolute, relative and protocol relative URLs,
-    // the src of the img is first converted to an URL object. To do so, the URL
-    // of the document in which the img is located is used as a base to build
-    // the URL object if the src of the img is a relative or protocol relative
-    // URL. The original attachment linked to the img is then retrieved thanks
-    // to the path of the built URL object.
+
     let docHref = el.ownerDocument.defaultView.location.href;
     if (docHref.startsWith("about:")) {
         docHref = window.location.href;
     }
 
-    const srcUrl = new URL(src, docHref);
-    let relativeSrc = srcUrl.pathname;
+    let realSrc = src;
 
-    let match = relativeSrc.match(/\/(?:web_editor|html_editor)\/image_shape\/(\w+\.\w+)/);
-    if (el.dataset.shape && match) {
-        match = match[1];
-        if (match.endsWith("_perspective")) {
-            // As an image might already have been modified with a
-            // perspective for some customized snippets in themes. We need
-            // to find the original image to set the 'data-original-src'
-            // attribute.
-            match = match.slice(0, -12);
+    // Match the image_shape segment anywhere in the URL (works with absolute
+    // URLs too). Capture the filename part until a slash, query or hash so we
+    // can replace only that segment and preserve the rest of the URL (host,
+    // querystring, hash...).
+    const m = realSrc.match(/\/(?:web_editor|html_editor)\/image_shape\/([^/?#]+)[^?#]*/);
+    if (el.dataset.shape && m) {
+        let filename = m[1];
+        if (filename.endsWith("_perspective")) {
+            // As an image might already have been modified with a perspective
+            // for some customized snippets in themes. We need to find the
+            // original image to set the 'data-original-src' attribute.
+            filename = filename.slice(0, -12);
         }
-        relativeSrc = `/web/image/${encodeURIComponent(match)}`;
+        // Replace only the matched segment so that other parts of the URL
+        // (domain, querystring, fragment) remain unchanged.
+        realSrc = realSrc.replace(m[0], `/web/image/${encodeURIComponent(filename)}`);
     }
 
     const { original } = await rpc(
         "/html_editor/get_image_info",
-        { src: relativeSrc },
+        {
+            src: realSrc.split(/[?#]/)[0],
+            href_base: docHref,
+        },
         { cache: true }
     );
     // If src was an absolute "external" URL, we consider unlikely that its

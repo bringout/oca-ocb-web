@@ -2,10 +2,20 @@ import { applyFunDependOnSelectorAndExclude } from "@html_builder/plugins/utils"
 import { Plugin } from "@html_editor/plugin";
 import { registry } from "@web/core/registry";
 
-class BackgroundOptionPlugin extends Plugin {
+/** @typedef {import("plugins").CSSSelector} CSSSelector */
+/**
+ * @typedef {{
+ *     selector: CSSSelector;
+ *     exclude?: CSSSelector;
+ *     applyTo?: CSSSelector;
+ * }[]} mark_color_level_selector_params
+ */
+
+export class BackgroundOptionPlugin extends Plugin {
     static id = "backgroundOption";
+    /** @type {import("plugins").BuilderResources} */
     resources = {
-        normalize_handlers: this.normalize.bind(this),
+        normalize_processors: this.normalize.bind(this),
         system_classes: ["o_colored_level"],
     };
     normalize(root) {

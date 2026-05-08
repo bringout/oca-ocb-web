@@ -4,6 +4,7 @@ import {
     getDataURLBinarySize,
     getImageSizeFromCache,
     isGif,
+    isWebGLEnabled,
     loadImage,
     loadImageDataURL,
     loadImageInfo,
@@ -11,12 +12,34 @@ import {
 import { Plugin } from "../../plugin";
 import { getAffineApproximation, getProjective } from "@html_editor/utils/perspective_utils";
 
-export const DEFAULT_IMAGE_QUALITY = "75";
+export const DEFAULT_IMAGE_QUALITY = "92";
 
 /**
  * @typedef { Object } ImagePostProcessShared
  * @property { ImagePostProcessPlugin['processImage'] } processImage
  * @property { ImagePostProcessPlugin['getProcessedImageSize'] } getProcessedImageSize
+ */
+
+/**
+ * @typedef {(
+ *   (img: HTMLImageElement, newDataset: object) => Promise<{
+ *     getHeight: (canvas: HTMLCanvasElement) => number,
+ *     perspective: string | null,
+ *     newDataset: object,
+ *     postProcessCroppedCanvas: (canvas: HTMLCanvasElement) => Promise<HTMLCanvasElement>,
+ *     svg: SVGElement,
+ *     svgAspectRatio: number,
+ *     svgWidth: number,
+ *   }>
+ * )[]} on_will_process_image_handlers
+ * @typedef {(
+ *   (
+ *     url: string,
+ *     newDataset: object,
+ *     processContext: { svg: SVGElement, svgAspectRatio: number, svgWidth: number }
+ *   ) => Promise<[newUrl: string, handlerDataset: object]>
+ * )[]} on_image_processed_handlers
+ * @typedef {((args: {imageEl: HTMLElement}) => void)[]} on_image_updated_handlers
  */
 
 export class ImagePostProcessPlugin extends Plugin {
@@ -30,22 +53,15 @@ export class ImagePostProcessPlugin extends Plugin {
      *
      * @param {HTMLImageElement} img the image to which modifications are applied
      * @param {Object} newDataset an object containing the modifications to apply
-     * @param {Function} [onImageInfoLoaded] can be used to fill
-     * newDataset after having access to image info, return true to cancel call
-     * @returns {Function} callback that sets dataURL of the image with the
-     * applied modifications to `img` element
+     * @returns {{ url: string, newDataset: object }} Object containing the image
+     * URL and the updated dataset.
      */
-    async _processImage({ img, newDataset = {}, onImageInfoLoaded }) {
+    async _processImage({ img, newDataset = {} }) {
         const processContext = {};
         if (!newDataset.originalSrc || !newDataset.mimetypeBeforeConversion) {
             Object.assign(newDataset, await loadImageInfo(img));
         }
-        if (onImageInfoLoaded) {
-            if (await onImageInfoLoaded(newDataset)) {
-                return;
-            }
-        }
-        for (const cb of this.getResource("process_image_warmup_handlers")) {
+        for (const cb of this.getResource("on_will_process_image_handlers")) {
             const addedContext = await cb(img, newDataset);
             if (addedContext) {
                 if (addedContext.newDataset) {
@@ -75,13 +91,15 @@ export class ImagePostProcessPlugin extends Plugin {
         const originalImg = await loadImage(data.originalSrc);
         const originalSrc = originalImg.getAttribute("src");
 
-        if (shouldPreventGifTransformation(data)) {
+        if (
+            !(await isImageSupportedForProcessing(img, formatMimetype || mimetypeBeforeConversion))
+        ) {
             const [postUrl, postDataset] = await this.postProcessImage(
                 await loadImageDataURL(originalSrc),
                 newDataset,
                 processContext
             );
-            return () => this.updateImageAttributes(img, postUrl, postDataset);
+            return { url: postUrl, newDataset: postDataset };
         }
         // Crop
         const container = document.createElement("div");
@@ -186,7 +204,8 @@ export class ImagePostProcessPlugin extends Plugin {
         }
 
         // GL filter
-        if (glFilter) {
+        const canUseWebGL = glFilter && isWebGLEnabled() && window.WebGLImageFilter;
+        if (canUseWebGL) {
             const glf = new window.WebGLImageFilter();
             const cv = document.createElement("canvas");
             cv.width = canvas.width;
@@ -238,13 +257,10 @@ export class ImagePostProcessPlugin extends Plugin {
     }
     async getProcessedImageSize(img) {
         const processed = await this._processImage({ img });
-        if (processed.url) {
-            return getDataURLBinarySize(processed.url);
-        }
-        return undefined;
+        return getDataURLBinarySize(processed.url);
     }
     async postProcessImage(url, newDataset, processContext) {
-        for (const cb of this.getResource("process_image_post_handlers")) {
+        for (const cb of this.getResource("on_image_processed_handlers")) {
             const [newUrl, handlerDataset] = (await cb(url, newDataset, processContext)) || [];
             url = newUrl || url;
             newDataset = handlerDataset || newDataset;
@@ -255,6 +271,7 @@ export class ImagePostProcessPlugin extends Plugin {
         el.classList.add("o_modified_image_to_save");
         if (el.tagName === "IMG") {
             el.setAttribute("src", url);
+            el.removeAttribute("srcset");
         } else {
             this.dependencies.style.setBackgroundImageUrl(el, url);
         }
@@ -266,6 +283,7 @@ export class ImagePostProcessPlugin extends Plugin {
                 delete el.dataset[key];
             }
         }
+        this.trigger("on_image_updated_handlers", { imageEl: el });
     }
 }
 
@@ -315,6 +333,13 @@ export const defaultImageFilterOptions = {
     brightness: "0",
     sepia: "0",
 };
+
+export async function isImageSupportedForProcessing(imgEl, originalImgMimetype) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(originalImgMimetype)) {
+        return false;
+    }
+    return !!(imgEl.dataset.originalSrc || (await loadImageInfo(imgEl)).originalSrc);
+}
 
 // webgl color filters
 const _applyAll = (result, filter, filters) => {

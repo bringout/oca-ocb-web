@@ -1,4 +1,5 @@
-import { Component, useState } from "@odoo/owl";
+import { useState } from "@web/owl2/utils";
+import { Component } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
 import { applyOpacityToGradient, isColorGradient } from "@web/core/utils/colors";
@@ -15,7 +16,7 @@ const DEFAULT_GRADIENT_COLORS = [
     "linear-gradient(135deg, rgb(255, 222, 202) 0%, rgb(202, 115, 69) 100%)",
 ];
 
-class ColorPickerGradientTab extends Component {
+export class ColorPickerGradientTab extends Component {
     static template = "html_editor.ColorPickerGradientTab";
     static components = { GradientPicker };
     static props = {
@@ -31,6 +32,7 @@ class ColorPickerGradientTab extends Component {
         defaultOpacity: { type: Number, optional: true },
         noTransparency: { type: Boolean, optional: true },
         selectedColor: { type: String, optional: true },
+        currentColorPreview: { type: String, optional: true },
         "*": { optional: true },
     };
     setup() {
@@ -42,6 +44,9 @@ class ColorPickerGradientTab extends Component {
     }
 
     getCurrentGradientColor() {
+        if (isColorGradient(this.props.currentColorPreview)) {
+            return this.props.currentColorPreview;
+        }
         if (isColorGradient(this.props.selectedColor)) {
             return this.props.selectedColor;
         }
@@ -49,6 +54,13 @@ class ColorPickerGradientTab extends Component {
 
     toggleGradientPicker() {
         this.state.showGradientPicker = !this.state.showGradientPicker;
+        if (
+            !this.state.showGradientPicker &&
+            this.props.currentColorPreview &&
+            this.props.currentColorPreview !== this.props.selectedColor
+        ) {
+            this.props.applyColor(this.props.currentColorPreview);
+        }
     }
 }
 

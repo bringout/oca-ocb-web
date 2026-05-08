@@ -1,7 +1,7 @@
 import { baseContainerGlobalSelector } from "./base_container";
 import { closestBlock, isBlock } from "./blocks";
 import { childNodes, closestElement, firstLeaf, lastLeaf } from "./dom_traversal";
-import { DIRECTIONS, nodeSize } from "./position";
+import { childNodeIndex, DIRECTIONS, nodeSize } from "./position";
 
 export function isEmpty(el) {
     if (isProtecting(el) || isProtected(el)) {
@@ -46,7 +46,11 @@ export function isEmptyTextNode(node) {
  */
 export function isBold(node) {
     const fontWeight = +getComputedStyle(closestElement(node)).fontWeight;
-    return fontWeight > 500 || fontWeight > +getComputedStyle(closestBlock(node)).fontWeight;
+    const referenceElement = closestElement(
+        node,
+        (el) => isBlock(el) || +getComputedStyle(el).fontWeight !== fontWeight
+    );
+    return fontWeight > 500 || fontWeight > +getComputedStyle(referenceElement).fontWeight;
 }
 
 /**
@@ -257,7 +261,28 @@ export function isVisibleTextNode(testedNode) {
  * @param {Node} node
  * @returns {boolean}
  */
-const selfClosingElementTags = ["BR", "IMG", "INPUT", "T", "HR"];
+// https://developer.mozilla.org/en-US/docs/Glossary/Void_element
+export const selfClosingHtmlTags = [
+    "AREA",
+    "BASE",
+    "BR",
+    "COL",
+    "EMBED",
+    "HR",
+    "IMG",
+    "INPUT",
+    "KEYGEN",
+    "LINK",
+    "META",
+    "PARAM",
+    "SOURCE",
+    "TRACK",
+    "WBR",
+    "V:IMAGE",
+    "V:FILL",
+];
+export const selfClosingXmlTags = ["T"];
+export const selfClosingElementTags = [...selfClosingHtmlTags, ...selfClosingXmlTags];
 export function isSelfClosingElement(node) {
     return node && selfClosingElementTags.includes(node.nodeName);
 }
@@ -321,7 +346,7 @@ export const ICON_SELECTOR = iconTags
     .map((tag) => iconClasses.map((cls) => `${tag}.${cls}`).join(", "))
     .join(", ");
 
-export const MEDIA_SELECTOR = `${ICON_SELECTOR} , .o_image, .media_iframe_video`;
+export const MEDIA_SELECTOR = `${ICON_SELECTOR}, .media_iframe_video, .o_file_box`;
 
 export const EDITABLE_MEDIA_CLASS = "o_editable_media";
 
@@ -342,12 +367,41 @@ export function isIconElement(node) {
 // @todo @phoenix: move the specific part in a proper plugin.
 export function isMediaElement(node) {
     return (
+        node.nodeName === "IMG" ||
         isIconElement(node) ||
         (node.classList &&
-            (node.classList.contains("o_image") ||
+            (node.classList.contains("o_file_box") ||
                 node.classList.contains("media_iframe_video"))) ||
         node.nodeName === "CANVAS"
     );
+}
+
+/**
+ * Checks whether the content of mediaContainerEl is only made of "media"
+ * (image, video, icon, document) - or links around "media".
+ *
+ * @param {HTMLElement} mediaContainerEl element within which to check
+ * @param {boolean} [requiresSingleMedia=false] if true, limits the positive
+ *     result to situations where only a single media is present
+ * @returns {boolean}
+ */
+export function hasMediaOnly(mediaContainerEl, requiresSingleMedia = false) {
+    const nonEmptyContent = [...mediaContainerEl.childNodes].filter(
+        (node) =>
+            node.tagName !== "BR" &&
+            (node.nodeType !== Node.TEXT_NODE || node.textContent.replaceAll(/\s+/g, ""))
+    );
+    if (requiresSingleMedia && nonEmptyContent.length !== 1) {
+        return false;
+    }
+    return nonEmptyContent.every((el) => {
+        if (isMediaElement(el) || el.tagName === "IMG") {
+            return true;
+        }
+        if (el.tagName === "A") {
+            return hasMediaOnly(el, requiresSingleMedia);
+        }
+    });
 }
 
 // See https://developer.mozilla.org/en-US/docs/Web/HTML/Content_categories#phrasing_content
@@ -520,7 +574,7 @@ export const paragraphRelatedElements = ["P", "H1", "H2", "H3", "H4", "H5", "H6"
  * @returns {boolean}
  */
 export function allowsParagraphRelatedElements(node) {
-    return isBlock(node) && !isParagraphRelatedElement(node);
+    return !isParagraphRelatedElement(node) && isBlock(node);
 }
 
 export const phrasingContent = new Set(["#text", ...phrasingTagNames]);
@@ -644,7 +698,12 @@ export function isEmptyBlock(blockEl) {
  * @returns {boolean}
  */
 export function isShrunkBlock(blockEl) {
-    return isEmptyBlock(blockEl) && !blockEl.querySelector("br") && !isSelfClosingElement(blockEl);
+    return (
+        isElement(blockEl) &&
+        !blockEl.querySelector("br") &&
+        !isSelfClosingElement(blockEl) &&
+        isEmptyBlock(blockEl)
+    );
 }
 
 export function isEditorTab(node) {
@@ -676,6 +735,76 @@ export function getDeepestPosition(node, offset) {
         next = !isSelfClosingElement(next) && next;
     }
     return [node, offset];
+}
+
+/**
+ * Return the deepest editable position from a given DOM position.
+ *
+ * This resolves a [node, offset] pair to the deepest descendant that is
+ * allowed to contain the caret. If the resolved deepest position is inside
+ * a non-editable element, the function walks up the DOM until it reaches
+ * an editable ancestor and adjusts the offset so the caret sits just before
+ * or after the non-editable region.
+ *
+ * Example:
+ *   <div contenteditable="true">
+ *       <span contenteditable="false">X</span>
+ *   </div>
+ *   getDeepestEditablePosition(div, 1)
+ *   → [div, 1]
+ *
+ * @param {node} node   - Node in which the position is being resolved.
+ * @param {number} offset - Offset within node.
+ * @returns {[Node, number]} A corrected editable node and offset.
+ */
+export function getDeepestEditablePosition(node, offset) {
+    const [deepNode, deepOffset] = getDeepestPosition(node, offset);
+
+    // If deepest node is already editable, nothing to correct.
+    if (isContentEditable(deepNode)) {
+        return [deepNode, deepOffset];
+    }
+
+    // The direct child of root that contains the deepest resolved node.
+    const nodeLevelAncestor =
+        isTextNode(deepNode) && deepNode.parentElement === node
+            ? deepNode
+            : closestElement(deepNode, (el) => el.parentElement === node);
+
+    // The closest non-editable ancestor whose parent is editable.
+    const closestNonEditable = closestElement(
+        deepNode,
+        (el) => !isContentEditable(el) && isContentEditable(el.parentElement)
+    );
+
+    const nodeLevelAncestorIndex = childNodeIndex(nodeLevelAncestor);
+    const closestNonEditableIndex = childNodeIndex(closestNonEditable);
+
+    // Decide whether the caret should be placed before or after
+    // the non-editable element based on the requested offset.
+    const deepEditableNode = closestNonEditable.parentElement;
+    const deepEditableOffset =
+        nodeLevelAncestorIndex < offset ? closestNonEditableIndex + 1 : closestNonEditableIndex;
+
+    // If caret lands on non-editable, resolve it from previous sibling.
+    if (deepEditableOffset === closestNonEditableIndex) {
+        const previousSiblingOfNonEditable = closestNonEditable.previousSibling;
+        if (previousSiblingOfNonEditable) {
+            if (isTextNode(previousSiblingOfNonEditable)) {
+                return [previousSiblingOfNonEditable, nodeSize(previousSiblingOfNonEditable)];
+            } else if (
+                isElement(previousSiblingOfNonEditable) &&
+                previousSiblingOfNonEditable.childNodes.length
+            ) {
+                return getDeepestEditablePosition(
+                    previousSiblingOfNonEditable,
+                    nodeSize(previousSiblingOfNonEditable)
+                );
+            }
+        }
+    }
+
+    return [deepEditableNode, deepEditableOffset];
 }
 
 export function previousLeaf(node, editable, skipInvisible = false) {
@@ -715,51 +844,9 @@ export function nextLeaf(node, editable, skipInvisible = false) {
     }
 }
 
-function hasPseudoElementContent(node, pseudoSelector) {
+export function hasPseudoElementContent(node, pseudoSelector) {
     const content = getComputedStyle(node, pseudoSelector).getPropertyValue("content");
     return content && content !== "none";
-}
-
-const NOT_A_NUMBER = /[^\d]/g;
-
-export function areSimilarElements(node, node2) {
-    if (![node, node2].every((n) => n?.nodeType === Node.ELEMENT_NODE)) {
-        return false; // The nodes don't both exist or aren't both elements.
-    }
-    if (node.nodeName !== node2.nodeName) {
-        return false; // The nodes aren't the same type of element.
-    }
-    for (const name of new Set([...node.getAttributeNames(), ...node2.getAttributeNames()])) {
-        if (name === "style") {
-            if (!hasSameStyleAttributes(node, node2)) {
-                return false;
-            }
-        } else if (name === "class") {
-            if (!hasSameClasses(node, node2)) {
-                return false; // The nodes don't have the same classes.
-            }
-        } else if (node.getAttribute(name) !== node2.getAttribute(name)) {
-            return false; // The nodes don't have the same attributes.
-        }
-    }
-    if (
-        [node, node2].some(
-            (n) => hasPseudoElementContent(n, ":before") || hasPseudoElementContent(n, ":after")
-        )
-    ) {
-        return false; // The nodes have pseudo elements with content.
-    }
-    if (isBlock(node)) {
-        return false;
-    }
-    const nodeStyle = getComputedStyle(node);
-    const node2Style = getComputedStyle(node2);
-    return (
-        !+nodeStyle.padding.replace(NOT_A_NUMBER, "") &&
-        !+node2Style.padding.replace(NOT_A_NUMBER, "") &&
-        !+nodeStyle.margin.replace(NOT_A_NUMBER, "") &&
-        !+node2Style.margin.replace(NOT_A_NUMBER, "")
-    );
 }
 
 export function hasSameStyleAttributes(node, node2) {
@@ -808,6 +895,41 @@ export function isContentEditableAncestor(node) {
     return node.isContentEditable && node.matches("[contenteditable]");
 }
 
+const QWEB_STYLE_ATTRS = ["t-att-class", "t-attf-class", "t-att-style", "t-attf-style"];
+
+/**
+ * @param {Node} node
+ * @returns {boolean}
+ */
+export function isStylable(node) {
+    if (!isElement(node) && node.parentNode) {
+        node = node.parentNode;
+    }
+    return !QWEB_STYLE_ATTRS.some((att) => node.hasAttribute(att));
+}
+
+/**
+ * Checks if all classes in node are present in node2 (subset check)
+ */
+function hasClassesSubset(node, node2) {
+    const getNodeClasses = (n) => (n || "").trim().split(/\s+/).filter(Boolean);
+    const [nodeClasses, node2Classes] = [node, node2].map(getNodeClasses);
+    return nodeClasses.every((cls) => node2Classes.includes(cls));
+}
+
+/**
+ * Checks if all styles in node are present in node2 (subset check)
+ */
+function hasStylesSubset(node, node2) {
+    const getNodeStyles = (n) =>
+        (n || "")
+            .split(";")
+            .map((s) => s.trim())
+            .filter(Boolean);
+    const [nodeStyles, node2Styles] = [node, node2].map(getNodeStyles);
+    return nodeStyles.every((style) => node2Styles.includes(style));
+}
+
 /**
  * Checks if a node is redundant based on its closest element with same tag.
  *
@@ -815,8 +937,8 @@ export function isContentEditableAncestor(node) {
  * - It is an Element node with a parent.
  * - There is a closest element with the same tag name.
  * - All of the node's attributes are present in that closest element:
- *   - All classes exist in the closest element's class list.
- *   - All inline styles are present in the closest element's style attribute.
+ *   - All classes exist in the closest element's class list (subset check).
+ *   - All inline styles are present in the closest element's style attribute (subset check).
  *   - All other attributes must have identical values.
  *
  * @param {Node} node - The DOM node to evaluate.
@@ -844,12 +966,12 @@ export function isRedundantElement(node) {
 
         if (attrName === "class") {
             // All classes on the node must exist in closest element.
-            if (!hasSameClasses(node, closestEl)) {
+            if (!hasClassesSubset(nodeAttrVal, closestElAttrVal)) {
                 return false;
             }
         } else if (attrName === "style") {
             // All inline styles on the node must exist in closest element.
-            if (!hasSameStyleAttributes(node, closestEl)) {
+            if (!hasStylesSubset(nodeAttrVal, closestElAttrVal)) {
                 return false;
             }
         } else {
@@ -862,3 +984,6 @@ export function isRedundantElement(node) {
 
     return true;
 }
+
+// Selector for QWeb-specific attributes
+export const PROTECTED_QWEB_SELECTOR = "[t-esc], [t-raw], [t-out], [t-field]";

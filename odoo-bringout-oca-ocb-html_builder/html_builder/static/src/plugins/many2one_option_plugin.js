@@ -1,22 +1,26 @@
 import { Plugin } from "@html_editor/plugin";
 import { registry } from "@web/core/registry";
-import { Many2OneOption } from "./many2one_option";
 import { BuilderAction } from "@html_builder/core/builder_action";
 
 export class Many2OneOptionPlugin extends Plugin {
     static id = "many2OneOption";
+    /** @type {import("plugins").BuilderResources} */
     resources = {
-        builder_options: [
-            {
-                OptionComponent: Many2OneOption,
-                selector: "[data-oe-many2one-model]:not([data-oe-readonly])",
-                editableOnly: false,
-            },
-        ],
         builder_actions: {
             Many2OneAction,
         },
-        force_not_editable_selector: "[data-oe-field][data-oe-many2one-id]",
+        content_not_editable_selectors: "[data-oe-field][data-oe-many2one-id]",
+        on_replicated_handlers: ({ sourceEl, targetEl }) => {
+            if (
+                sourceEl.hasAttribute("data-oe-many2one-model") &&
+                targetEl.hasAttribute("data-oe-many2one-model")
+            ) {
+                targetEl.setAttribute(
+                    "data-oe-many2one-id",
+                    sourceEl.getAttribute("data-oe-many2one-id")
+                );
+            }
+        },
     };
 }
 

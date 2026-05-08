@@ -2,11 +2,12 @@ import {
     addBuilderAction,
     addBuilderOption,
     setupHTMLBuilder,
+    waitForEndOfOperation,
 } from "@html_builder/../tests/helpers";
 import { BuilderAction } from "@html_builder/core/builder_action";
 import { undo } from "@html_editor/../tests/_helpers/user_actions";
 import { before, describe, expect, test } from "@odoo/hoot";
-import { animationFrame, click, Deferred, hover, press, tick, waitFor } from "@odoo/hoot-dom";
+import { animationFrame, click, hover, press, tick, waitFor } from "@odoo/hoot-dom";
 import { xml } from "@odoo/owl";
 import { contains } from "@web/../tests/web_test_helpers";
 
@@ -50,19 +51,19 @@ test("hide/display base on applyTo", async () => {
         template: xml`<BuilderColorPicker applyTo="'.my-custom-class'" styleAction="'background-color'"/>`,
     });
     const { getEditableContent } = await setupHTMLBuilder(
-        `<div class="parent-target"><div class="child-target b">b</div></div>`
+        `<div class="parent-target"><p class="child-target b">b</p></div>`
     );
     const editableContent = getEditableContent();
     await contains(":iframe .parent-target").click();
     expect(editableContent).toHaveInnerHTML(
-        `<div class="parent-target"><div class="child-target b o-paragraph">b</div></div>`
+        `<div class="parent-target"><p class="child-target b">b</p></div>`
     );
     expect("[data-class-action='my-custom-class']").not.toHaveClass("active");
     expect(".options-container .o_we_color_preview").toHaveCount(0);
 
     await contains("[data-class-action='my-custom-class']").click();
     expect(editableContent).toHaveInnerHTML(
-        `<div class="parent-target"><div class="child-target b o-paragraph my-custom-class">b</div></div>`
+        `<div class="parent-target"><p class="child-target b my-custom-class">b</p></div>`
     );
     expect("[data-class-action='my-custom-class']").toHaveClass("active");
     expect(".options-container .o_we_color_preview").toHaveCount(1);
@@ -114,7 +115,7 @@ test("apply custom action", async () => {
 });
 
 test("apply custom async action", async () => {
-    const def = new Deferred();
+    const def = Promise.withResolvers();
     addBuilderAction({
         customAction: class extends BuilderAction {
             static id = "customAction";
@@ -122,7 +123,7 @@ test("apply custom async action", async () => {
                 return "";
             }
             async apply({ editingElement }) {
-                await def;
+                await def.promise;
                 editingElement.classList.add("applied");
             }
         },
@@ -132,7 +133,7 @@ test("apply custom async action", async () => {
         template: xml`
             <BuilderColorPicker action="'customAction'" enabledTabs="['solid']"/>
             <BuilderButton classAction="'test'" preview="false"/>
-            `,
+        `,
     });
     const { getEditor } = await setupHTMLBuilder(`<div class="test-options-target">b</div>`);
     const editor = getEditor();
@@ -171,21 +172,6 @@ test("should revert preview on escape", async () => {
     expect(":iframe .test-options-target").toHaveStyle({ "background-color": "rgb(255, 0, 0)" });
     await press("escape");
     expect(":iframe .test-options-target").toHaveStyle({ "background-color": "rgba(0, 0, 0, 0)" });
-});
-
-test("should mark default color as selected when it is selected", async () => {
-    addBuilderOption({
-        selector: ".test-options-target",
-        template: xml`<BuilderColorPicker enabledTabs="['custom']" styleAction="'background-color'"/>`,
-    });
-    await setupHTMLBuilder(`<div class="test-options-target">b</div>`);
-    await contains(":iframe .test-options-target").click();
-    expect(".options-container").toBeDisplayed();
-    await contains(".we-bg-options-container .o_we_color_preview").click();
-    await contains(".o-overlay-item [data-color='900']").click();
-    expect(":iframe .test-options-target").toHaveClass("bg-900");
-    await contains(".we-bg-options-container .o_we_color_preview").click();
-    expect(".o-overlay-item [data-color='900']").toHaveClass("selected");
 });
 
 test("should apply transparent color if no color is defined", async () => {
@@ -343,4 +329,148 @@ describe("Custom colorpicker: preview and commit", () => {
         await animationFrame();
         expect(":iframe .test-options-target").toHaveAttribute("data-color");
     });
+});
+
+test("should open the last used tab", async () => {
+    addBuilderOption({
+        selector: ".test-options-target",
+        template: xml`<BuilderColorPicker styleAction="'background-color'"/>`,
+    });
+    await setupHTMLBuilder(`<div class="test-options-target">b</div>`, {
+        styleContent: ":root { --900: #212527; }",
+    });
+    await contains(":iframe .test-options-target").click();
+    expect(".options-container").toBeDisplayed();
+
+    await contains(".we-bg-options-container .o_we_color_preview").click();
+    await click(".theme-tab");
+    await animationFrame();
+    expect(".theme-tab.active").toHaveCount(1);
+
+    await click(".custom-tab");
+    await animationFrame();
+    await click(".o_color_picker_button[data-color='900']");
+    await animationFrame();
+    await contains(".we-bg-options-container .o_we_color_preview").click();
+    expect(".custom-tab.active").toHaveCount(1);
+
+    await click(".gradient-tab");
+    await animationFrame();
+    await click(".o_gradient_color_button");
+    await animationFrame();
+    await contains(".we-bg-options-container .o_we_color_preview").click();
+    expect(".gradient-tab.active").toHaveCount(1);
+
+    await click("button[title='Reset']");
+    await animationFrame();
+    await contains(".we-bg-options-container .o_we_color_preview").click();
+    expect(".theme-tab.active").toHaveCount(1);
+});
+
+test("the color picker opens on click after it has been remounted", async () => {
+    addBuilderAction({
+        toggleTarget: class extends BuilderAction {
+            static id = "toggleTarget";
+            isApplied({ editingElement }) {
+                return !!editingElement.querySelector(".target");
+            }
+            apply({ editingElement }) {
+                const target = document.createElement("div");
+                target.textContent = "Target";
+                target.classList.add("target");
+                editingElement.appendChild(target);
+            }
+            clean({ editingElement }) {
+                editingElement.querySelector(".target").remove();
+            }
+        },
+    });
+    addBuilderOption({
+        selector: ".test-options-target",
+        template: xml`
+            <BuilderColorPicker styleAction="'background-color'" applyTo="'.target'"/>
+            <BuilderRow label="'Target'">
+                <BuilderCheckbox action="'toggleTarget'" />
+            </BuilderRow>
+        `,
+    });
+    const { waitSidebarUpdated } = await setupHTMLBuilder(
+        `<div class="test-options-target"><div class="target">Target</div></div>`
+    );
+    await contains(":iframe .test-options-target").click();
+    expect(".o_we_color_preview").toHaveCount(1);
+    await contains(".o_we_color_preview").click();
+    await animationFrame();
+    expect(".o-hb-colorpicker-popover").toHaveCount(1);
+    await contains(".o_we_color_preview").click();
+
+    await contains("[data-action-id='toggleTarget'] input").click();
+    await waitSidebarUpdated();
+
+    expect(":iframe .target").toHaveCount(0);
+    expect(".o_we_color_preview").toHaveCount(0);
+
+    await contains("[data-action-id='toggleTarget'] input").click();
+    await waitSidebarUpdated();
+    expect(":iframe .target").toHaveCount(1);
+    expect(".o_we_color_preview").toHaveCount(1);
+
+    await contains(".o_we_color_preview").click();
+    await waitSidebarUpdated();
+    expect(".o-hb-colorpicker-popover").toHaveCount(1);
+});
+
+test("should work with force and allowImportant params", async () => {
+    addBuilderOption({
+        selector: ".test-options-target",
+        template: xml`<BuilderColorPicker styleAction="{ mainParam: 'color', force: true, allowImportant: false }" enabledTabs="['custom']"/>`,
+    });
+    addBuilderOption({
+        selector: ".test-options-target",
+        template: xml`<BuilderColorPicker styleAction="{ mainParam: 'background-color', force: true, allowImportant: true }" enabledTabs="['custom']"/>`,
+    });
+    await setupHTMLBuilder(`<div class="test-options-target">b</div>`);
+
+    await contains(":iframe .test-options-target").click();
+
+    await contains(".we-bg-options-container .o_we_color_preview:nth-child(1)").click();
+    await contains(".o_colorpicker_widget .o_hex_input").edit("#0000FF");
+    await waitForEndOfOperation();
+    expect(":iframe .test-options-target").toHaveStyle("color: rgb(0, 0, 255)", { inline: true });
+
+    await contains(".we-bg-options-container .o_we_color_preview:nth-child(2)").click();
+    await contains(".o_colorpicker_widget .o_hex_input").edit("#0000FF");
+    await waitForEndOfOperation();
+    expect(":iframe .test-options-target").toHaveStyle(
+        "background-color: rgb(0, 0, 255) !important",
+        { inline: true }
+    );
+});
+
+test("should apply theme and update preview using CSS variables", async () => {
+    addBuilderAction({
+        customAction: class extends BuilderAction {
+            static id = "customAction";
+            getValue() {
+                return "";
+            }
+            apply({ editingElement, value }) {
+                editingElement.classList.add("o_cc", value);
+            }
+        },
+    });
+    addBuilderOption({
+        selector: ".test-options-target",
+        template: xml`<BuilderColorPicker action="'customAction'" defaultColor="''"/>`,
+    });
+    await setupHTMLBuilder(`<div class="test-options-target">b</div>`);
+
+    await contains(":iframe .test-options-target").click();
+    await contains(".we-bg-options-container .o_we_color_preview").click();
+    await contains(".o-overlay-item [data-color='o_cc1']").click();
+    expect(":iframe .test-options-target").toHaveClass("o_cc o_cc1");
+    expect(".we-bg-options-container .o_we_color_preview").toHaveAttribute(
+        "style",
+        "background-color: var(--hb-cp-o-cc1-bg); background-image: var(--hb-cp-o-cc1-bg-gradient);"
+    );
 });

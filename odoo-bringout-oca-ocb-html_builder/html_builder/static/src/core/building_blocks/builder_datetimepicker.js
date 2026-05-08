@@ -1,7 +1,9 @@
+import { useState } from "@web/owl2/utils";
 import { useDateTimePicker } from "@web/core/datetime/datetime_picker_hook";
-import { Component, useState } from "@odoo/owl";
+import { Component } from "@odoo/owl";
 import { effect } from "@web/core/utils/reactive";
 import { ConversionError, formatDate, formatDateTime, parseDateTime } from "@web/core/l10n/dates";
+import { localization } from "@web/core/l10n/localization";
 import { pick } from "@web/core/utils/objects";
 import {
     basicContainerBuilderComponentProps,
@@ -9,7 +11,8 @@ import {
     useInputBuilderComponent,
 } from "../utils";
 import { BuilderComponent } from "./builder_component";
-import { BuilderTextInputBase, textInputBasePassthroughProps } from "./builder_text_input_base";
+import { BuilderTextInputBase } from "./builder_text_input_base";
+import { textInputBasePassthroughProps } from "./builder_input_base";
 
 const { DateTime } = luxon;
 
@@ -68,10 +71,14 @@ export class BuilderDateTimePicker extends Component {
             minDate,
             maxDate,
             value: this.getCurrentValueDateTime(),
-            rounding: 0,
+            rounding: 1,
         });
 
-        this.formatDateTime = this.props.type === "date" ? formatDate : formatDateTime;
+        const isDateOnly = this.props.type === "date";
+        this.formatDateTime = isDateOnly ? formatDate : formatDateTime;
+        this.format = isDateOnly
+            ? localization.dateFormat
+            : localization.dateTimeFormat.replace(":ss", "").replace(".ss", "");
 
         this.dateTimePicker = useDateTimePicker({
             target: "root",
@@ -102,7 +109,9 @@ export class BuilderDateTimePicker extends Component {
      * @returns {String} a formatted date string
      */
     formatRawValue(rawValue) {
-        return rawValue ? this.formatDateTime(DateTime.fromSeconds(parseInt(rawValue))) : "";
+        return rawValue
+            ? this.formatDateTime(DateTime.fromSeconds(parseInt(rawValue)), { format: this.format })
+            : "";
     }
 
     /**
@@ -116,7 +125,7 @@ export class BuilderDateTimePicker extends Component {
         try {
             const parsedDateTime = parseDateTime(displayValue);
             if (parsedDateTime) {
-                return parsedDateTime.toUnixInteger().toString();
+                return parsedDateTime.set({ second: 0, millisecond: 0 }).toUnixInteger().toString();
             }
         } catch (e) {
             // A ConversionError means displayValue is an invalid date: fall

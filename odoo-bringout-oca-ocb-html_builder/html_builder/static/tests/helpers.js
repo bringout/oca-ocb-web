@@ -1,15 +1,17 @@
 import { Builder } from "@html_builder/builder";
 import { CORE_PLUGINS } from "@html_builder/core/core_plugins";
-import { Img } from "@html_builder/core/img";
+import { Image } from "@html_builder/core/img";
+import { BuilderOptionsPlugin } from "@html_builder/core/builder_options_plugin";
 import { SetupEditorPlugin } from "@html_builder/core/setup_editor_plugin";
+import { revertPreview } from "@html_builder/core/utils";
+import { BackgroundShapeOptionPlugin } from "@html_builder/plugins/background_option/background_shape_option_plugin";
 import { unformat } from "@html_editor/../tests/_helpers/format";
 import { setContent } from "@html_editor/../tests/_helpers/selection";
 import { insertText } from "@html_editor/../tests/_helpers/user_actions";
 import { LocalOverlayContainer } from "@html_editor/local_overlay_container";
 import { Plugin } from "@html_editor/plugin";
-import { withSequence } from "@html_editor/utils/resource";
 import { defineMailModels } from "@mail/../tests/mail_test_helpers";
-import { after } from "@odoo/hoot";
+import { after, click, queryAll, queryFirst } from "@odoo/hoot";
 import { animationFrame, waitForNone, queryOne, waitFor, advanceTime, tick } from "@odoo/hoot-dom";
 import { Component, onMounted, useRef, useState, useSubEnv, xml } from "@odoo/owl";
 import {
@@ -17,20 +19,23 @@ import {
     defineModels,
     models,
     mountWithCleanup,
+    onRpc,
     patchWithCleanup,
+    waitUntilIdle,
 } from "@web/../tests/web_test_helpers";
 import { loadBundle } from "@web/core/assets";
 import { isBrowserFirefox } from "@web/core/browser/feature_detection";
 import { registry } from "@web/core/registry";
 import { uniqueId } from "@web/core/utils/functions";
+import { delay } from "@web/core/utils/concurrency";
 
 export function patchWithCleanupImg() {
     const defaultImg =
         "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z9DwHwAGBQKA3H7sNwAAAABJRU5ErkJggg==";
-    patchWithCleanup(Img, {
-        template: xml`<img t-att-data-src="props.src" t-att-alt="props.alt" t-att-class="props.class" t-att-style="props.style" t-att="props.attrs" src="${defaultImg}"/>`,
+    patchWithCleanup(Image, {
+        template: xml`<img t-att-data-src="this.props.src" t-att-alt="this.props.alt" t-att-class="this.props.class" t-att-style="this.props.style" t-att="this.props.attrs" src="${defaultImg}"/>`,
     });
-    patchWithCleanup(Img.prototype, {
+    patchWithCleanup(Image.prototype, {
         loadImage: () => {},
         getSvg: function () {
             this.isSvg = () => false;
@@ -72,6 +77,7 @@ export function getInnerContent({
  * @param {string} options.name - The display name of the snippet
  * @param {string} options.content - The HTML content of the snippet
  * @param {string[]} [options.keywords=[]] - Search keywords for the snippet
+ * @param {string} options.label - Search label for the snippet (tag)
  * @param {string} options.groupName - The snippet group (category) name
  * @param {string} [options.imagePreview=""] - URL to preview image
  * @param {string|number} [options.moduleId=""] - Module ID if snippet belongs to a module
@@ -82,13 +88,14 @@ export function getSnippetStructure({
     name,
     content,
     keywords = [],
+    label = "",
     groupName,
     imagePreview = "",
     moduleId = "",
     moduleDisplayName = "",
 }) {
     keywords = keywords.join(", ");
-    return `<div name="${name}" data-oe-snippet-id="123" data-o-image-preview="${imagePreview}" data-oe-keywords="${keywords}" data-o-group="${groupName}" data-module-id="${moduleId}" data-module-display-name="${moduleDisplayName}">${content}</div>`;
+    return `<div name="${name}" data-oe-snippet-id="123" data-o-image-preview="${imagePreview}" data-oe-keywords="${keywords}" data-o-label="${label}" data-o-group="${groupName}" data-module-id="${moduleId}" data-module-display-name="${moduleDisplayName}">${content}</div>`;
 }
 
 class BuilderContainer extends Component {
@@ -96,14 +103,14 @@ class BuilderContainer extends Component {
         <div class="d-flex h-100 w-100" t-ref="container">
             <div class="o_website_preview flex-grow-1" t-ref="website_preview">
                 <div class="o_iframe_container">
-                    <iframe class="h-100 w-100" t-ref="iframe" t-on-load="onLoad"/>
+                    <iframe class="h-100 w-100" t-ref="iframe" t-on-load="this.onLoad"/>
                     <div t-if="this.state.isMobile" class="o_mobile_preview_layout">
                         <img alt="phone" src="/html_builder/static/img/phone.svg"/>
                     </div>
                 </div>
             </div>
-            <LocalOverlayContainer localOverlay="overlayRef" identifier="env.localOverlayContainerKey"/>
-            <div t-if="state.isEditing" t-att-class="{'o_builder_sidebar_open': state.isEditing and state.showSidebar}" class="o-website-builder_sidebar border-start border-dark">
+            <LocalOverlayContainer localOverlay="this.overlayRef" identifier="this.env.localOverlayContainerKey"/>
+            <div t-if="this.state.isEditing" t-att-class="{'o_builder_sidebar_open': this.state.isEditing and this.state.showSidebar}" class="o-website-builder_sidebar border-start border-dark">
                 <Builder t-props="this.getBuilderProps()"/>
             </div>
         </div>`;
@@ -114,6 +121,7 @@ class BuilderContainer extends Component {
         headerContent: String,
         Plugins: Array,
         onEditorLoad: Function,
+        iframeLangDir: String,
     };
 
     setup() {
@@ -124,12 +132,19 @@ class BuilderContainer extends Component {
         });
         this.iframeLoaded = new Promise((resolve) => {
             onMounted(async () => {
-                if (isBrowserFirefox()) {
+                // Fix for Firefox < 148.
+                if (
+                    isBrowserFirefox() &&
+                    !(this.iframeRef.el?.contentDocument.readyState === "complete")
+                ) {
                     await originalIframeLoaded;
                 }
 
                 const el = this.iframeRef.el;
                 el.contentDocument.body.innerHTML = `<div id="wrapwrap">${this.props.headerContent}<div id="wrap" class="oe_structure oe_empty" data-oe-model="ir.ui.view" data-oe-id="539" data-oe-field="arch">${this.props.content}</div></div>`;
+                if (this.props.iframeLangDir === "rtl") {
+                    el.contentDocument.body.querySelector("#wrapwrap").classList.add("o_rtl");
+                }
                 resolve(el);
             });
         });
@@ -155,6 +170,9 @@ class BuilderContainer extends Component {
             iframeLoaded: this.iframeLoaded,
             isMobile: this.state.isMobile,
             Plugins: this.props.Plugins,
+            config: {
+                builderOptionsTemplate: "html_builder.TestBuilderOptions",
+            },
         };
     }
 }
@@ -181,7 +199,7 @@ class IrUiView extends models.Model {
  * getEditableContent: () => HTMLElement,
  * contentEl: HTMLElement,
  * builderEl: HTMLElement,
- * waitDomUpdated: () => Promise<void>
+ * waitSidebarUpdated: () => Promise<void>
  * }>}
 }}
  */
@@ -194,6 +212,7 @@ export async function setupHTMLBuilder(
         dropzoneSelectors,
         snippets,
         styleContent,
+        iframeLangDir = "ltr",
     } = {}
 ) {
     defineMailModels();
@@ -236,7 +255,7 @@ export async function setupHTMLBuilder(
         class P extends Plugin {
             static id = pluginId;
             resources = {
-                dropzone_selector: dropzoneSelectors,
+                dropzone_selectors: dropzoneSelectors,
             };
         }
         Plugins.push(P);
@@ -246,11 +265,13 @@ export async function setupHTMLBuilder(
     Plugins.push(...BuilderPlugins);
 
     let lastUpdatePromise;
-    const waitDomUpdated = async () => {
+    const waitSidebarUpdated = async () => {
+        await revertPreview(attachedEditor);
         // The tick ensures that lastUpdatePromise has correctly been assigned
         await tick();
         await lastUpdatePromise;
         await animationFrame();
+        await waitUntilIdle([comp.__owl__.app]);
     };
     patchWithCleanup(Builder.prototype, {
         setup() {
@@ -277,9 +298,26 @@ export async function setupHTMLBuilder(
         setup() {
             super.setup();
             _resolve();
-            editableContent = this.getEditableElements(
-                '.oe_structure.oe_empty, [data-oe-type="html"]'
-            )[0];
+            editableContent = this.editable.querySelector(
+                '.o_savable.oe_structure.oe_empty, .o_savable[data-oe-type="html"]'
+            );
+        },
+    });
+
+    // Remove as soon as the background shape are not always instantiated when
+    // entering in edit mode.
+    patchWithCleanup(BackgroundShapeOptionPlugin.prototype, {
+        getShapeStylePosition(shapeId, flip) {
+            if (!this.shapeStyles[this.convertShapeIdForStyleSearch(shapeId)]) {
+                return [50, 50];
+            }
+            return super.getShapeStylePosition(shapeId, flip);
+        },
+        getShapeStyleUrl(shapeId) {
+            if (!this.shapeStyles[this.convertShapeIdForStyleSearch(shapeId)]) {
+                return "";
+            }
+            return super.getShapeStyleUrl(shapeId);
         },
     });
 
@@ -293,6 +331,7 @@ export async function setupHTMLBuilder(
             onEditorLoad: (editor) => {
                 attachedEditor = editor;
             },
+            iframeLangDir,
         },
     });
     await comp.iframeLoaded;
@@ -310,7 +349,7 @@ export async function setupHTMLBuilder(
         getEditableContent: () => editableContent,
         contentEl: comp.iframeRef.el.contentDocument.body.firstChild.firstChild,
         builderEl: comp.env.builderRef.el.querySelector(".o-website-builder_sidebar"),
-        waitDomUpdated,
+        waitSidebarUpdated,
     };
 }
 
@@ -321,45 +360,46 @@ export function addBuilderPlugin(Plugin) {
     });
 }
 
-export function addBuilderOption({
-    selector,
-    exclude,
-    applyTo,
-    template,
-    Component,
-    sequence,
-    cleanForSave,
-    props,
-    editableOnly,
-    title,
-    reloadTarget,
-}) {
-    const pluginId = uniqueId("test-option");
-    const option = {
-        pluginId,
-        OptionComponent: Component,
-        template,
-        selector,
-        exclude,
-        applyTo,
-        sequence,
-        cleanForSave,
-        props,
-        editableOnly,
-        title,
-        reloadTarget,
+const testBuilderOptions = [];
+let isBuilderOptionPatched = false;
+
+export function addBuilderOption(option) {
+    if (!isBuilderOptionPatched) {
+        patchWithCleanup(BuilderOptionsPlugin.prototype, {
+            computeBuilderOptionsFromTemplate() {
+                const options = super.computeBuilderOptionsFromTemplate();
+                const normalizedTestOptions = testBuilderOptions.map(
+                    ({ optionAttributes, OptionComponent }, index) => {
+                        const optionName = `TestBuilderOption${index}`;
+                        if (!OptionComponent) {
+                            return this.createOptionClass(optionName, optionAttributes);
+                        }
+                        return this.createOptionClass(
+                            optionName,
+                            optionAttributes,
+                            OptionComponent
+                        );
+                    }
+                );
+                return [...options, ...normalizedTestOptions];
+            },
+        });
+        after(() => {
+            testBuilderOptions.length = 0;
+            isBuilderOptionPatched = false;
+        });
+        isBuilderOptionPatched = true;
+    }
+
+    const normalizeBuilderOption = (option) => {
+        const { Component: OptionComponent, ...optionAttributes } = option;
+        return {
+            optionAttributes,
+            OptionComponent,
+        };
     };
 
-    const P = {
-        [pluginId]: class extends Plugin {
-            static id = pluginId;
-            resources = {
-                builder_options: sequence ? withSequence(sequence, option) : option,
-            };
-        },
-    }[pluginId];
-
-    addBuilderPlugin(P);
+    testBuilderOptions.push(normalizeBuilderOption(option));
 }
 
 export function addBuilderAction(actions = {}) {
@@ -403,7 +443,7 @@ export function addDropZoneSelector(selector) {
     class P extends Plugin {
         static id = pluginId;
         resources = {
-            dropzone_selector: [selector],
+            dropzone_selectors: [selector],
         };
     }
 
@@ -456,7 +496,7 @@ export function getBasicSection(
     return unformat(
         `<section class="${classes}" data-snippet="${snippet}" ${
             name ? `data-name="${name}"` : ""
-        }><div class="test_a o-paragraph">${content}</div></section>`
+        }><div class="test_a">${content}</div></section>`
     );
 }
 
@@ -468,6 +508,7 @@ export function createTestSnippets({ snippets: snippetConfigs = [], withName = f
             content,
             innerHTML,
             keywords = [],
+            label = "",
             imagePreview = "",
             moduleId,
             moduleDisplayName,
@@ -488,6 +529,7 @@ export function createTestSnippets({ snippets: snippetConfigs = [], withName = f
             groupName,
             content: finalContent,
             keywords,
+            label,
             imagePreview,
             moduleId,
             moduleDisplayName,
@@ -508,7 +550,7 @@ export async function confirmAddSnippet(snippetName) {
 }
 
 export const dummyBase64Img =
-    "data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAAUA\n        AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO\n            9TXL0Y4OHwAAAABJRU5ErkJggg==";
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==";
 
 export const exampleContent = '<h1 class="title">Hello</h1>';
 
@@ -541,4 +583,35 @@ export async function setupHTMLBuilderWithDummySnippet(content) {
     };
 
     return await setupHTMLBuilder(content || "", snippetsStructure);
+}
+
+export async function editBuilderRangeValue(selector, newValue) {
+    const input = queryFirst(selector);
+    input.value = newValue;
+    input.dispatchEvent(new Event("input"));
+    await delay();
+    input.dispatchEvent(new Event("change"));
+    await delay();
+}
+
+export async function unfoldAllOptionsGroups() {
+    for (const i of queryAll(".options-container-header i.fa-caret-right")) {
+        await click(i);
+    }
+    await animationFrame();
+}
+
+export const dummyCORSSrc = "/web/image/0-redirect/foo.jpg";
+
+export function setupCORSProtectedImg() {
+    onRpc("/html_editor/get_image_info", () => ({
+        original: {
+            id: 1,
+            image_src: dummyCORSSrc,
+            mimetype: "image/jpeg",
+        },
+    }));
+    onRpc(dummyCORSSrc, () => {
+        throw new Error("simulated cors error");
+    });
 }

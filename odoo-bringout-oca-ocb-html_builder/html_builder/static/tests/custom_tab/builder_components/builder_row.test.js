@@ -1,9 +1,11 @@
 import { addBuilderOption, setupHTMLBuilder } from "@html_builder/../tests/helpers";
+import { refreshSublevelLines } from "@html_builder/core/building_blocks/builder_row";
 import { describe, expect, test } from "@odoo/hoot";
 import {
     advanceTime,
     animationFrame,
     hover,
+    queryAll,
     queryAllTexts,
     queryOne,
     waitFor,
@@ -52,21 +54,27 @@ test("show row tooltip", async () => {
 test("hide empty row and display row with content", async () => {
     addBuilderOption({
         selector: ".parent-target",
-        template: xml`<BuilderRow label="'Row 1'">
-                    <BuilderButton applyTo="'.child-target'" classAction="'my-custom-class'"/>
-                </BuilderRow>`,
+        template: xml`
+            <BuilderRow label="'Row 1'">
+                <BuilderButton applyTo="'.child-target'" classAction="'my-custom-class'"/>
+            </BuilderRow>
+        `,
     });
     addBuilderOption({
         selector: ".parent-target",
-        template: xml`<BuilderRow label="'Row 2'">
-                    <BuilderButton applyTo="':not(.my-custom-class)'" classAction="'test'"/>
-                </BuilderRow>`,
+        template: xml`
+            <BuilderRow label="'Row 2'">
+                <BuilderButton applyTo="':not(.my-custom-class)'" classAction="'test'"/>
+            </BuilderRow>
+        `,
     });
     addBuilderOption({
         selector: ".parent-target",
-        template: xml`<BuilderRow label="'Row 3'">
-                    <BuilderButton applyTo="'.my-custom-class'" classAction="'test'"/>
-                </BuilderRow>`,
+        template: xml`
+            <BuilderRow label="'Row 3'">
+                <BuilderButton applyTo="'.my-custom-class'" classAction="'test'"/>
+            </BuilderRow>
+        `,
     });
     await setupHTMLBuilder(`<div class="parent-target"><div class="child-target">b</div></div>`);
     const selectorRowLabel = ".options-container .hb-row:not(.d-none) .hb-row-label";
@@ -75,6 +83,59 @@ test("hide empty row and display row with content", async () => {
 
     await contains("[data-class-action='my-custom-class']").click();
     expect(queryAllTexts(selectorRowLabel)).toEqual(["Row 1", "Row 3"]);
+});
+
+test("reconnects lines across mixed levels", async () => {
+    addBuilderOption({
+        selector: ".test-options-target",
+        template: xml`
+            <div class="options-container">
+                <BuilderRow label="'root-1'">root-1</BuilderRow>
+                <BuilderRow label="'level-1'" level="1">A</BuilderRow>
+                <BuilderRow label="'level-2'" level="2">B</BuilderRow>
+                <BuilderRow label="'level-1'" level="1">C</BuilderRow>
+                <BuilderRow label="'root-2'">root-2</BuilderRow>
+                <BuilderRow label="'level-1'" level="1">D</BuilderRow>
+                <BuilderRow label="'level-2'" level="2">E</BuilderRow>
+                <BuilderRow label="'level-2'" level="2">F</BuilderRow>
+                <BuilderRow label="'level-3'" level="3">G</BuilderRow>
+                <BuilderRow label="'level-3'" level="3">H</BuilderRow>
+                <BuilderRow label="'level-2'" level="2">I</BuilderRow>
+                <BuilderRow label="'level-1'" level="1">J</BuilderRow>
+            </div>
+        `,
+    });
+
+    await setupHTMLBuilder(`<div class="test-options-target">b</div>`);
+    await contains(":iframe .test-options-target").click();
+    await waitFor(".options-container .hb-row-label");
+
+    const labelEls = queryAll(".options-container .hb-row-label");
+    const rowEls = queryAll(".options-container .hb-row");
+    const rects = [
+        { top: 0, bottom: 40 },
+        { top: 40, bottom: 80 },
+        { top: 80, bottom: 120 },
+        { top: 120, bottom: 160 },
+        { top: 160, bottom: 200 },
+        { top: 200, bottom: 240 },
+        { top: 240, bottom: 280 },
+        { top: 280, bottom: 320 },
+        { top: 320, bottom: 360 },
+        { top: 360, bottom: 400 },
+        { top: 400, bottom: 440 },
+        { top: 440, bottom: 480 },
+    ];
+    labelEls.forEach((labelEl, index) => {
+        labelEl.getBoundingClientRect = () => rects[index];
+    });
+    refreshSublevelLines(rowEls[10]);
+    await animationFrame();
+
+    const offsets = labelEls.map((labelEl) =>
+        labelEl.style.getPropertyValue("--o-hb-row-sublevel-top")
+    );
+    expect(offsets).toEqual(["", "", "", "-40px", "", "", "", "", "", "", "-80px", "-200px"]);
 });
 
 /* ================= Collapse template ================= */
@@ -89,7 +150,7 @@ const collapseOptionTemplate = ({
             }>A</BuilderButton>
             <t t-set-slot="collapse">
                 <BuilderRow level="1" label="'B'" ${
-                    dependency ? "t-if=\"isActiveItem('test_opt')\"" : ""
+                    dependency ? "t-if=\"this.isActiveItem('test_opt')\"" : ""
                 }>
                     <BuilderButton classAction="'b'">B</BuilderButton>
                 </BuilderRow>
@@ -159,14 +220,15 @@ describe("BuilderRow with collapse content", () => {
                         <BuilderSelectItem classAction="'c'" id="'random_opt'">C</BuilderSelectItem>
                     </BuilderSelect>
                     <t t-set-slot="collapse">
-                        <BuilderRow level="1" t-if="isActiveItem('test_opt')" label="'B'">
+                        <BuilderRow level="1" t-if="this.isActiveItem('test_opt')" label="'B'">
                             <BuilderButton classAction="'b'">B</BuilderButton>
                         </BuilderRow>
-                        <BuilderRow level="1" t-if="isActiveItem('random_opt')" label="'D'">
+                        <BuilderRow level="1" t-if="this.isActiveItem('random_opt')" label="'D'">
                             <BuilderButton classAction="'d'">D</BuilderButton>
                         </BuilderRow>
                     </t>
-                </BuilderRow>`,
+                </BuilderRow>
+            `,
         });
         await setupHTMLBuilder(`<div class="test-options-target">b</div>`);
         await contains(":iframe .test-options-target").click();
@@ -311,6 +373,23 @@ describe("HTML builder tests", () => {
         const label = queryOne("[data-label='Supercalifragilisticexpalidocious'] .text-truncate");
         expect(label.scrollWidth).toBeGreaterThan(label.clientWidth); // the text is longer than the available width.
         expect(".o-tooltip").toHaveText("Supercalifragilisticexpalidocious");
+
+        await contains(":iframe .test-options-target").hover();
+        expect(".o-tooltip").toHaveCount(0);
+    });
+    test("show row label before tooltip when label is truncated", async () => {
+        addBuilderOption({
+            selector: ".test-options-target",
+            template: xml`<BuilderRow label="'Supercalifragilisticexpalidocious'" tooltip="'my tooltip'">Palais chatouille</BuilderRow>`,
+        });
+        await setupHTMLBuilder(`<div class="test-options-target">b</div>`);
+        await contains(":iframe .test-options-target").click();
+        await hover("[data-label='Supercalifragilisticexpalidocious'] .text-truncate");
+        await advanceTime(OPEN_DELAY);
+        await waitFor(".o-tooltip");
+        const label = queryOne("[data-label='Supercalifragilisticexpalidocious'] .text-truncate");
+        expect(label.scrollWidth).toBeGreaterThan(label.clientWidth); // the text is longer than the available width.
+        expect(".o-tooltip").toHaveText("Supercalifragilisticexpalidocious : my tooltip");
 
         await contains(":iframe .test-options-target").hover();
         expect(".o-tooltip").toHaveCount(0);

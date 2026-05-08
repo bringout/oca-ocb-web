@@ -6,12 +6,12 @@ import { insertText, splitBlock } from "../_helpers/user_actions";
 const base64Img =
     "data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAAUA\n        AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO\n            9TXL0Y4OHwAAAABJRU5ErkJggg==";
 
-before(
-    () =>
-        document.fonts.add(
-            new FontFace("Roboto", "url(/web/static/fonts/google/Roboto/Roboto-Regular.ttf)")
-        ).ready
-);
+before(async () => {
+    const font = new FontFace("Roboto", "url(/web/static/fonts/google/Roboto/Roboto-Regular.ttf)");
+    await font.load();
+    document.fonts.add(font);
+    await document.fonts.ready;
+});
 
 describe("Selection collapsed", () => {
     describe("Ordered", () => {
@@ -98,7 +98,7 @@ describe("Selection collapsed", () => {
                 });
             });
 
-            test("should split list item containing image", async () => {
+            test("should split list item containing image (1)", async () => {
                 await testEditor({
                     contentBefore: unformat(`
                         <ol>
@@ -111,6 +111,9 @@ describe("Selection collapsed", () => {
                             <li>[]<br></li>
                         </ol>`),
                 });
+            });
+
+            test("should split list item containing image (2)", async () => {
                 await testEditor({
                     contentBefore: unformat(`
                         <ol>
@@ -122,6 +125,26 @@ describe("Selection collapsed", () => {
                             <li><br></li>
                             <li>[]<img src="${base64Img}"></li>
                         </ol>`),
+                });
+            });
+
+            test("should add an empty nested list item after a nested list item (1)", async () => {
+                await testEditor({
+                    contentBefore:
+                        '<ol><li><p>a</p></li><li class="oe-nested"><p>b[]</p></li></ol>',
+                    stepFunction: splitBlock,
+                    contentAfter:
+                        '<ol><li><p>a</p></li><li class="oe-nested"><p>b</p></li><li class="oe-nested"><p>[]<br></p></li></ol>',
+                });
+            });
+
+            test("should add an empty nested list item after a nested list item (2)", async () => {
+                await testEditor({
+                    contentBefore:
+                        '<ol><li><p>a</p></li><li class="oe-nested"><p>b[]</p><ol><li><p>c</p></li></ol></li></ol>',
+                    stepFunction: splitBlock,
+                    contentAfter:
+                        '<ol><li><p>a</p></li><li class="oe-nested"><p>b</p></li><li class="oe-nested"><p>[]<br></p><ol><li><p>c</p></li></ol></li></ol>',
                 });
             });
         });
@@ -150,11 +173,20 @@ describe("Selection collapsed", () => {
                 });
             });
 
-            test("should remove a list with p", async () => {
+            test("should remove a list with p (1)", async () => {
                 await testEditor({
                     contentBefore: "<ol><li><p>[]<br></p></li></ol>",
                     stepFunction: splitBlock,
                     contentAfter: "<p>[]<br></p>",
+                });
+            });
+
+            test("should remove a list with p (2)", async () => {
+                await testEditor({
+                    contentBefore: "<ol><li>ab</li><li><p>[]<br></p><ol><li>cd</li></ol></li></ol>",
+                    stepFunction: splitBlock,
+                    contentAfter:
+                        '<ol><li>ab</li></ol><p>[]<br></p><ol><li class="oe-nested"><ol><li>cd</li></ol></li></ol>',
                 });
             });
 
@@ -163,6 +195,32 @@ describe("Selection collapsed", () => {
                     contentBefore: "<ol><li><p><b>[]<br></b></p></li></ol>",
                     stepFunction: splitBlock,
                     contentAfter: "<p><b>[]<br></b></p>",
+                });
+            });
+
+            test("should add an empty nested list item after a nested list item, then remove it (1)", async () => {
+                await testEditor({
+                    contentBefore:
+                        '<ol><li><p>a</p></li><li class="oe-nested"><p class="o-we-hint" o-we-hint-text="List">b[]<br></p></li></ol>',
+                    stepFunction: async (editor) => {
+                        splitBlock(editor);
+                        splitBlock(editor);
+                    },
+                    contentAfter:
+                        '<ol><li><p>a</p></li><li class="oe-nested"><p>b</p></li></ol><p>[]<br></p>',
+                });
+            });
+
+            test("should add an empty nested list item after a nested list item, then remove it (2)", async () => {
+                await testEditor({
+                    contentBefore:
+                        '<ol><li><p>a</p></li><li class="oe-nested"><p>b[]</p><ol><li><p>c</p></li></ol></li></ol>',
+                    stepFunction: async (editor) => {
+                        splitBlock(editor);
+                        splitBlock(editor);
+                    },
+                    contentAfter:
+                        '<ol><li><p>a</p></li><li class="oe-nested"><p>b</p></li></ol><p>[]<br></p><ol><li class="oe-nested"><ol><li><p>c</p></li></ol></li></ol>',
                 });
             });
         });
@@ -192,7 +250,7 @@ describe("Selection collapsed", () => {
                 });
             });
 
-            test("should create list items after one with a block in it", async () => {
+            test("should create list items after one with a block in it (1)", async () => {
                 await testEditor({
                     contentBefore:
                         '<ol><li class="a"><custom-block style="display: block;">abc[]</custom-block></li></ol>',
@@ -206,6 +264,9 @@ describe("Selection collapsed", () => {
                         '<li class="a"><custom-block style="display: block;">b</custom-block></li>' +
                         '<li class="a"><custom-block style="display: block;">[]<br></custom-block></li></ol>',
                 });
+            });
+
+            test("should create list items after one with a block in it (2)", async () => {
                 await testEditor({
                     contentBefore:
                         '<ol><li><custom-block class="a" style="display: block;">abc[]</custom-block></li></ol>',
@@ -296,6 +357,26 @@ describe("Selection collapsed", () => {
                     contentAfter: "<ul><li>abc</li><li>[]<br></li></ul>",
                 });
             });
+
+            test("should add an empty nested list item after a nested list item (1)", async () => {
+                await testEditor({
+                    contentBefore:
+                        '<ul><li><p>a</p></li><li class="oe-nested"><p>b[]</p></li></ul>',
+                    stepFunction: splitBlock,
+                    contentAfter:
+                        '<ul><li><p>a</p></li><li class="oe-nested"><p>b</p></li><li class="oe-nested"><p>[]<br></p></li></ul>',
+                });
+            });
+
+            test("should add an empty nested list item after a nested list item (2)", async () => {
+                await testEditor({
+                    contentBefore:
+                        '<ul><li><p>a</p></li><li class="oe-nested"><p>b[]</p><ul><li><p>c</p></li></ul></li></ul>',
+                    stepFunction: splitBlock,
+                    contentAfter:
+                        '<ul><li><p>a</p></li><li class="oe-nested"><p>b</p></li><li class="oe-nested"><p>[]<br></p><ul><li><p>c</p></li></ul></li></ul>',
+                });
+            });
         });
         describe("Removing items", () => {
             test("should add an empty list item at the end of a list, then remove it", async () => {
@@ -322,11 +403,19 @@ describe("Selection collapsed", () => {
                 });
             });
 
-            test("should remove a list", async () => {
+            test("should remove a list (1)", async () => {
                 await testEditor({
                     contentBefore: "<ul><li><p>[]<br></p></li></ul>",
                     stepFunction: splitBlock,
                     contentAfter: "<p>[]<br></p>",
+                });
+            });
+            test("should remove a list (2)", async () => {
+                await testEditor({
+                    contentBefore: "<ul><li>ab</li><li><p>[]<br></p><ul><li>cd</li></ul></li></ul>",
+                    stepFunction: splitBlock,
+                    contentAfter:
+                        '<ul><li>ab</li></ul><p>[]<br></p><ul><li class="oe-nested"><ul><li>cd</li></ul></li></ul>',
                 });
             });
 
@@ -335,6 +424,32 @@ describe("Selection collapsed", () => {
                     contentBefore: "<ul><li><p><b>[]<br></b></p></li></ul>",
                     stepFunction: splitBlock,
                     contentAfter: "<p><b>[]<br></b></p>",
+                });
+            });
+
+            test("should add an empty nested list item after a nested list item, then remove it (1)", async () => {
+                await testEditor({
+                    contentBefore:
+                        '<ul><li><p>a</p></li><li class="oe-nested"><p class="o-we-hint" o-we-hint-text="List">b[]<br></p></li></ul>',
+                    stepFunction: async (editor) => {
+                        splitBlock(editor);
+                        splitBlock(editor);
+                    },
+                    contentAfter:
+                        '<ul><li><p>a</p></li><li class="oe-nested"><p>b</p></li></ul><p>[]<br></p>',
+                });
+            });
+
+            test("should add an empty nested list item after a nested list item, then remove it (2)", async () => {
+                await testEditor({
+                    contentBefore:
+                        '<ul><li><p>a</p></li><li class="oe-nested"><p>b[]</p><ul><li><p>c</p></li></ul></li></ul>',
+                    stepFunction: async (editor) => {
+                        splitBlock(editor);
+                        splitBlock(editor);
+                    },
+                    contentAfter:
+                        '<ul><li><p>a</p></li><li class="oe-nested"><p>b</p></li></ul><p>[]<br></p><ul><li class="oe-nested"><ul><li><p>c</p></li></ul></li></ul>',
                 });
             });
         });
@@ -364,7 +479,7 @@ describe("Selection collapsed", () => {
                 });
             });
 
-            test("should create list items after one with a block in it", async () => {
+            test("should create list items after one with a block in it (1)", async () => {
                 await testEditor({
                     contentBefore:
                         '<ul><li class="a"><custom-block style="display: block;">abc[]</custom-block></li></ul>',
@@ -378,6 +493,9 @@ describe("Selection collapsed", () => {
                         '<li class="a"><custom-block style="display: block;">b</custom-block></li>' +
                         '<li class="a"><custom-block style="display: block;">[]<br></custom-block></li></ul>',
                 });
+            });
+
+            test("should create list items after one with a block in it (2)", async () => {
                 await testEditor({
                     contentBefore:
                         '<ul><li><custom-block class="a" style="display: block;">abc[]</custom-block></li></ul>',
@@ -501,6 +619,26 @@ describe("Selection collapsed", () => {
                         '<ul class="o_checklist"><li class="o_checked">abc</li><li>[]<br></li></ul>',
                 });
             });
+
+            test("should add an empty nested list item after a nested list item (1)", async () => {
+                await testEditor({
+                    contentBefore:
+                        '<ul class="o_checklist"><li><p>a</p></li><li class="oe-nested"><p>b[]</p></li></ul>',
+                    stepFunction: splitBlock,
+                    contentAfter:
+                        '<ul class="o_checklist"><li><p>a</p></li><li class="oe-nested"><p>b</p></li><li class="oe-nested"><p>[]<br></p></li></ul>',
+                });
+            });
+
+            test("should add an empty nested list item after a nested list item (2)", async () => {
+                await testEditor({
+                    contentBefore:
+                        '<ul class="o_checklist"><li><p>a</p></li><li class="oe-nested"><p>b[]</p><ul class="o_checklist"><li><p>c</p></li></ul></li></ul>',
+                    stepFunction: splitBlock,
+                    contentAfter:
+                        '<ul class="o_checklist"><li><p>a</p></li><li class="oe-nested"><p>b</p></li><li class="oe-nested"><p>[]<br></p><ul class="o_checklist"><li><p>c</p></li></ul></li></ul>',
+                });
+            });
         });
         describe("Removing items", () => {
             test("should add an empty list item at the end of a checklist, then remove it", async () => {
@@ -541,12 +679,22 @@ describe("Selection collapsed", () => {
                 });
             });
 
-            test("should remove a checklist", async () => {
+            test("should remove a checklist (1)", async () => {
                 await testEditor({
                     contentBefore:
                         '<ul class="o_checklist"><li class="o_checked"><p>[]<br></p></li></ul>',
                     stepFunction: splitBlock,
                     contentAfter: "<p>[]<br></p>",
+                });
+            });
+
+            test("should remove a checklist (2)", async () => {
+                await testEditor({
+                    contentBefore:
+                        '<ul class="o_checklist"><li>ab</li><li><p>[]<br></p><ul class="o_checklist"><li>cd</li></ul></li></ul>',
+                    stepFunction: splitBlock,
+                    contentAfter:
+                        '<ul class="o_checklist"><li>ab</li></ul><p>[]<br></p><ul class="o_checklist"><li class="oe-nested"><ul class="o_checklist"><li>cd</li></ul></li></ul>',
                 });
             });
 
@@ -556,6 +704,30 @@ describe("Selection collapsed", () => {
                         '<ul class="o_checklist"><li class="o_checked"><p><b>[]<br></b></p></li></ul>',
                     stepFunction: splitBlock,
                     contentAfter: "<p><b>[]<br></b></p>",
+                });
+            });
+            test("should add an empty nested list item after a nested list item, then remove it (1)", async () => {
+                await testEditor({
+                    contentBefore:
+                        '<ul class="o_checklist"><li><p>a</p></li><li class="oe-nested"><p class="o-we-hint" o-we-hint-text="List">b[]<br></p></li></ul>',
+                    stepFunction: async (editor) => {
+                        splitBlock(editor);
+                        splitBlock(editor);
+                    },
+                    contentAfter:
+                        '<ul class="o_checklist"><li><p>a</p></li><li class="oe-nested"><p>b</p></li></ul><p>[]<br></p>',
+                });
+            });
+            test("should add an empty nested list item after a nested list item, then remove it (2)", async () => {
+                await testEditor({
+                    contentBefore:
+                        '<ul class="o_checklist"><li><p>a</p></li><li class="oe-nested"><p>b[]</p><ul class="o_checklist"><li><p>c</p></li></ul></li></ul>',
+                    stepFunction: async (editor) => {
+                        splitBlock(editor);
+                        splitBlock(editor);
+                    },
+                    contentAfter:
+                        '<ul class="o_checklist"><li><p>a</p></li><li class="oe-nested"><p>b</p></li></ul><p>[]<br></p><ul class="o_checklist"><li class="oe-nested"><ul class="o_checklist"><li><p>c</p></li></ul></li></ul>',
                 });
             });
         });
@@ -587,7 +759,7 @@ describe("Selection collapsed", () => {
                     });
                 });
 
-                test("should create list items after one with a block in it", async () => {
+                test("should create list items after one with a block in it (1)", async () => {
                     await testEditor({
                         contentBefore:
                             '<ul class="o_checklist"><li class="a"><custom-block style="display: block;">abc[]</custom-block></li></ul>',
@@ -601,6 +773,9 @@ describe("Selection collapsed", () => {
                             '<li class="a"><custom-block style="display: block;">d</custom-block></li>' +
                             '<li class="a"><custom-block style="display: block;">[]<br></custom-block></li></ul>',
                     });
+                });
+
+                test("should create list items after one with a block in it (2)", async () => {
                     await testEditor({
                         contentBefore:
                             '<ul class="o_checklist"><li><custom-block class="a" style="display: block;">abc[]</custom-block></li></ul>',
@@ -748,78 +923,41 @@ describe("Selection collapsed", () => {
 });
 describe("Selection not collapsed", () => {
     test("should delete part of a list item, then split it", async () => {
-        // Forward selection
         await testEditor({
             contentBefore: "<ul><li>ab[cd]ef</li></ul>",
-            stepFunction: splitBlock,
-            contentAfter: "<ul><li>ab</li><li>[]ef</li></ul>",
-        });
-        // Backward selection
-        await testEditor({
-            contentBefore: "<ul><li>ab]cd[ef</li></ul>",
             stepFunction: splitBlock,
             contentAfter: "<ul><li>ab</li><li>[]ef</li></ul>",
         });
     });
 
     test("should delete all contents of a list item, then split it", async () => {
-        // Forward selection
         await testEditor({
             contentBefore: "<ul><li>[abc]</li></ul>",
             stepFunction: splitBlock,
             // JW cAfter: '<ul><li><br></li><li>[]<br></li></ul>',
             contentAfter: "<p>[]<br></p>",
         });
-        // Backward selection
-        await testEditor({
-            contentBefore: "<ul><li>]abc[</li></ul>",
-            stepFunction: splitBlock,
-            contentAfter: "<p>[]<br></p>",
-            // JW cAfter: '<ul><li><br></li><li>[]<br></li></ul>',
-        });
     });
 
     test("should delete across two list items, then split what's left", async () => {
-        // Forward selection
         await testEditor({
             contentBefore: "<ul><li>ab[cd</li><li>ef]gh</li></ul>",
-            stepFunction: splitBlock,
-            contentAfter: "<ul><li>ab</li><li>[]gh</li></ul>",
-        });
-        // Backward selection
-        await testEditor({
-            contentBefore: "<ul><li>ab]cd</li><li>ef[gh</li></ul>",
             stepFunction: splitBlock,
             contentAfter: "<ul><li>ab</li><li>[]gh</li></ul>",
         });
     });
 
     test("should delete part of a checklist item, then split it", async () => {
-        // Forward selection
         await testEditor({
             contentBefore: "<ul><li>ab[cd]ef</li></ul>",
-            stepFunction: splitBlock,
-            contentAfter: "<ul><li>ab</li><li>[]ef</li></ul>",
-        });
-        // Backward selection
-        await testEditor({
-            contentBefore: "<ul><li>ab]cd[ef</li></ul>",
             stepFunction: splitBlock,
             contentAfter: "<ul><li>ab</li><li>[]ef</li></ul>",
         });
     });
 
     test("should delete all contents of a checklist item, then split it", async () => {
-        // Forward selection
         await testEditor({
             contentBefore: "<ul><li>[abc]</li></ul>",
-            stepFunction: splitBlock,
-            // JW cAfter: '<ul><li><br></li><li>[]<br></li></ul>',
-            contentAfter: "<p>[]<br></p>",
-        });
-        // Backward selection
-        await testEditor({
-            contentBefore: "<ul><li>]abc[</li></ul>",
             stepFunction: splitBlock,
             // JW cAfter: '<ul><li><br></li><li>[]<br></li></ul>',
             contentAfter: "<p>[]<br></p>",

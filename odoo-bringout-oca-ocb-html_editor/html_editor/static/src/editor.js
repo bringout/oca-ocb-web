@@ -1,14 +1,18 @@
-import { MAIN_PLUGINS } from "./plugin_sets";
+import { MAIN_PLUGINS, TOUCH_EXCLUDED_PLUGINS } from "./plugin_sets";
 import { createBaseContainer, SUPPORTED_BASE_CONTAINER_NAMES } from "./utils/base_container";
-import { fillShrunkPhrasingParent, removeClass } from "./utils/dom";
+import { removeClass } from "./utils/dom";
 import { isEmpty } from "./utils/dom_info";
-import { resourceSequenceSymbol, withSequence } from "./utils/resource";
+import { resourceSequenceSymbol, warnOfNamingConvention, withSequence } from "./utils/resource";
 import { fixInvalidHTML, initElementForEdition } from "./utils/sanitize";
 import { setElementContent } from "@web/core/utils/html";
+import { hasTouch } from "@web/core/browser/feature_detection";
 
+/** @typedef {import("plugins").EditorResources} EditorResources */
+/** @typedef {import("plugins").GlobalResources} GlobalResources */
+/** @typedef {keyof GlobalResources} GlobalResourcesId */
 /**
- * @typedef { import("./plugin_sets").SharedMethods } SharedMethods
- * @typedef {typeof import("./plugin").Plugin} PluginConstructor
+ * @typedef {import("plugins").SharedMethods} SharedMethods
+ * @typedef {import("plugins").PluginConstructor} PluginConstructor
  **/
 
 /**
@@ -36,8 +40,36 @@ import { setElementContent } from "@web/core/utils/html";
  * @property { boolean } [dropImageAsAttachment]
  * @property { CollaborationConfig } [collaboration]
  * @property { Function } getRecordInfo
+ *
+ * @typedef { Object } EditorContext
+ * @property { Document } document
+ * @property { HTMLElement } editable
+ * @property { SharedMethods } dependencies
+ * @property { import("./editor").EditorConfig } config
+ * @property { import("services").ServiceFactories } services
+ * @property { Editor['getResource'] } getResource
+ * @property { Editor['trigger'] } trigger
+ * @property { Editor['triggerAsync'] } triggerAsync
+ * @property { Editor['delegateTo'] } delegateTo
+ * @property { Editor['processThrough'] } processThrough
+ * @property { Editor['checkPredicates'] } checkPredicates
  */
 
+/**
+ * @typedef {((root: HTMLElement = EditorContext["editable"]) => HTMLElement)[]} clean_for_save_processors
+ * @typedef {(() => void)[]} on_editor_started_handlers
+ */
+
+/**
+ * Clean up DOM before taking into account for next history step remaining in
+ * edit mode
+ * @typedef {((root: EditorContext["editable"] | HTMLElement, stepType?: "original"|"undo"|"redo"|"restore") => void)[]} normalize_processors
+ */
+
+/**
+ * @param {PluginConstructor[]} plugins
+ * @returns {PluginConstructor[]}
+ */
 function sortPlugins(plugins) {
     const initialPlugins = new Set(plugins);
     const inResult = new Set();
@@ -80,6 +112,7 @@ export class Editor {
         this.isDestroyed = false;
         this.config = config;
         this.services = services;
+        /** @type { EditorResources } */
         this.resources = null;
         this.plugins = [];
         /** @type { HTMLElement } **/
@@ -104,12 +137,15 @@ export class Editor {
                     this.config.baseContainers[0],
                     this.document
                 );
-                fillShrunkPhrasingParent(baseContainer);
                 editable.replaceChildren(baseContainer);
             }
         }
         editable.setAttribute("contenteditable", true);
-        initElementForEdition(editable, { allowInlineAtRoot: !!this.config.allowInlineAtRoot });
+        editable.setAttribute("translate", "no");
+        initElementForEdition(editable, {
+            allowInlineAtRoot: !!this.config.allowInlineAtRoot,
+            wrapInlinesInBlocks: this.shared.dom.wrapInlinesInBlocks,
+        });
         editable.classList.add("odoo-editor-editable");
         if (this.config.classList) {
             editable.classList.add(...this.config.classList);
@@ -134,29 +170,23 @@ export class Editor {
     }
 
     preparePlugins() {
-        const Plugins = sortPlugins(this.config.Plugins || MAIN_PLUGINS);
+        const pluginList = this.config.Plugins || MAIN_PLUGINS;
+        const filteredPluginList = hasTouch()
+            ? pluginList.filter((p) => !TOUCH_EXCLUDED_PLUGINS.includes(p))
+            : pluginList;
+        const Plugins = sortPlugins(filteredPluginList);
         this.config = Object.assign({}, ...Plugins.map((P) => P.defaultConfig), this.config);
-        const plugins = new Map();
+        this.pluginsMap = new Map();
         for (const P of Plugins) {
             if (P.id === "") {
                 throw new Error(`Missing plugin id (class ${P.name})`);
             }
-            if (plugins.has(P.id)) {
+            if (this.pluginsMap.has(P.id)) {
                 throw new Error(`Duplicate plugin id: ${P.id}`);
             }
-            const imports = {};
-            for (const dep of P.dependencies) {
-                if (plugins.has(dep)) {
-                    imports[dep] = {};
-                    for (const h of plugins.get(dep).shared) {
-                        imports[dep][h] = this.shared[dep][h];
-                    }
-                } else {
-                    throw new Error(`Missing dependency for plugin ${P.id}: ${dep}`);
-                }
-            }
-            plugins.set(P.id, P);
-            const plugin = new P(this.document, this.editable, imports, this.config, this.services);
+            this.pluginsMap.set(P.id, P);
+            const plugin = new P(this.getEditorContext(P.dependencies));
+            plugin.__editor = this;
             this.plugins.push(plugin);
             const exports = {};
             for (const h of P.shared) {
@@ -178,8 +208,19 @@ export class Editor {
         for (const plugin of this.plugins) {
             plugin.setup();
         }
-        this.resources["normalize_handlers"].forEach((cb) => cb(this.editable));
-        this.resources["start_edition_handlers"].forEach((cb) => cb());
+        this.processThrough("normalize_processors", this.editable);
+        this.trigger("on_editor_started_handlers");
+    }
+
+    getDependencies(dependencies) {
+        const deps = {};
+        for (const depName of dependencies) {
+            if (!(depName in this.shared)) {
+                throw new Error(`Missing dependency: ${depName}`);
+            }
+            deps[depName] = this.shared[depName];
+        }
+        return deps;
     }
 
     createResources() {
@@ -221,22 +262,183 @@ export class Editor {
     }
 
     /**
-     * @param {string} resourceId
-     * @returns {Array}
+     * @return { EditorContext }
+     */
+    getEditorContext(dependencies = []) {
+        return {
+            document: this.document,
+            editable: this.editable,
+            dependencies: this.getDependencies(dependencies),
+            config: this.config,
+            services: this.services,
+            getResource: this.getResource.bind(this),
+            trigger: this.trigger.bind(this),
+            triggerAsync: this.triggerAsync.bind(this),
+            delegateTo: this.delegateTo.bind(this),
+            processThrough: this.processThrough.bind(this),
+            checkPredicates: this.checkPredicates.bind(this),
+        };
+    }
+
+    /**
+     * @template {GlobalResourcesId} R
+     * @param {R} resourceId
+     * @returns {GlobalResources[R]}
      */
     getResource(resourceId) {
         return this.resources[resourceId] || [];
     }
 
     /**
-     * Executes the functions registered under resourceId with the given
-     * arguments.
+     * Execute the handler functions registered under resourceId with the given
+     * arguments, and return an array containing all their return values.
+     *
+     * This function is meant to enhance code readability by clearly expressing
+     * its intent.
+     *
+     * Examples:
+     * ```js
+     * const values = this.trigger("on_my_event_handlers", arg1, arg2);
+     * await Promise.all(this.trigger("on_my_async_event_handlers", arg1, arg2));
+     * ```
+     *
+     * @template {GlobalResourcesId} R
+     * @param {R} resourceId
+     * @param {Parameters<GlobalResources[R][0]>} args The arguments to pass to the handlers.
+     * @returns {Array<any>}
+     */
+    trigger(resourceId, ...args) {
+        if (!resourceId.endsWith("_handlers")) {
+            warnOfNamingConvention("trigger", resourceId, {
+                prefix: "on",
+                suffix: "handlers",
+            });
+        }
+        return this.getResource(resourceId).map((handler) => handler(...args));
+    }
+
+    /**
+     * Execute the handler functions registered under resourceId with the given
+     * arguments sequentially, waiting for each call to resolve before calling
+     * the next.
+     *
+     * This function is meant to enhance code readability by clearly expressing
+     * its intent.
+     *
+     * Example:
+     * ```js
+     * await this.triggerAsync("on_my_sequential_async_event_handlers", arg1, arg2);
+     * ```
+     *
+     * @template {GlobalResourcesId} R
+     * @param {R} resourceId
+     * @param {Parameters<GlobalResources[R][0]>} args The arguments to pass to the handlers.
+     * @returns {Promise<void>}
+     */
+    async triggerAsync(resourceId, ...args) {
+        if (!resourceId.endsWith("_handlers")) {
+            warnOfNamingConvention("triggerAsync", resourceId, {
+                prefix: "on",
+                suffix: "handlers",
+            });
+        }
+        for (const handler of this.getResource(resourceId)) {
+            await handler(...args);
+        }
+    }
+
+    /**
+     * Execute a series of functions until one of them returns a truthy value.
+     *
+     * This function is meant to enhance code readability by clearly expressing
+     * its intent.
+     *
+     * A command "delegates" its execution to one of the overriding functions,
+     * which return a truthy value to signal it has been handled.
+     *
+     * It is the the caller's responsability to stop the execution when this
+     * function returns true.
+     *
+     * Example:
+     * ```js
+     * if (this.delegateTo("my_command_overrides", arg1, arg2)) {
+     *   return;
+     * }
+     * ```
+     *
+     * @template {GlobalResourcesId} R
+     * @param {R} resourceId
+     * @param {Parameters<GlobalResources[R][0]>} args The arguments to pass to the overrides.
+     * @returns {boolean} Whether one of the overrides returned a truthy value.
+     */
+    delegateTo(resourceId, ...args) {
+        if (!resourceId.endsWith("_overrides")) {
+            warnOfNamingConvention("delegateTo", resourceId, { suffix: "overrides" });
+        }
+        return this.getResource(resourceId).some((fn) => fn(...args));
+    }
+
+    /**
+     * Execute a series of functions that each process an item, and return its
+     * final value.
+     *
+     * This function is meant to enhance code readability by clearly expressing
+     * its intent.
+     *
+     * An item is processed by each processor in sequence, each processor
+     * returning the new value of the item. If a processor returns a falsy
+     * value, the item remains unchanged.
+     *
+     * Example:
+     * ```js
+     * const processedItem = this.processThrough("my_item_processors", item, arg1, arg2);
+     * ```
+     *
+     * @template {GlobalResourcesId} R
+     * @param {R} resourceId
+     * @param {Parameters<GlobalResources[R][0]>[0]} item The item to process.
+     * @param  {Parameters<GlobalResources[R][0]>} args The other arguments to pass to the processors.
+     * @returns {Parameters<GlobalResources[R][0]>[0]} The processed value of the item.
+     */
+    processThrough(resourceId, item, ...args) {
+        if (!resourceId.endsWith("_processors")) {
+            warnOfNamingConvention("processThrough", resourceId, { suffix: "processors" });
+        }
+        this.getResource(resourceId).forEach((processor) => {
+            item = processor(item, ...args) || item;
+        });
+        return item;
+    }
+
+    /**
+     * Test the given arguments against all the predicates registered under
+     * `resourceId` (which ends with "_predicates" by convention), and return
+     * true if any predicate returns `true` and none returns `false` (ignoring
+     * those that return `undefined`).
+     *
+     * Important note: since this function treats booleans and nullish results
+     * differently, make sure that:
+     * 1. Predicates only return a boolean when it's meaningful.
+     * 2. Any call to `checkPredicates` involves the declaration of a default
+     *    value in case it returns `undefined`.
+     *
+     * Example:
+     * ```js
+     * const isTrue = this.checkPredicates("is_it_true_predicates", arg1, arg2) ?? true;
+     * ```
      *
      * @param {string} resourceId
-     * @param  {...any} args The arguments to pass to the handlers
+     * @param  {...any} args The arguments to pass to the predicates.
+     * @returns {boolean | undefined}
      */
-    dispatchTo(resourceId, ...args) {
-        this.getResource(resourceId).forEach((handler) => handler(...args));
+    checkPredicates(resourceId, ...args) {
+        if (!resourceId.endsWith("_predicates")) {
+            warnOfNamingConvention("checkPredicates", resourceId, { suffix: "predicates" });
+        }
+        const results = this.getResource(resourceId)
+            .map((predicate) => predicate(...args))
+            .filter((result) => result !== undefined);
+        return results.length ? results.every(Boolean) : undefined;
     }
 
     getContent() {
@@ -244,9 +446,7 @@ export class Editor {
     }
 
     getElContent() {
-        const el = this.editable.cloneNode(true);
-        this.resources["clean_for_save_handlers"].forEach((cb) => cb({ root: el }));
-        return el;
+        return this.processThrough("clean_for_save_processors", this.editable.cloneNode(true));
     }
 
     destroy(willBeRemoved) {

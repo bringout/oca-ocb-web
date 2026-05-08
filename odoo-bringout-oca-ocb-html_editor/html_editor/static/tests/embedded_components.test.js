@@ -17,7 +17,7 @@ import {
 import { MAIN_PLUGINS } from "@html_editor/plugin_sets";
 import { parseHTML } from "@html_editor/utils/html";
 import { beforeEach, describe, expect, getFixture, test } from "@odoo/hoot";
-import { click, queryFirst } from "@odoo/hoot-dom";
+import { click, queryFirst, waitFor } from "@odoo/hoot-dom";
 import { animationFrame, tick } from "@odoo/hoot-mock";
 import {
     App,
@@ -39,8 +39,9 @@ import { addStep, deleteBackward, deleteForward, redo, undo } from "./_helpers/u
 import { makeMockEnv, patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { Deferred } from "@web/core/utils/concurrency";
 import { Plugin } from "@html_editor/plugin";
-import { cleanHints, dispatchCleanForSave } from "./_helpers/dispatch";
+import { cleanHints, processThroughCleanForSave } from "./_helpers/dispatch";
 import { expectElementCount } from "./_helpers/ui_expectations";
+import { renderToElement } from "@web/core/utils/render";
 
 function getConfig(components) {
     return {
@@ -309,8 +310,8 @@ describe("Mount and Destroy embedded components", () => {
         class RecursiveComponent extends Component {
             static template = xml`
                 <div>
-                    <div t-on-click="increment" t-att-class="'click count-' + props.index">Count:<t t-esc="state.value"/></div>
-                    <div t-ref="innerEditable" t-att-class="'innerEditable-' + props.index"/>
+                    <div t-on-click="this.increment" t-att-class="'click count-' + this.props.index">Count:<t t-out="this.state.value"/></div>
+                    <div t-ref="innerEditable" t-att-class="'innerEditable-' + this.props.index"/>
                 </div>
             `;
             static props = {
@@ -385,16 +386,19 @@ describe("Mount and Destroy embedded components", () => {
         expect.verifySteps(["mount 1", "mount 2", "mount 3"]);
         expect(getContent(el)).toBe(
             unformat(`
+                <p data-selection-placeholder=""><br></p>
                 <div data-embedded="recursiveComponent" data-oe-protected="true" contenteditable="false">
-                    <div>
+                    []<div>
                         <div class="click count-2">Count:2</div>
                         <div class="innerEditable-2">
                             <div data-prop-name="innerValue" data-oe-protected="false" contenteditable="true">
+                                <p data-selection-placeholder=""><br></p>
                                 <div data-embedded="recursiveComponent" data-oe-protected="true" contenteditable="false">
                                     <div>
                                         <div class="click count-1">Count:1</div>
                                         <div class="innerEditable-1">
                                             <div data-prop-name="innerValue" data-oe-protected="false" contenteditable="true">
+                                                <p data-selection-placeholder=""><br></p>
                                                 <div data-embedded="recursiveComponent" data-oe-protected="true" contenteditable="false">
                                                     <div>
                                                         <div class="click count-3">Count:3</div>
@@ -405,15 +409,17 @@ describe("Mount and Destroy embedded components", () => {
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <p data-selection-placeholder=""><br></p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                                <p data-selection-placeholder=""><br></p>
                             </div>
                         </div>
                     </div>
                 </div>
-                <p class="target o-we-hint" o-we-hint-text='Type "/" for commands'>[]<br></p>
+                <p data-selection-placeholder=""><br></p>
             `)
         );
         for (const index of indexOrder) {
@@ -438,8 +444,9 @@ describe("Mount and Destroy embedded components", () => {
         // outermost host.
         expect(getContent(el)).toBe(
             unformat(`
-                <div data-embedded="recursiveComponent" data-oe-protected="true" contenteditable="false"></div>
-                <p class="target o-we-hint" o-we-hint-text='Type "/" for commands'>[]<br></p>
+                <p data-selection-placeholder=""><br></p>
+                <div data-embedded="recursiveComponent" data-oe-protected="true" contenteditable="false">[]</div>
+                <p data-selection-placeholder=""><br></p>
             `)
         );
         // Verify that there is no potential host outside of the editable,
@@ -575,10 +582,15 @@ describe("Selection after embedded component insertion", () => {
         });
         editor.shared.dom.insert(parseHTML(editor.document, `<div data-embedded="counter"></div>`));
         editor.shared.history.addStep();
-        await animationFrame();
+        // Insertion triggers selectionchange & addStep creates selection
+        // placeholder.fixSelectionInsideEditableRoot moves selection into it,
+        // trigger another selectionchange that removes selection placeholder.
+        // So we must wait for the o-we-hint.
+        await waitFor(".o-we-hint");
         cleanHints(editor);
         expect(getContent(el)).toBe(
             unformat(`
+                <p data-selection-placeholder=""><br></p>
                 <div data-embedded="counter" data-oe-protected="true" contenteditable="false"><span class="counter">Counter:0</span></div>
                 <p>[]<br></p>`)
         );
@@ -589,7 +601,11 @@ describe("Selection after embedded component insertion", () => {
         });
         editor.shared.dom.insert(parseHTML(editor.document, `<div data-embedded="counter"></div>`));
         editor.shared.history.addStep();
-        await animationFrame();
+        // Insertion triggers selectionchange & addStep creates selection
+        // placeholder.fixSelectionInsideEditableRoot moves selection into it,
+        // trigger another selectionchange that removes selection placeholder.
+        // So we must wait for the o-we-hint.
+        await waitFor(".o-we-hint");
         cleanHints(editor);
         expect(getContent(el)).toBe(
             unformat(`
@@ -608,6 +624,7 @@ describe("Selection after embedded component insertion", () => {
         cleanHints(editor);
         expect(getContent(el)).toBe(
             unformat(`
+                <p data-selection-placeholder=""><br></p>
                 <div data-embedded="counter" data-oe-protected="true" contenteditable="false"><span class="counter">Counter:0</span></div>
                 <p>[]a</p>`)
         );
@@ -758,8 +775,8 @@ describe("Mount processing", () => {
         const delayedWillStart = new Deferred();
         class LabeledCounter extends Counter {
             static template = xml`
-                <span t-ref="root" class="counter" t-on-click="increment">
-                    <span t-ref="label"/>:<t t-esc="state.value"/>
+                <span t-ref="root" class="counter" t-on-click="this.increment">
+                    <span t-ref="label"/>:<t t-out="this.state.value"/>
                 </span>
             `;
             static props = {
@@ -838,7 +855,9 @@ describe("Mount processing", () => {
         // "unknown" data-embedded should be considered once during the first
         // mounting wave.
         expect.verifySteps(["unknown handled"]);
-        expect(getContent(el)).toBe(`<div data-embedded="unknown"><p>UNKNOWN</p></div>`);
+        expect(getContent(el)).toBe(
+            `<p data-selection-placeholder=""><br></p><div data-embedded="unknown"><p>UNKNOWN</p></div><p data-selection-placeholder=""><br></p>`
+        );
     });
     test("Mount a component with a plugin that modifies the Component's env", async () => {
         let setSelection;
@@ -846,7 +865,7 @@ describe("Mount processing", () => {
             static id = "simple";
             static dependencies = ["selection", "embeddedComponents", "dom", "history"];
             resources = {
-                mount_component_handlers: this.setupNewComponent.bind(this),
+                on_will_mount_component_handlers: this.setupNewComponent.bind(this),
             };
 
             setupNewComponent({ name, env }) {
@@ -866,8 +885,8 @@ describe("Mount processing", () => {
 
         class EmbeddedCounter extends Counter {
             static template = xml`
-                <span class="counter" t-on-click="increment">
-                    <t t-esc="state.value"/>
+                <span class="counter" t-on-click="this.increment">
+                    <t t-out="this.state.value"/>
                 </span>
             `;
             setup() {
@@ -883,6 +902,62 @@ describe("Mount processing", () => {
         await animationFrame();
         expect(setSelection).toBe(simplePlugin.dependencies.selection.setSelection);
     });
+
+    test("Insert a component and execute a callback for its first mount", async () => {
+        const { el, editor, plugins } = await setupEditor(`<p>[]after</p>`, {
+            config: getConfig([embedding("counter", Counter)]),
+        });
+        const host = plugins
+            .get("embeddedComponents")
+            .renderBlueprintToElement(xml`<span data-embedded="counter"></span>`, {}, () =>
+                expect.step("onComponentInserted")
+            );
+        plugins.get("dom").insert(host);
+        addStep(editor);
+        await animationFrame();
+        // First mount
+        expect(getContent(el)).toBe(
+            `<p><span data-embedded="counter" data-oe-protected="true" contenteditable="false"><span class="counter">Counter:0</span></span>[]after</p>`
+        );
+        expect.verifySteps(["onComponentInserted"]);
+        deleteBackward(editor);
+        addStep(editor);
+        expect(getContent(el)).toBe(`<p>[]after</p>`);
+        undo(editor);
+        await animationFrame();
+        // Second mount, onComponentInserted was discarded
+        expect(getContent(el)).toBe(
+            `<p><span data-embedded="counter" data-oe-protected="true" contenteditable="false"><span class="counter">Counter:0</span></span>[]after</p>`
+        );
+        expect.verifySteps([]);
+    });
+
+    test("Discard onComponentInserted callback if a component is removed before finishing being mounted after insertion", async () => {
+        const { el, editor, plugins } = await setupEditor(`<p>[]after</p>`, {
+            config: getConfig([embedding("counter", Counter)]),
+        });
+        const host = plugins
+            .get("embeddedComponents")
+            .renderBlueprintToElement(xml`<span data-embedded="counter"></span>`, {}, () =>
+                expect.step("onComponentInserted")
+            );
+        plugins.get("dom").insert(host);
+        addStep(editor);
+        expect(getContent(el)).toBe(
+            `<p><span data-embedded="counter" data-oe-protected="true" contenteditable="false"></span>[]after</p>`
+        );
+        // Don't wait for the component to mount, and remove the host
+        deleteBackward(editor);
+        addStep(editor);
+        expect(getContent(el)).toBe(`<p>[]after</p>`);
+        undo(editor);
+        await animationFrame();
+        // First mount, but onComponentInserted was discarded since the component was removed
+        expect(getContent(el)).toBe(
+            `<p><span data-embedded="counter" data-oe-protected="true" contenteditable="false"><span class="counter">Counter:0</span></span>[]after</p>`
+        );
+        expect.verifySteps([]);
+    });
 });
 
 describe("In-editor manipulations", () => {
@@ -896,7 +971,7 @@ describe("In-editor manipulations", () => {
         await animationFrame();
         await expectElementCount(".o-we-toolbar", 1);
         expect(getContent(el)).toBe(
-            `<div><p>[a]</p><span data-embedded="counter" data-oe-protected="true" contenteditable="false"><span class="counter">Counter:0</span></span></div>`
+            `<p data-selection-placeholder=""><br></p><div><p>[a]</p><span data-embedded="counter" data-oe-protected="true" contenteditable="false"><span class="counter">Counter:0</span></span></div><p data-selection-placeholder=""><br></p>`
         );
 
         const node = queryFirst(".counter", {}).firstChild;
@@ -904,7 +979,7 @@ describe("In-editor manipulations", () => {
         await tick();
         await animationFrame();
         expect(getContent(el)).toBe(
-            `<div><p>a</p><span data-embedded="counter" data-oe-protected="true" contenteditable="false"><span class="counter">C[ou]nter:0</span></span></div>`
+            `<p data-selection-placeholder=""><br></p><div><p>a</p><span data-embedded="counter" data-oe-protected="true" contenteditable="false"><span class="counter">C[ou]nter:0</span></span></div><p data-selection-placeholder=""><br></p>`
         );
         await expectElementCount(".o-we-toolbar", 0);
     });
@@ -916,8 +991,7 @@ describe("In-editor manipulations", () => {
                 config: getConfig([embedding("counter", Counter)]),
             }
         );
-        const clone = el.cloneNode(true);
-        dispatchCleanForSave(editor, { root: clone });
+        const clone = processThroughCleanForSave(editor, el.cloneNode(true));
         expect(getContent(clone)).toBe(`<div><p>a</p></div><div data-embedded="counter"></div>`);
     });
 
@@ -930,7 +1004,7 @@ describe("In-editor manipulations", () => {
         );
         cleanHints(editor);
         expect(getContent(el)).toBe(
-            `<div><p>a</p></div><div data-embedded="counter" data-oe-protected="true" contenteditable="false"><span class="counter">Counter:0</span></div>`
+            `<p data-selection-placeholder=""><br></p><div><p>a</p></div><p data-selection-placeholder=""><br></p><div data-embedded="counter" data-oe-protected="true" contenteditable="false"><span class="counter">Counter:0</span></div><p data-selection-placeholder=""><br></p>`
         );
     });
 
@@ -944,7 +1018,7 @@ describe("In-editor manipulations", () => {
         const historyPlugin = plugins.get("history");
         const node = historyPlugin._unserializeNode(historyPlugin.serializeNode(el))[0];
         expect(getContent(node, { sortAttrs: true })).toBe(
-            `<div><p>a</p></div><div contenteditable="false" data-embedded="counter" data-oe-protected="true"></div>`
+            `<p data-selection-placeholder=""><br></p><div><p>a</p></div><p data-selection-placeholder=""><br></p><div contenteditable="false" data-embedded="counter" data-oe-protected="true"></div><p data-selection-placeholder=""><br></p>`
         );
     });
 
@@ -953,7 +1027,7 @@ describe("In-editor manipulations", () => {
             `<div data-embedded="unknown"><p>UNKNOWN</p></div>`,
             { config: getConfig([]) }
         );
-        dispatchCleanForSave(editor, { root: el });
+        processThroughCleanForSave(editor, el);
         expect(getContent(el)).toBe(`<div data-embedded="unknown"><p>UNKNOWN</p></div>`);
     });
 
@@ -964,7 +1038,9 @@ describe("In-editor manipulations", () => {
         );
         const historyPlugin = plugins.get("history");
         const node = historyPlugin._unserializeNode(historyPlugin.serializeNode(el))[0];
-        expect(getContent(node)).toBe(`<div data-embedded="unknown"><p>UNKNOWN</p></div>`);
+        expect(getContent(node)).toBe(
+            `<p data-selection-placeholder=""><br></p><div data-embedded="unknown"><p>UNKNOWN</p></div><p data-selection-placeholder=""><br></p>`
+        );
     });
 
     test("Don't remove empty inline-block data-embedded elements during initElementForEdition, but wrap them in div instead", async () => {
@@ -973,7 +1049,7 @@ describe("In-editor manipulations", () => {
             { config: getConfig([embedding("counter", Counter)]) }
         );
         expect(getContent(el, { sortAttrs: true })).toBe(
-            `<div><div contenteditable="false" data-embedded="counter" data-oe-protected="true" style="display:inline-block;"><span class="counter">Counter:0</span></div></div>`
+            `<p data-selection-placeholder=""><br></p><div><div contenteditable="false" data-embedded="counter" data-oe-protected="true" style="display:inline-block;"><span class="counter">Counter:0</span></div></div><p data-selection-placeholder=""><br></p>`
         );
     });
 });
@@ -1001,6 +1077,7 @@ describe("editable descendants", () => {
         );
         expect(getContent(el)).toBe(
             unformat(`
+                <p data-selection-placeholder=""><br></p>
                 <div data-embedded="wrapper" data-oe-protected="true" contenteditable="false">
                     <div class="shallow">
                         <div data-embedded-editable="shallow" data-oe-protected="false" contenteditable="true">
@@ -1015,6 +1092,7 @@ describe("editable descendants", () => {
                         </div>
                     </div>
                 </div>
+                <p data-selection-placeholder=""><br></p>
             `)
         );
     });
@@ -1048,9 +1126,11 @@ describe("editable descendants", () => {
         await animationFrame();
         expect(getContent(el)).toBe(
             unformat(`
+                <p data-selection-placeholder=""><br></p>
                 <div data-embedded="wrapper" data-oe-protected="true" contenteditable="false">
                     <div class="deep">
                         <div data-embedded-editable="deep" data-oe-protected="false" contenteditable="true">
+                            <p data-selection-placeholder=""><br></p>
                             <div data-embedded="wrapper" data-oe-protected="true" contenteditable="false">
                                 <div class="deep">
                                     <div data-embedded-editable="deep" data-oe-protected="false" contenteditable="true">
@@ -1058,6 +1138,7 @@ describe("editable descendants", () => {
                                     </div>
                                 </div>
                             </div>
+                            <p data-selection-placeholder=""><br></p>
                         </div>
                     </div>
                 </div>
@@ -1105,6 +1186,7 @@ describe("editable descendants", () => {
         expect.verifySteps(["patched"]);
         expect(getContent(el)).toBe(
             unformat(`
+                <p data-selection-placeholder=""><br></p>
                 <div data-embedded="wrapper" data-oe-protected="true" contenteditable="false">
                     <div class="shallow">
                         <div data-embedded-editable="shallow" data-oe-protected="false" contenteditable="true">
@@ -1121,6 +1203,7 @@ describe("editable descendants", () => {
                         </div>
                     </div>
                 </div>
+                <p data-selection-placeholder=""><br></p>
             `)
         );
         // No mutation should be added to the next step
@@ -1151,8 +1234,7 @@ describe("editable descendants", () => {
                 ]),
             }
         );
-        const clone = el.cloneNode(true);
-        dispatchCleanForSave(editor, { root: clone });
+        const clone = processThroughCleanForSave(editor, el.cloneNode(true));
         expect(getContent(clone)).toBe(
             unformat(`
                 <div data-embedded="wrapper">
@@ -1191,6 +1273,7 @@ describe("editable descendants", () => {
         const node = historyPlugin._unserializeNode(historyPlugin.serializeNode(el))[0];
         expect(getContent(node, { sortAttrs: true })).toBe(
             unformat(`
+                <p data-selection-placeholder=""><br></p>
                 <div contenteditable="false" data-embedded="wrapper" data-oe-protected="true">
                     <div contenteditable="true" data-embedded-editable="shallow" data-oe-protected="false">
                         <p>shallow</p>
@@ -1199,6 +1282,7 @@ describe("editable descendants", () => {
                         <p>deep</p>
                     </div>
                 </div>
+                <p data-selection-placeholder=""><br></p>
             `)
         );
     });
@@ -1233,9 +1317,11 @@ describe("editable descendants", () => {
         );
         expect(getContent(el)).toBe(
             unformat(`
+                <p data-selection-placeholder=""><br></p>
                 <div data-embedded="wrapper" data-oe-protected="true" contenteditable="false">
                     <div class="shallow">
                         <div data-embedded-editable="shallow" data-oe-protected="false" contenteditable="true">
+                            <p data-selection-placeholder=""><br></p>
                             <div data-embedded="simpleWrapper" data-oe-protected="true" contenteditable="false">
                                 <div class="deep">
                                     <div data-embedded-editable="deep" data-oe-protected="false" contenteditable="true">
@@ -1243,6 +1329,7 @@ describe("editable descendants", () => {
                                     </div>
                                 </div>
                             </div>
+                            <p data-selection-placeholder=""><br></p>
                         </div>
                     </div>
                     <div>
@@ -1253,6 +1340,7 @@ describe("editable descendants", () => {
                         </div>
                     </div>
                 </div>
+                <p data-selection-placeholder=""><br></p>
             `)
         );
         const wrapper = el.querySelector(`[data-embedded="wrapper"]`);
@@ -1260,6 +1348,55 @@ describe("editable descendants", () => {
         const editableDescendants = el.querySelectorAll(`[data-embedded-editable="deep"]`);
         expect(getEditableDescendants(simple).deep).toBe(editableDescendants[0]);
         expect(getEditableDescendants(wrapper).deep).toBe(editableDescendants[1]);
+    });
+
+    test("preserve selection inside an editable descendant", async () => {
+        const SimpleEmbeddedWrapper = EmbeddedWrapperMixin("deep");
+        const { el, editor, plugins } = await setupEditor(unformat(`<p>after</p>`), {
+            config: getConfig([
+                embedding("wrapper", SimpleEmbeddedWrapper, (host) => ({ host }), {
+                    getEditableDescendants,
+                }),
+            ]),
+        });
+        plugins.get("dom").insert(
+            renderToElement(xml`
+                <div data-embedded="wrapper">
+                    <div data-embedded-editable="deep">
+                        <p>deep</p>
+                    </div>
+                </div>
+            `)
+        );
+        addStep(editor);
+        // Set the selection before the component is mounted
+        plugins.get("selection").setCursorStart(el.querySelector("[data-embedded-editable] p"));
+        expect(getContent(el)).toBe(
+            unformat(`
+                <p data-selection-placeholder=""><br></p>
+                <div data-embedded="wrapper" data-oe-protected="true" contenteditable="false">
+                    <div data-embedded-editable="deep" data-oe-protected="false" contenteditable="true">
+                        <p>[]deep</p>
+                    </div>
+                </div>
+                <p>after</p>
+            `)
+        );
+        await animationFrame();
+        // Verify that the selection was preserved after insertion
+        expect(getContent(el)).toBe(
+            unformat(`
+                <p data-selection-placeholder=""><br></p>
+                <div data-embedded="wrapper" data-oe-protected="true" contenteditable="false">
+                    <div class="deep">
+                        <div data-embedded-editable="deep" data-oe-protected="false" contenteditable="true">
+                            <p>[]deep</p>
+                        </div>
+                    </div>
+                </div>
+                <p>after</p>
+            `)
+        );
     });
 });
 

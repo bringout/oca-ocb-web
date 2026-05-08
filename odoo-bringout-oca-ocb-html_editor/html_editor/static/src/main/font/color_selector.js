@@ -1,5 +1,6 @@
+import { useState } from "@web/owl2/utils";
 import { isColorGradient } from "@web/core/utils/colors";
-import { Component, useState } from "@odoo/owl";
+import { Component } from "@odoo/owl";
 import {
     useColorPicker,
     DEFAULT_COLORS,
@@ -27,10 +28,12 @@ export class ColorSelector extends Component {
         enabledTabs: { type: Array, optional: true },
         cssVarColorPrefix: { type: String, optional: true },
         onClose: Function,
+        useDefaultThemeColors: { type: Boolean, optional: true },
     };
     static defaultProps = {
         cssVarColorPrefix: "",
         enabledTabs: ["solid", "gradient", "custom"],
+        useDefaultThemeColors: true,
     };
 
     setup() {
@@ -48,11 +51,11 @@ export class ColorSelector extends Component {
         effect(
             (selectedColors) => {
                 this.state.selectedColor = selectedColors[this.props.mode];
-                this.state.defaultTab = this.getCorrespondingColorTab(
+                this.state.defaultTab = "solid";
+                this.state.selectedTab = this.getCorrespondingColorTab(
                     selectedColors[this.props.mode]
                 );
                 this.state.getTargetedElements = this.props.getTargetedElements;
-                this.state.mode = this.props.mode;
             },
             [this.props.getSelectedColors()]
         );
@@ -69,6 +72,7 @@ export class ColorSelector extends Component {
                 colorPrefix: this.props.colorPrefix,
                 enabledTabs: this.props.enabledTabs,
                 cssVarColorPrefix: this.props.cssVarColorPrefix,
+                useDefaultThemeColors: this.props.useDefaultThemeColors,
             },
             {
                 env: this.__owl__.childEnv,

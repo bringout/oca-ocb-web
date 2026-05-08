@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "@web/owl2/utils";
 import {
     Component,
     markup,
@@ -5,15 +6,15 @@ import {
     onWillStart,
     onWillUnmount,
     onWillUpdateProps,
-    useEffect,
-    useRef,
-    useState,
 } from "@odoo/owl";
 import { getBundle } from "@web/core/assets";
 import { memoize } from "@web/core/utils/functions";
+import { fillHtmlTransferData } from "@html_editor/utils/clipboard";
 import { fixInvalidHTML, instanceofMarkup } from "@html_editor/utils/sanitize";
 import { HtmlUpgradeManager } from "@html_editor/html_migrations/html_upgrade_manager";
+import { mountComponent } from "@html_editor/others/embedded_component_utils";
 import { TableOfContentManager } from "@html_editor/others/embedded_components/core/table_of_content/table_of_content_manager";
+import { browser } from "@web/core/browser/browser";
 
 export class HtmlViewer extends Component {
     static template = "html_editor.HtmlViewer";
@@ -26,6 +27,7 @@ export class HtmlViewer extends Component {
     };
 
     setup() {
+        this._cleanups = [];
         this.htmlUpgradeManager = new HtmlUpgradeManager();
         this.iframeRef = useRef("iframe");
 
@@ -62,7 +64,7 @@ export class HtmlViewer extends Component {
             });
         } else {
             this.readonlyElementRef = useRef("readonlyContent");
-            useEffect(
+            useLayoutEffect(
                 () => {
                     this.processReadonlyContent(this.readonlyElementRef.el);
                 },
@@ -85,7 +87,7 @@ export class HtmlViewer extends Component {
                 }
                 return result;
             });
-            useEffect(
+            useLayoutEffect(
                 () => {
                     if (this.readonlyElementRef?.el) {
                         this.mountComponents();
@@ -95,6 +97,14 @@ export class HtmlViewer extends Component {
             );
             this.tocManager = new TableOfContentManager(this.readonlyElementRef);
         }
+    }
+
+    addDomListener(target, eventName, fn, capture = false) {
+        const handler = (ev) => {
+            fn?.call(this, ev);
+        };
+        target.addEventListener(eventName, handler, capture);
+        this._cleanups.push(() => target.removeEventListener(eventName, handler, capture));
     }
 
     get showIframe() {
@@ -127,6 +137,19 @@ export class HtmlViewer extends Component {
     processReadonlyContent(container) {
         this.retargetLinks(container);
         this.applyAccessibilityAttributes(container);
+        this.addDomListener(container, "copy", this.onCopy);
+    }
+
+    /**
+     * @param {ClipboardEvent} ev
+     */
+    onCopy(ev) {
+        ev.preventDefault();
+        const selection = ev.target.ownerDocument.defaultView.getSelection();
+        const clonedContents = selection.getRangeAt(0).cloneContents();
+        fillHtmlTransferData(ev, "clipboardData", clonedContents, {
+            textContent: selection.toString(),
+        });
     }
 
     /**
@@ -143,10 +166,17 @@ export class HtmlViewer extends Component {
     }
 
     /**
-     * Ensure all links are opened in a new tab.
+     * Retarget links to open in a new tab.
+     * When inside an iframe, all links are retargeted.
+     * Otherwise, only external links (different origin) are retargeted.
      */
     retargetLinks(container) {
-        for (const link of container.querySelectorAll("a")) {
+        const isInsideIframe = container.ownerDocument !== document;
+        const retargetSelector = isInsideIframe
+            ? "a"
+            : `a:not([href^="${browser.location.origin}"]):not([href^="/"])`;
+
+        for (const link of container.querySelectorAll(retargetSelector)) {
             this.retargetLink(link);
         }
     }
@@ -209,6 +239,9 @@ export class HtmlViewer extends Component {
     }
 
     destroyComponents() {
+        for (const cleanup of this._cleanups) {
+            cleanup();
+        }
         for (const info of [...this.components]) {
             this.destroyComponent(info);
         }
@@ -257,23 +290,10 @@ export class HtmlViewer extends Component {
             env,
             props,
         });
-        const root = this.__owl__.app.createRoot(Component, {
-            props,
-            env,
-        });
-        const promise = root.mount(host);
+        const { root, mountPromise } = mountComponent(this.__owl__.app, Component, host, props, env);
         // Don't show mounting errors as they will happen often when the host
         // is disconnected from the DOM because of a patch
-        promise.catch();
-        // Patch mount fiber to hook into the exact call stack where root is
-        // mounted (but before). This will remove host children synchronously
-        // just before adding the root rendered html.
-        const fiber = root.node.fiber;
-        const fiberComplete = fiber.complete;
-        fiber.complete = function () {
-            host.replaceChildren();
-            fiberComplete.call(this);
-        };
+        mountPromise.catch();
         const info = {
             root,
             host,

@@ -1,12 +1,13 @@
-import { BaseOptionComponent, useDomState } from "@html_builder/core/utils";
-import { getImageSrc } from "@html_editor/utils/image";
+import { BaseOptionComponent } from "@html_builder/core/base_option_component";
+import { useDomState } from "@html_builder/core/utils";
+import { getImageSrc, isImageCorsProtected } from "@html_editor/utils/image";
 import { getDataURLBinarySize } from "@html_editor/utils/image_processing";
 
 const imageCacheSize = new Map();
 
 export class ImageSize extends BaseOptionComponent {
     static template = "html_builder.ImageSize";
-    static props = {};
+
     setup() {
         super.setup();
         this.imagePostProcess = this.env.editor.shared.imagePostProcess;
@@ -26,12 +27,12 @@ export class ImageSize extends BaseOptionComponent {
             if (imageCacheSize.has(src)) {
                 size = imageCacheSize.get(src);
             } else {
+                if (await isImageCorsProtected(el)) {
+                    return;
+                }
                 size = await this.imagePostProcess.getProcessedImageSize(el);
                 imageCacheSize.set(src, size);
             }
-        }
-        if (size === undefined) {
-            return;
         }
         return `${(size / 1024).toFixed(1)} kB`;
     }

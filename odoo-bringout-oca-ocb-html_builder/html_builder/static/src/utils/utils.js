@@ -1,5 +1,5 @@
+import { useSubEnv } from "@web/owl2/utils";
 import { DependencyManager } from "../core/dependency_manager";
-import { useSubEnv } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 
 /**
@@ -13,23 +13,20 @@ export function getSnippetName(snippetEl) {
     if (snippetEl.dataset.name) {
         return snippetEl.dataset.name;
     }
-    if (snippetEl.matches("img")) {
-        return _t("Image");
-    }
-    if (snippetEl.matches(".fa")) {
-        return _t("Icon");
-    }
-    if (snippetEl.matches(".media_iframe_video")) {
-        return _t("Video");
-    }
-    if (snippetEl.parentNode?.matches(".row")) {
-        return _t("Column");
-    }
-    if (snippetEl.matches("#wrapwrap > main")) {
-        return _t("Page Options");
-    }
-    if (snippetEl.matches(".btn")) {
-        return _t("Button");
+    const snippetNameRules = [
+        { selector: "img", name: _t("Image") },
+        { selector: ".fa", name: _t("Icon") },
+        { selector: ".media_iframe_video", name: _t("Video") },
+        { selector: ".row > *", name: _t("Column") },
+        { selector: "#wrapwrap > main", name: _t("Page Options") },
+        { selector: ".btn", name: _t("Button") },
+        { selector: "[data-snippet=s_website_form]", name: _t("Form") },
+        { selector: "#wrapwrap", name: _t("Website") },
+    ];
+    for (const { selector, name } of snippetNameRules) {
+        if (snippetEl.matches(selector)) {
+            return name;
+        }
     }
     return _t("Block");
 }
@@ -107,37 +104,58 @@ export function getValueFromVar(value) {
     return value;
 }
 
-/**
- * Converts a value to a ratio.
- *
- * @param {string} value
- */
-export function toRatio(value) {
-    const inputValueAsNumber = Number(value);
-    const ratio = inputValueAsNumber >= 0 ? 1 + inputValueAsNumber : 1 / (1 - inputValueAsNumber);
-    return `${ratio.toFixed(2)}x`;
+export function ratioValueConverter() {
+    /**
+     * Converts a value to a ratio.
+     *
+     * @param {string} value
+     */
+    const toRatio = (value) => {
+        const inputValueAsNumber = Number(value);
+        const ratio =
+            inputValueAsNumber >= 0 ? 1 + inputValueAsNumber : 1 / (1 - inputValueAsNumber);
+        return Number(ratio.toFixed(2)).toString();
+    };
+    /**
+     * Converts a ratio to a value.
+     *
+     * @param {string} ratio
+     */
+    const toValue = (ratio) => {
+        const ratioValue = Number(ratio);
+        const value = ratioValue >= 1 ? ratioValue - 1 : 1 - 1 / ratioValue;
+        return Number(value.toFixed(2)).toString();
+    };
+
+    return { toRatio, toValue, ratioStep: 0.1 };
 }
 
 /**
- * Returns the list of selector, exclude and applyTo on which an option is
- * applied.
- * @param {Array<Object>} builderOptions - All the builder options
- * @param {Class} optionClass - The applied option
+ * Filters an array of classes to only include those that extend a given class.
  */
-export function getSelectorParams(builderOptions, optionClass) {
-    const selectorParams = [];
-    const optionClassName = optionClass.name;
-    for (const builderOption of builderOptions) {
-        const { OptionComponent } = builderOption;
-        if (
-            OptionComponent &&
-            (OptionComponent.name === optionClassName ||
-                OptionComponent.prototype instanceof optionClass)
-        ) {
-            selectorParams.push(builderOption);
-        }
+export function filterExtends(arr, PotentialSuperClass) {
+    return arr.filter((PotentialSubClass) =>
+        doesExtendsClass(PotentialSubClass, PotentialSuperClass)
+    );
+}
+
+/**
+ * Checks if a `potentialSubClass` directly or indirectly extends a
+ * `potentialSuperClass`.
+ *
+ * The implementation leverages the fact that classes are functions and their
+ * prototype chain reflects the inheritance.
+ *
+ * @param {Function} PotentialSubClass The class that might be a subclass.
+ * @param {Function} PotentialSuperClass The class that might be a superclass.
+ * @returns {boolean} True if `potentialSubClass` extends `potentialSuperClass`,
+ * false otherwise.
+ */
+export function doesExtendsClass(PotentialSubClass, PotentialSuperClass) {
+    if (PotentialSubClass === PotentialSuperClass) {
+        return false;
     }
-    return selectorParams;
+    return PotentialSubClass.prototype instanceof PotentialSuperClass;
 }
 
 /**
@@ -153,7 +171,7 @@ export function isEditable(node) {
             if (currentNode.className.includes("o_not_editable")) {
                 return false;
             }
-            if (currentNode.className.includes("o_editable")) {
+            if (currentNode.className.includes("o_savable")) {
                 return true;
             }
         }

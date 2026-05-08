@@ -5,8 +5,9 @@ import { Plugin } from "@html_editor/plugin";
 import { getHtmlStyle } from "@html_editor/utils/formatting";
 import { registry } from "@web/core/registry";
 
-class ImageFilterOptionPlugin extends Plugin {
+export class ImageFilterOptionPlugin extends Plugin {
     static id = "ImageFilterOption";
+    /** @type {import("plugins").BuilderResources} */
     resources = {
         builder_actions: {
             GlFilterAction,

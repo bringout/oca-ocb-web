@@ -1,36 +1,74 @@
 import { Plugin } from "@html_editor/plugin";
 import { withSequence } from "@html_editor/utils/resource";
 import { _t } from "@web/core/l10n/translation";
-import { unremovableNodePredicates as deletePluginPredicates } from "@html_editor/core/delete_plugin";
-import { isUnremovableQWebElement as qwebPluginPredicate } from "@html_editor/others/qweb_plugin";
+import { removableNodePredicates as deletePluginPredicates } from "@html_editor/core/delete_plugin";
+import { isUnremovableQWebElement } from "@html_editor/others/qweb_plugin";
 import { isEditable } from "@html_builder/utils/utils";
+import { closestElement, selectElements } from "@html_editor/utils/dom_traversal";
 
-const unremovableNodePredicates = [
-    (node) => !isEditable(node.parentNode),
+/** @typedef {import("plugins").CSSSelector} CSSSelector */
+
+/**
+ * @typedef { Object } RemoveShared
+ * @property { RemovePlugin['removeElement'] } removeElement
+ */
+
+/**
+ * @typedef {((arg: {
+ *      removedEl: HTMLElement,
+ *      nextTargetEl: HTMLElement,
+ *      originPreviousEl: HTMLElement | undefined,
+ *      originNextEl: HTMLElement | undefined
+ * }) => void)[]} on_removed_handlers
+ * @typedef {((toRemoveEl: HTMLElement) => void)[]} on_will_remove_handlers
+ *
+ * @typedef {((el: HTMLElement) => boolean | undefined)[]} is_node_empty_predicates
+ *
+ * @typedef {CSSSelector[]} is_unremovable_selectors
+ */
+
+const removableNodePredicates = [
+    (node) => {
+        if (!isEditable(node.parentNode)) {
+            return false;
+        }
+    },
     ...deletePluginPredicates,
-    qwebPluginPredicate,
-    (node) => node.parentNode.matches('[data-oe-type="image"]'),
+    (node) => {
+        if (isUnremovableQWebElement(node)) {
+            return false;
+        }
+    },
+    (node) => {
+        if (node.parentNode.matches('[data-oe-type="image"]')) {
+            return false;
+        }
+    },
 ];
 
 export function isRemovable(el) {
-    return !unremovableNodePredicates.some((p) => p(el));
+    // TODO: This way of using preidcates is error-prone. Prefer using `checkPredicates`.
+    return removableNodePredicates.every((p) => p(el) ?? true);
 }
-
-const layoutElementsSelector = [
-    ".o_we_shape",
-    ".o_we_bg_filter",
-    // Website only
-    ".s_parallax_bg",
-    ".o_bg_video_container",
-].join(",");
 
 export class RemovePlugin extends Plugin {
     static id = "remove";
     static dependencies = ["builderOptions", "visibility"];
+    /** @type {import("plugins").BuilderResources} */
     resources = {
         get_overlay_buttons: withSequence(3, {
             getButtons: this.getActiveOverlayButtons.bind(this),
         }),
+        is_node_empty_predicates: (el) => {
+            const systemNodeSelectors = this.getResource("system_node_selectors").join(",");
+            if (
+                el.textContent.trim() === "" &&
+                (!systemNodeSelectors ||
+                    [...el.children].every((child) => closestElement(child, systemNodeSelectors)))
+            ) {
+                return true;
+            }
+        },
     };
     static shared = ["removeElement"];
 
@@ -38,11 +76,15 @@ export class RemovePlugin extends Plugin {
         this.overlayTarget = null;
 
         const unremovableSelectors = [];
-        for (const unremovableSelector of this.getResource("is_unremovable_selector")) {
+        for (const unremovableSelector of this.getResource("is_unremovable_selectors")) {
             unremovableSelectors.push(unremovableSelector);
         }
         if (unremovableSelectors.length) {
-            unremovableNodePredicates.push((node) => node.matches(unremovableSelectors.join(", ")));
+            removableNodePredicates.push((node) => {
+                if (node.matches(unremovableSelectors.join(", "))) {
+                    return false;
+                }
+            });
         }
     }
 
@@ -56,7 +98,7 @@ export class RemovePlugin extends Plugin {
         this.overlayTarget = target;
         const disabledReason = this.dependencies.builderOptions.getRemoveDisabledReason(target);
         buttons.push({
-            class: "oe_snippet_remove bg-danger fa fa-trash",
+            class: "oe_snippet_remove text-danger fa fa-trash",
             title: _t("Remove"),
             disabledReason,
             handler: () => {
@@ -67,25 +109,8 @@ export class RemovePlugin extends Plugin {
     }
 
     isEmptyAndRemovable(el, optionsTargetEls) {
-        const childrenEls = [...el.children];
-        // Consider a <figure> element as empty if it only contains a
-        // <figcaption> element (e.g. when its image has just been
-        // removed).
-        const isEmptyFigureEl =
-            el.matches("figure") &&
-            childrenEls.length === 1 &&
-            childrenEls[0].matches("figcaption");
-
-        const isEmpty =
-            isEmptyFigureEl ||
-            (el.textContent.trim() === "" &&
-                childrenEls.every((el) =>
-                    // Consider layout-only elements (like bg-shapes) as empty
-                    el.matches(layoutElementsSelector)
-                ));
-
         return (
-            isEmpty &&
+            (this.checkPredicates("is_node_empty_predicates", el) ?? false) &&
             !el.classList.contains("oe_structure") &&
             !el.parentElement.classList.contains("carousel-item") &&
             (!optionsTargetEls.includes(el) ||
@@ -102,12 +127,22 @@ export class RemovePlugin extends Plugin {
      *   of the remaining element should be activated.
      */
     removeElement(toRemoveEl, updateContainers = true) {
+        if (!toRemoveEl.isConnected) {
+            return;
+        }
         // Get the elements having options containers.
         const optionTargetEls = this.getOptionsContainersElements().filter((targetEl) =>
             targetEl.contains(toRemoveEl)
         );
+        const originPreviousEl = toRemoveEl.previousElementSibling;
+        const originNextEl = toRemoveEl.nextElementSibling;
         const nextTargetEl = this.removeCurrentTarget(toRemoveEl, optionTargetEls);
-        this.dispatchTo("on_removed_handlers", { removedEl: toRemoveEl, nextTargetEl });
+        this.trigger("on_removed_handlers", {
+            removedEl: toRemoveEl,
+            nextTargetEl,
+            originPreviousEl,
+            originNextEl,
+        });
         if (updateContainers) {
             this.dependencies.builderOptions.setNextTarget(nextTargetEl);
         }
@@ -124,7 +159,7 @@ export class RemovePlugin extends Plugin {
      * @returns {HTMLElement}
      */
     removeCurrentTarget(toRemoveEl, optionsTargetEls) {
-        this.dispatchTo("on_will_remove_handlers", toRemoveEl);
+        this.trigger("on_will_remove_handlers", toRemoveEl);
 
         // Get the parent and the previous and next visible siblings.
         let parentEl = toRemoveEl.parentElement;
@@ -133,14 +168,14 @@ export class RemovePlugin extends Plugin {
             "prev"
         );
         const nextSiblingEl = this.dependencies.visibility.getVisibleSibling(toRemoveEl, "next");
-        if (parentEl.matches(".o_editable:not(body)")) {
-            // If we target the editable, we want to reset the selection to the
-            // body. If the editable has options, we do not want to show them.
+        if (parentEl.matches(".o_savable:not(body)")) {
+            // If we target the savable, we want to reset the selection to the
+            // body. If the savable has options, we do not want to show them.
             parentEl = parentEl.closest("body");
         }
 
         // Remove tooltips.
-        [toRemoveEl, ...toRemoveEl.querySelectorAll("*")].forEach((el) => {
+        selectElements(toRemoveEl, "*").forEach((el) => {
             const tooltip = Tooltip.getInstance(el);
             if (tooltip) {
                 tooltip.dispose();

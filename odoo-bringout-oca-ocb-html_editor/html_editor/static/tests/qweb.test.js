@@ -1,11 +1,20 @@
-import { describe, expect, test } from "@odoo/hoot";
-import { click, dblclick, queryAll, queryAllTexts, queryOne, select } from "@odoo/hoot-dom";
+import { describe, expect, runAllTimers, test } from "@odoo/hoot";
+import {
+    click,
+    dblclick,
+    queryAll,
+    queryAllTexts,
+    queryOne,
+    select,
+    waitFor,
+} from "@odoo/hoot-dom";
 import { animationFrame, tick } from "@odoo/hoot-mock";
 import { setupEditor } from "./_helpers/editor";
-import { getContent, setSelection } from "./_helpers/selection";
+import { getContent, setContent, setSelection } from "./_helpers/selection";
 import { QWebPlugin } from "@html_editor/others/qweb_plugin";
 import { MAIN_PLUGINS } from "@html_editor/plugin_sets";
-import { dispatchCleanForSave } from "./_helpers/dispatch";
+import { processThroughCleanForSave } from "./_helpers/dispatch";
+import { expectElementCount } from "./_helpers/ui_expectations";
 
 const config = { Plugins: [...MAIN_PLUGINS, QWebPlugin] };
 describe("qweb picker", () => {
@@ -15,7 +24,9 @@ describe("qweb picker", () => {
             { config }
         );
         expect(getContent(el)).toBe(
-            `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">no</t></div>`
+            '<p data-selection-placeholder=""><br></p>' +
+                `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">no</t></div>` +
+                '<p data-selection-placeholder=""><br></p>'
         );
         await click(queryOne(`[data-oe-t-group-active="true"]`));
         await animationFrame();
@@ -29,16 +40,18 @@ describe("qweb picker", () => {
         expect(".o-we-qweb-picker").toHaveCount(1);
         expect(".o-we-qweb-picker select option:selected").toHaveText("else");
         expect(getContent(el)).toBe(
-            `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0" data-oe-t-group-active="true">no</t></div>`
+            '<p data-selection-placeholder=""><br></p>' +
+                `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0" data-oe-t-group-active="true">no</t></div>` +
+                '<p data-selection-placeholder=""><br></p>'
         );
 
-        dispatchCleanForSave(editor, { root: el });
+        processThroughCleanForSave(editor, el);
         expect(getContent(el)).toBe(`<div><t t-if="test">yes</t><t t-else="">no</t></div>`);
     });
 
     test("plugin's dom markers are not savable", async () => {
         const resources = {
-            handleNewRecords: () => {
+            on_new_records_handled_handlers: () => {
                 expect.step("handleNewRecords");
             },
         };
@@ -53,7 +66,9 @@ describe("qweb picker", () => {
             config,
         });
         expect(getContent(el)).toBe(
-            `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">no</t></div>`
+            '<p data-selection-placeholder=""><br></p>' +
+                `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">no</t></div>` +
+                '<p data-selection-placeholder=""><br></p>'
         );
         await click(queryOne(`[data-oe-t-group-active="true"]`));
         await animationFrame();
@@ -67,7 +82,9 @@ describe("qweb picker", () => {
         expect(".o-we-qweb-picker").toHaveCount(1);
         expect(".o-we-qweb-picker select option:selected").toHaveText("if: test");
         expect(getContent(el)).toBe(
-            `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">no</t></div>`
+            '<p data-selection-placeholder=""><br></p>' +
+                `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">no</t></div>` +
+                '<p data-selection-placeholder=""><br></p>'
         );
     });
 
@@ -77,7 +94,9 @@ describe("qweb picker", () => {
             { config }
         );
         expect(getContent(el)).toBe(
-            `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">if</t><t t-elif="test2" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">elif</t><t t-elif="test3" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">elif 3</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">else</t></div>`
+            '<p data-selection-placeholder=""><br></p>' +
+                `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">if</t><t t-elif="test2" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">elif</t><t t-elif="test3" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">elif 3</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">else</t></div>` +
+                '<p data-selection-placeholder=""><br></p>'
         );
         await click(queryOne(`[data-oe-t-group-active="true"]`));
         await animationFrame();
@@ -96,7 +115,9 @@ describe("qweb picker", () => {
         expect(".o-we-qweb-picker").toHaveCount(1);
         expect(".o-we-qweb-picker select option:selected").toHaveText("elif: test2");
         expect(getContent(el)).toBe(
-            `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true">if</t><t t-elif="test2" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0" data-oe-t-group-active="true">elif</t><t t-elif="test3" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">elif 3</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">else</t></div>`
+            '<p data-selection-placeholder=""><br></p>' +
+                `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true">if</t><t t-elif="test2" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0" data-oe-t-group-active="true">elif</t><t t-elif="test3" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">elif 3</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">else</t></div>` +
+                '<p data-selection-placeholder=""><br></p>'
         );
 
         await click(".o-we-qweb-picker select");
@@ -105,7 +126,9 @@ describe("qweb picker", () => {
         expect(".o-we-qweb-picker").toHaveCount(1);
         expect(".o-we-qweb-picker select option:selected").toHaveText("elif: test3");
         expect(getContent(el)).toBe(
-            `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true">if</t><t t-elif="test2" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">elif</t><t t-elif="test3" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0" data-oe-t-group-active="true">elif 3</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">else</t></div>`
+            '<p data-selection-placeholder=""><br></p>' +
+                `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true">if</t><t t-elif="test2" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">elif</t><t t-elif="test3" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0" data-oe-t-group-active="true">elif 3</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">else</t></div>` +
+                '<p data-selection-placeholder=""><br></p>'
         );
 
         await click(".o-we-qweb-picker select");
@@ -114,7 +137,9 @@ describe("qweb picker", () => {
         expect(".o-we-qweb-picker").toHaveCount(1);
         expect(".o-we-qweb-picker select option:selected").toHaveText("else");
         expect(getContent(el)).toBe(
-            `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true">if</t><t t-elif="test2" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">elif</t><t t-elif="test3" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">elif 3</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0" data-oe-t-group-active="true">else</t></div>`
+            '<p data-selection-placeholder=""><br></p>' +
+                `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true">if</t><t t-elif="test2" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">elif</t><t t-elif="test3" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">elif 3</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0" data-oe-t-group-active="true">else</t></div>` +
+                '<p data-selection-placeholder=""><br></p>'
         );
     });
 
@@ -124,7 +149,9 @@ describe("qweb picker", () => {
             { config }
         );
         expect(getContent(el)).toBe(
-            `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">no</t><t t-if="test2" data-oe-t-inline="true" data-oe-t-group="1" data-oe-t-selectable="true" data-oe-t-group-active="true">hello</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="1">bye</t></div>`
+            '<p data-selection-placeholder=""><br></p>' +
+                `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">no</t><t t-if="test2" data-oe-t-inline="true" data-oe-t-group="1" data-oe-t-selectable="true" data-oe-t-group-active="true">hello</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="1">bye</t></div>` +
+                '<p data-selection-placeholder=""><br></p>'
         );
         expect('[data-oe-t-group-active="true"]').toHaveCount(2);
 
@@ -140,7 +167,9 @@ describe("qweb picker", () => {
         expect(".o-we-qweb-picker").toHaveCount(1);
         expect(".o-we-qweb-picker select option:selected").toHaveText("else");
         expect(getContent(el)).toBe(
-            `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">no</t><t t-if="test2" data-oe-t-inline="true" data-oe-t-group="1" data-oe-t-selectable="true">hello</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="1" data-oe-t-group-active="true">bye</t></div>`
+            '<p data-selection-placeholder=""><br></p>' +
+                `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">no</t><t t-if="test2" data-oe-t-inline="true" data-oe-t-group="1" data-oe-t-selectable="true">hello</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="1" data-oe-t-group-active="true">bye</t></div>` +
+                '<p data-selection-placeholder=""><br></p>'
         );
     });
 
@@ -149,7 +178,9 @@ describe("qweb picker", () => {
             config,
         });
         expect(getContent(el)).toBe(
-            `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">no</t></div>`
+            '<p data-selection-placeholder=""><br></p>' +
+                `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true">yes</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">no</t></div>` +
+                '<p data-selection-placeholder=""><br></p>'
         );
 
         // Open picker
@@ -171,7 +202,9 @@ describe("qweb picker", () => {
             }
         );
         expect(getContent(el)).toBe(
-            `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true"><t t-if="sub-test" data-oe-t-inline="true" data-oe-t-group="1" data-oe-t-selectable="true" data-oe-t-group-active="true">Sub if</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="1">Sub Else</t></t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">Else</t></div>`
+            '<p data-selection-placeholder=""><br></p>' +
+                `<div><t t-if="test" data-oe-t-inline="true" data-oe-t-group="0" data-oe-t-selectable="true" data-oe-t-group-active="true"><t t-if="sub-test" data-oe-t-inline="true" data-oe-t-group="1" data-oe-t-selectable="true" data-oe-t-group-active="true">Sub if</t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="1">Sub Else</t></t><t t-else="" data-oe-t-inline="true" data-oe-t-selectable="true" data-oe-t-group="0">Else</t></div>` +
+                '<p data-selection-placeholder=""><br></p>'
         );
 
         // Open picker on sub condition
@@ -218,43 +251,57 @@ describe("qweb picker", () => {
     });
 });
 
+test("show t-out expression in picker on click", async () => {
+    const { el } = await setupEditor(`<div><t t-out="test">Hello</t></div>`, {
+        config,
+    });
+    expect(getContent(el)).toBe(
+        '<p data-selection-placeholder=""><br></p>' +
+            `<div><t t-out="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t></div>` +
+            '<p data-selection-placeholder=""><br></p>'
+    );
+    await click(queryOne(`[t-out]`));
+    await expectElementCount(".o-we-qweb-picker", 1);
+    expect(queryOne(".o-we-qweb-picker div")).toHaveText("t-out: test");
+});
+
+test("show t-field expression in picker on click", async () => {
+    const { el } = await setupEditor(`<div><t t-field="test">Hello</t></div>`, {
+        config,
+    });
+    expect(getContent(el)).toBe(
+        '<p data-selection-placeholder=""><br></p>' +
+            `<div><t t-field="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t></div>` +
+            '<p data-selection-placeholder=""><br></p>'
+    );
+    await click(queryOne(`[t-field]`));
+    await expectElementCount(".o-we-qweb-picker", 1);
+    expect(queryOne(".o-we-qweb-picker div")).toHaveText("t-field: test");
+});
+
 test("select text inside t-out", async () => {
     const { el } = await setupEditor(`<div><t t-out="test">Hello</t></div>`, {
         config,
     });
     expect(getContent(el)).toBe(
-        `<div><t t-out="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t></div>`
+        '<p data-selection-placeholder=""><br></p>' +
+            `<div><t t-out="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t></div>` +
+            '<p data-selection-placeholder=""><br></p>'
     );
 
     setSelection({ anchorNode: el.querySelector("t[t-out]").childNodes[0], anchorOffset: 1 });
 
     await tick();
     expect(getContent(el)).toBe(
-        `<div><t t-out="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">H[]ello</t></div>`
+        '<p data-selection-placeholder=""><br></p>' +
+            `<div><t t-out="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">H[]ello</t></div>` +
+            '<p data-selection-placeholder=""><br></p>'
     );
     await dblclick("t");
     expect(getContent(el)).toBe(
-        `<div>[<t t-out="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t>]</div>`
-    );
-});
-
-test("select text inside t-esc", async () => {
-    const { el } = await setupEditor(`<div><t t-esc="test">Hello</t></div>`, {
-        config,
-    });
-    expect(getContent(el)).toBe(
-        `<div><t t-esc="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t></div>`
-    );
-
-    setSelection({ anchorNode: el.querySelector("t[t-esc]").childNodes[0], anchorOffset: 1 });
-
-    await tick();
-    expect(getContent(el)).toBe(
-        `<div><t t-esc="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">H[]ello</t></div>`
-    );
-    await dblclick("t");
-    expect(getContent(el)).toBe(
-        `<div>[<t t-esc="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t>]</div>`
+        '<p data-selection-placeholder=""><br></p>' +
+            `<div>[<t t-out="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t>]</div>` +
+            '<p data-selection-placeholder=""><br></p>'
     );
 });
 
@@ -263,18 +310,24 @@ test("select text inside t-field", async () => {
         config,
     });
     expect(getContent(el)).toBe(
-        `<div><t t-field="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t></div>`
+        '<p data-selection-placeholder=""><br></p>' +
+            `<div><t t-field="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t></div>` +
+            '<p data-selection-placeholder=""><br></p>'
     );
 
     setSelection({ anchorNode: el.querySelector("t[t-field]").childNodes[0], anchorOffset: 1 });
 
     await tick();
     expect(getContent(el)).toBe(
-        `<div><t t-field="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">H[]ello</t></div>`
+        '<p data-selection-placeholder=""><br></p>' +
+            `<div><t t-field="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">H[]ello</t></div>` +
+            '<p data-selection-placeholder=""><br></p>'
     );
     await dblclick("t");
     expect(getContent(el)).toBe(
-        `<div>[<t t-field="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t>]</div>`
+        '<p data-selection-placeholder=""><br></p>' +
+            `<div>[<t t-field="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t>]</div>` +
+            '<p data-selection-placeholder=""><br></p>'
     );
 });
 
@@ -284,7 +337,7 @@ test("cleaning removes content editable", async () => {
         <div>
             <t t-field="test">Hello</t>
             <t t-out="test">Hello</t>
-            <t t-esc="test">Hello</t>
+            <t t-out="test">Hello</t>
             <t t-raw="test">Hello</t>
         </div>`,
         {
@@ -292,18 +345,18 @@ test("cleaning removes content editable", async () => {
         }
     );
     expect(getContent(el)).toBe(`
-        <div>
+        <p data-selection-placeholder=""><br></p><div>
             <t t-field="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t>
             <t t-out="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t>
-            <t t-esc="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t>
+            <t t-out="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t>
             <t t-raw="test" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">Hello</t>
-        </div>`);
+        </div><p data-selection-placeholder=""><br></p>`);
 
     expect(editor.getContent()).toBe(`
         <div>
             <t t-field="test">Hello</t>
             <t t-out="test">Hello</t>
-            <t t-esc="test">Hello</t>
+            <t t-out="test">Hello</t>
             <t t-raw="test">Hello</t>
         </div>`);
 });
@@ -318,9 +371,48 @@ test("cleaning does not remove t-out links", async () => {
         { config }
     );
     expect(el.innerHTML.trim().replace(/\s+/g, " ")).toBe(
-        `<ul> <li> <a href="xyz" t-out="xyz" data-oe-protected="true" contenteditable="false"> </a> </li> </ul>`
+        `<ul> <li><a href="xyz" t-out="xyz" data-oe-protected="true" contenteditable="false"></a></li> </ul>`
     );
     expect(editor.getContent().trim().replace(/\s+/g, " ")).toBe(
         '<ul> <li><a href="xyz" t-out="xyz"></a></li> </ul>'
     );
+});
+
+test("formatting toolbar items are disabled on t-att-class and t-att-style (and their format counterparts)", async () => {
+    const { el } = await setupEditor(`<p>[<t>foo</t>]</p>`, {
+        config,
+    });
+
+    await waitFor(".o-we-toolbar button[name=expand_toolbar]");
+    await click(".o-we-toolbar button[name=expand_toolbar]");
+    await waitFor("button[name=remove_format]");
+
+    expect(`button[name="bold"]`).not.toHaveAttribute("disabled");
+    expect(`button[name="italic"]`).not.toHaveAttribute("disabled");
+    expect(`button[name="underline"]`).not.toHaveAttribute("disabled");
+    expect(`button[name="strikethrough"]`).not.toHaveAttribute("disabled");
+    expect(`button[name="font_type"]`).not.toHaveAttribute("disabled");
+    expect(`button[name="font_family"]`).not.toHaveAttribute("disabled");
+    expect(`button[name="font_size"]`).not.toHaveAttribute("disabled");
+    expect(`button[title="Apply Font Color"]`).not.toHaveAttribute("disabled");
+    expect(`button[title="Apply Background Color"]`).not.toHaveAttribute("disabled");
+    expect(`button[name="link"]`).not.toHaveAttribute("disabled");
+
+    setContent(el, `<p>[<t t-att-class="expr_class">foo</t>]</p>`);
+    await animationFrame();
+    await runAllTimers();
+    await waitFor("button[name=remove_format]");
+
+    expect(`button[name="font_type"]`).toHaveAttribute("disabled");
+    expect(`button[name="font_family"]`).toHaveAttribute("disabled");
+    expect(`button[name="font_size"]`).toHaveAttribute("disabled");
+    expect(`button[title="Apply Font Color"]`).toHaveAttribute("disabled");
+    expect(`button[title="Apply Background Color"]`).toHaveAttribute("disabled");
+    expect(`button[name="link"]`).toHaveAttribute("disabled");
+
+    // These buttons are hidden since the command is not available
+    expect(`button[name="bold"]`).toHaveCount(0);
+    expect(`button[name="italic"]`).toHaveCount(0);
+    expect(`button[name="underline"]`).toHaveCount(0);
+    expect(`button[name="strikethrough"]`).toHaveCount(0);
 });

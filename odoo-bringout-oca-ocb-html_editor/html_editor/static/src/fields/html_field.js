@@ -1,3 +1,4 @@
+import { useRef, useState } from "@web/owl2/utils";
 import { HtmlUpgradeManager } from "@html_editor/html_migrations/html_upgrade_manager";
 import { stripVersion } from "@html_editor/html_migrations/html_migrations_utils";
 import { stripHistoryIds } from "@html_editor/others/collaboration/collaboration_odoo_plugin";
@@ -7,14 +8,14 @@ import {
     MAIN_PLUGINS,
     NO_EMBEDDED_COMPONENTS_FALLBACK_PLUGINS,
 } from "@html_editor/plugin_sets";
-import { DYNAMIC_PLACEHOLDER_PLUGINS } from "@html_editor/backend/plugin_sets";
+import { DYNAMIC_FIELD_PLUGINS } from "@html_editor/backend/dynamic_field/dynamic_field_plugin";
 import {
     MAIN_EMBEDDINGS,
     READONLY_MAIN_EMBEDDINGS,
 } from "@html_editor/others/embedded_components/embedding_sets";
 import { normalizeHTML } from "@html_editor/utils/html";
 import { Wysiwyg } from "@html_editor/wysiwyg";
-import { Component, markup, status, useRef, useState } from "@odoo/owl";
+import { Component, markup, status } from "@odoo/owl";
 import { localization } from "@web/core/l10n/localization";
 import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
@@ -53,8 +54,8 @@ export class HtmlField extends Component {
         ...standardFieldProps,
         isCollaborative: { type: Boolean, optional: true },
         collaborativeTrigger: { type: String, optional: true },
-        dynamicPlaceholder: { type: Boolean, optional: true, default: false },
-        dynamicPlaceholderModelReferenceField: { type: String, optional: true },
+        dynamicField: { type: Boolean, optional: true },
+        dynamicFieldReferenceModel: { type: String, optional: true },
         migrateHTML: { type: Boolean, optional: true },
         cssReadonlyAssetId: { type: String, optional: true },
         sandboxedPreview: { type: Boolean, optional: true },
@@ -63,7 +64,7 @@ export class HtmlField extends Component {
         embeddedComponents: { type: Boolean, optional: true },
     };
     static defaultProps = {
-        dynamicPlaceholder: false,
+        dynamicField: false,
     };
     static components = {
         Wysiwyg,
@@ -86,6 +87,7 @@ export class HtmlField extends Component {
         this.ormService = useService("orm");
 
         this.isDirty = false;
+        this.lastChangeId = 0;
         this.state = useState({
             key: 0,
             showCodeView: false,
@@ -95,6 +97,7 @@ export class HtmlField extends Component {
         });
 
         useRecordObserver((record) => {
+            const key = this.state.key;
             // Reset Wysiwyg when we discard or onchange value
             const newValue = fixInvalidHTML(record.data[this.props.name]);
             if (!this.isDirty) {
@@ -105,12 +108,16 @@ export class HtmlField extends Component {
                     this.lastValue = value;
                 }
             }
+            if (key === this.state.key && record.resId !== this.props.record.resId) {
+                // Ensure key is reset for 2 different records with identical html values
+                this.state.key++;
+            }
         });
         useRecordObserver((record) => {
-            const value = record.data[this.props.dynamicPlaceholderModelReferenceField || "model"];
+            const value = record.data[this.props.dynamicFieldReferenceModel || "model"];
             // update Dynamic Placeholder reference model
-            if (this.props.dynamicPlaceholder && this.editor) {
-                this.editor.shared.dynamicPlaceholder?.updateDphDefaultModel(value);
+            if (this.editor && this.editor.isReady) {
+                this.editor.trigger("on_model_changed_handlers", value);
             }
         });
     }
@@ -154,18 +161,38 @@ export class HtmlField extends Component {
         stripVersion(element);
     }
 
-    async updateValue(value) {
+    async updateValue(value, { changeId } = { changeId: this.lastChangeId }) {
         this.lastValue = normalizeHTML(value, this.clearElementToCompare.bind(this));
-        this.isDirty = false;
-        await this.props.record.update({ [this.props.name]: value }).catch(() => {
-            this.isDirty = true;
-        });
+        await this.props.record.update({ [this.props.name]: value }).then(
+            () => {
+                if (this.lastChangeId === changeId) {
+                    this.isDirty = false;
+                }
+            },
+            () => {}
+        );
         this.props.record.model.bus.trigger("FIELD_IS_DIRTY", this.isDirty);
     }
 
     async getEditorContent() {
-        await this.editor.shared.imageSave?.savePendingImages();
-        return this.editor.getElContent();
+        const content = this.editor.getElContent();
+        const oldSrcToNewSrcMap = await this.editor.shared.imageSave?.savePendingImages(content);
+        // Update the actual editable if still in the DOM.
+        if (this.editor.editable && oldSrcToNewSrcMap) {
+            this.editor.editable
+                .querySelectorAll(".o_b64_image_to_save, .o_modified_image_to_save")
+                .forEach((unsavedImage) => {
+                    const oldSrc = unsavedImage.getAttribute("src");
+                    if (oldSrcToNewSrcMap.has(oldSrc)) {
+                        unsavedImage.setAttribute("src", oldSrcToNewSrcMap.get(oldSrc));
+                    }
+                    unsavedImage.classList.remove(
+                        "o_b64_image_to_save",
+                        "o_modified_image_to_save"
+                    );
+                });
+        }
+        return content;
     }
 
     async _commitChanges({ urgent }) {
@@ -180,12 +207,13 @@ export class HtmlField extends Component {
             if (urgent) {
                 await this.updateValue(this.editor.getContent());
             }
+            const changeId = this.lastChangeId;
             const el = await this.getEditorContent();
             const content = el.innerHTML;
             this.clearElementToCompare(el);
             const comparisonValue = el.innerHTML;
             if (!urgent || (urgent && this.lastValue !== comparisonValue)) {
-                await this.updateValue(content);
+                await this.updateValue(content, { changeId });
             }
         }
     }
@@ -204,6 +232,9 @@ export class HtmlField extends Component {
 
     onChange() {
         this.isDirty = true;
+        // Keep track of every change individually to avoid resetting dirtiness
+        // after committing a change if another change occurred in the meantime.
+        this.lastChangeId++;
         this.props.record.model.bus.trigger("FIELD_IS_DIRTY", true);
     }
 
@@ -227,7 +258,7 @@ export class HtmlField extends Component {
                 ...(this.props.migrateHTML ? [EditorVersionPlugin] : []),
                 ...MAIN_PLUGINS,
                 ...(this.props.isCollaborative ? COLLABORATION_PLUGINS : []),
-                ...(this.props.dynamicPlaceholder ? DYNAMIC_PLACEHOLDER_PLUGINS : []),
+                ...(this.props.dynamicField ? DYNAMIC_FIELD_PLUGINS : []),
                 ...(this.props.embeddedComponents
                     ? EMBEDDED_COMPONENT_PLUGINS
                     : NO_EMBEDDED_COMPONENTS_FALLBACK_PLUGINS),
@@ -246,9 +277,9 @@ export class HtmlField extends Component {
                 peerId: this.generateId(),
             },
             dropImageAsAttachment: true, // @todo @phoenix always true ?
-            dynamicPlaceholder: this.props.dynamicPlaceholder,
-            dynamicPlaceholderResModel:
-                this.props.record.data[this.props.dynamicPlaceholderModelReferenceField || "model"],
+            dynamicPlaceholder: this.props.dynamicField,
+            dynamicResModel:
+                this.props.record.data[this.props.dynamicFieldReferenceModel || "model"],
             direction: localization.direction || "ltr",
             getRecordInfo: () => {
                 const { resModel, resId, data, fields, id } = this.props.record;
@@ -322,7 +353,7 @@ export const htmlField = {
     component: HtmlField,
     displayName: _t("Html"),
     supportedTypes: ["html"],
-    extractProps({ attrs, options }, dynamicInfo) {
+    extractProps({ attrs, options, viewType }) {
         const editorConfig = {
             mediaModalParams: {
                 useMediaLibrary: true,
@@ -362,20 +393,32 @@ export const htmlField = {
                 options.cleanEmptyStructuralContainers
             );
         }
-        return {
+        if ("debouncePowerbuttons" in options) {
+            editorConfig.debouncePowerbuttons = Boolean(options.debouncePowerbuttons);
+        }
+        if ("debounceHints" in options) {
+            editorConfig.debounceHints = Boolean(options.debounceHints);
+        }
+
+        const props = {
             editorConfig,
             isCollaborative: options.collaborative,
             collaborativeTrigger: options.collaborative_trigger,
             migrateHTML: "migrateHTML" in options ? Boolean(options.migrateHTML) : true,
-            dynamicPlaceholder: options.dynamic_placeholder,
-            dynamicPlaceholderModelReferenceField:
-                options.dynamic_placeholder_model_reference_field,
+            dynamicField: options.dynamic_placeholder,
+            dynamicFieldReferenceModel: options.dynamic_placeholder_model_reference_field,
             embeddedComponents:
                 "embedded_components" in options ? Boolean(options.embedded_components) : true,
             sandboxedPreview: Boolean(options.sandboxedPreview),
             cssReadonlyAssetId: options.cssReadonly,
             codeview: Boolean(odoo.debug && options.codeview),
         };
+
+        if (viewType === "list") {
+            props.readonly = true;
+        }
+
+        return props;
     },
 };
 

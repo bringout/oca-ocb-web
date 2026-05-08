@@ -15,7 +15,8 @@ import {
     setElementToMaxZindex,
     toggleGridMode,
 } from "@html_builder/utils/grid_layout_utils";
-import { isElement } from "@html_editor/utils/dom_info";
+import { hasMediaOnly, isElement, isMediaElement } from "@html_editor/utils/dom_info";
+import { selectElements } from "@html_editor/utils/dom_traversal";
 
 const gridItemSelector = ".row.o_grid_mode > div.o_grid_item";
 
@@ -26,6 +27,7 @@ function isGridItem(el) {
 export class GridLayoutPlugin extends Plugin {
     static id = "gridLayout";
     static dependencies = ["selection", "builderOptions"];
+    /** @type {import("plugins").BuilderResources} */
     resources = {
         get_overlay_buttons: withSequence(0, {
             getButtons: this.getActiveOverlayButtons.bind(this),
@@ -41,7 +43,7 @@ export class GridLayoutPlugin extends Plugin {
         on_snippet_dropped_near_handlers: this.onSnippetDroppedNear.bind(this),
         on_snippet_dropped_handlers: withSequence(1000, this.onSnippetDropped.bind(this)),
         // Drag and drop from the page
-        is_draggable_handlers: this.isDraggable.bind(this),
+        is_draggable_predicates: this.isDraggable.bind(this),
         on_element_dragged_handlers: this.onElementDragged.bind(this),
         on_element_over_dropzone_handlers: this.onDropzoneOver.bind(this),
         on_element_move_handlers: this.onDragMove.bind(this),
@@ -50,7 +52,12 @@ export class GridLayoutPlugin extends Plugin {
         on_element_dropped_near_handlers: this.onElementDroppedNear.bind(this),
         on_element_dropped_handlers: this.onElementDropped.bind(this),
         // Ignore background grid in history
-        savable_mutation_record_predicates: this.ignoreBackgroundGrid.bind(this),
+        is_mutation_record_savable_predicates: this.ignoreBackgroundGrid.bind(this),
+        // Make sure `o_grid_item_image` elements are not editable, unless they
+        // already have other contents in them (=> compatibility with older
+        // versions).
+        content_editable_providers: this.getContentEditableEls.bind(this),
+        content_not_editable_providers: this.getContentNotEditableEls.bind(this),
     };
 
     setup() {
@@ -86,7 +93,6 @@ export class GridLayoutPlugin extends Plugin {
                 return false;
             }
         }
-        return true;
     }
 
     getActiveOverlayButtons(target) {
@@ -100,12 +106,12 @@ export class GridLayoutPlugin extends Plugin {
         if (!this.config.isMobileView(this.overlayTarget)) {
             buttons.push(
                 {
-                    class: "o_send_back oi",
+                    class: "o_send_back oi-send-back oi",
                     title: _t("Send to back"),
                     handler: this.sendGridItemToBack.bind(this),
                 },
                 {
-                    class: "o_bring_front oi",
+                    class: "o_bring_front oi-bring-front oi",
                     title: _t("Bring to front"),
                     handler: this.bringGridItemToFront.bind(this),
                 }
@@ -422,7 +428,6 @@ export class GridLayoutPlugin extends Plugin {
         if (isColumn && this.config.isMobileView(targetEl)) {
             return false;
         }
-        return true;
     }
 
     /**
@@ -767,5 +772,17 @@ export class GridLayoutPlugin extends Plugin {
                 return parentEl === startGridEl && gridArea === startGridArea;
             };
         }
+    }
+
+    getContentEditableEls(rootEl) {
+        return [
+            ...selectElements(rootEl, ".o_grid_item_image > *, .o_grid_item_image > a > *"),
+        ].filter((el) => isMediaElement(el) || el.tagName === "IMG");
+    }
+
+    getContentNotEditableEls(rootEl) {
+        return [...selectElements(rootEl, ".o_grid_item_image")].filter((el) =>
+            hasMediaOnly(el, true)
+        );
     }
 }

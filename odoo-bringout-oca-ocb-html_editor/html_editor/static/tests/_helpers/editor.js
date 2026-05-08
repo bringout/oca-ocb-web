@@ -3,15 +3,21 @@ import { destroy, expect, getFixture } from "@odoo/hoot";
 import { queryOne } from "@odoo/hoot-dom";
 import { Component, markup, onWillDestroy, xml } from "@odoo/owl";
 import { mountWithCleanup } from "@web/../tests/web_test_helpers";
-import { getContent, getSelection, setContent } from "./selection";
+import { getContent, getSelection, setContent, setSelection } from "./selection";
 import { Deferred, animationFrame, tick } from "@odoo/hoot-mock";
-import { dispatchCleanForSave } from "./dispatch";
+import { processThroughCleanForSave } from "./dispatch";
 import { fixInvalidHTML } from "@html_editor/utils/sanitize";
 import { toExplicitString } from "@web/../lib/hoot/hoot_utils";
+import { EmbeddedComponentPlugin } from "@html_editor/others/embedded_component_plugin";
 
 export const Direction = {
     BACKWARD: "BACKWARD",
     FORWARD: "FORWARD",
+};
+
+const defaultTestConfig = {
+    debouncePowerbuttons: false,
+    debounceHints: false,
 };
 
 // A generic base64 image for testing
@@ -20,10 +26,10 @@ export const base64Img =
 
 class TestEditor extends Component {
     static template = xml`
-        <t t-if="props.styleContent">
-            <style t-esc="props.styleContent"></style>
+        <t t-if="this.props.styleContent">
+            <style t-out="this.props.styleContent"></style>
         </t>
-        <Wysiwyg t-props="wysiwygProps" />`;
+        <Wysiwyg t-props="this.wysiwygProps" />`;
     static components = { Wysiwyg };
     static props = ["wysiwygProps", "content", "styleContent?", "onMounted?", "onWillDestroy?"];
 
@@ -62,7 +68,7 @@ class TestEditor extends Component {
         if (this.props.onWillDestroy) {
             onWillDestroy(this.props.onWillDestroy);
         }
-        if (this.wysiwygProps.config.resources?.embedded_components) {
+        if (this.wysiwygProps.config.Plugins?.includes(EmbeddedComponentPlugin)) {
             this.wysiwygProps.config.embeddedComponentInfo = {
                 app: this.__owl__.app,
                 env: this.env,
@@ -93,7 +99,10 @@ class TestEditor extends Component {
  */
 export async function setupEditor(content, options = {}) {
     const wysiwygProps = Object.assign({}, options.props);
-    wysiwygProps.config = options.config || {};
+    wysiwygProps.config = {
+        ...defaultTestConfig,
+        ...(options.config || {}),
+    };
     const attachedEditor = new Promise((resolve) => {
         wysiwygProps.onLoad = (editor) => {
             const oldAttachTo = editor.attachTo;
@@ -138,14 +147,25 @@ export async function setupEditor(content, options = {}) {
     };
 }
 
+export function reverseTextualSelection(content) {
+    return content.replace("[", "°°°").replace("]", "[").replace("°°°", "]").replace("][", "[]");
+}
+
+/**
+ * @typedef { Object } StepFunctionHelpers
+ * @property { (string) => void } assertContentEquals
+ * @property { ({ anchorNode: Node, anchorOffset: Number, focusNode?: Node, focusOffset?: Number }) => void } setTestSelection
+ */
 /**
  * @typedef { Object } TestEditorConfig
  * @property { string } contentBefore
  * @property { string } [contentBeforeEdit]
- * @property { (editor: Editor) => any } [stepFunction]
+ * @property { (editor: Editor, helpers: StepFunctionHelpers) => Promise<void> } [stepFunction]
  * @property { string } [contentAfter]
  * @property { string } [contentAfterEdit]
  * @property { (content: string, expected: string, phase: string, editor: Editor) => Promise<void> } [compareFunction]
+ * @property { boolean } [testInBothDirections = true] set to false to disable automatic reverse selection testing
+ * @property { string } [reverseSelection = false] set to true to reverse the selection at every step
  */
 
 /**
@@ -160,20 +180,25 @@ export async function testEditor(config) {
         contentAfter,
         contentAfterEdit,
         compareFunction,
+        testInBothDirections = true,
+        reverseSelection = false,
     } = config;
     if (!compareFunction) {
         compareFunction = (content, expected, phase) => {
             expect(content).toBe(expected, {
-                message: `(testEditor) ${phase} should be strictly equal to ${toExplicitString(
-                    expected
-                )}`,
+                message: `(testEditor) ${
+                    phase + (reverseSelection ? " (reversed selection)" : "")
+                } should be strictly equal to ${toExplicitString(expected)}`,
             });
         };
     }
     delete config.props?.mobile;
     const willBeDestroyed = new Deferred();
     config.onWillDestroy = () => willBeDestroyed.resolve();
-    const { el, editor, editorComponent } = await setupEditor(contentBefore, config);
+    const { el, editor, editorComponent } = await setupEditor(
+        reverseSelection ? reverseTextualSelection(contentBefore) : contentBefore,
+        config
+    );
     // The stageSelection should have been triggered by the click on
     // the editable. As we set the selection programmatically, we dispatch the
     // selection here for the commands that relies on it.
@@ -193,20 +218,39 @@ export async function testEditor(config) {
         // we should do something before (sanitize)
         await compareFunction(
             getContent(el, config.options),
-            contentBeforeEdit,
+            reverseSelection ? reverseTextualSelection(contentBeforeEdit) : contentBeforeEdit,
             "Editor content, before edit",
             editor
         );
     }
 
     if (stepFunction) {
-        await stepFunction(editor);
+        await stepFunction(editor, {
+            assertContentEquals: (expectedContent) => {
+                expect(getContent(el, config.options)).toBe(
+                    reverseSelection ? reverseTextualSelection(expectedContent) : expectedContent
+                );
+            },
+            setTestSelection: ({
+                anchorNode,
+                anchorOffset,
+                focusNode = anchorNode,
+                focusOffset = anchorOffset,
+            }) => {
+                setSelection({
+                    anchorNode: reverseSelection ? focusNode : anchorNode,
+                    anchorOffset: reverseSelection ? focusOffset : anchorOffset,
+                    focusNode: reverseSelection ? anchorNode : focusNode,
+                    focusOffset: reverseSelection ? anchorOffset : focusOffset,
+                });
+            },
+        });
     }
 
     if (contentAfterEdit) {
         await compareFunction(
             getContent(el, config.options),
-            contentAfterEdit,
+            reverseSelection ? reverseTextualSelection(contentAfterEdit) : contentAfterEdit,
             "Editor content, after edit",
             editor
         );
@@ -214,11 +258,11 @@ export async function testEditor(config) {
     if (contentAfter) {
         // Test the saved value, with added cursor markers for convenience of testing.
         const content = editor.getContent(); // Saved value.
-        dispatchCleanForSave(editor, { root: el, preserveSelection: true });
+        processThroughCleanForSave(editor, el, { preserveSelection: true });
         const innerHTML = el.innerHTML; // Cleaned value without cursors.
         await compareFunction(
             getContent(el, config.options),
-            contentAfter,
+            reverseSelection ? reverseTextualSelection(contentAfter) : contentAfter,
             "Editor content, after clean",
             editor
         );
@@ -227,6 +271,17 @@ export async function testEditor(config) {
     }
     destroy(editorComponent);
     await willBeDestroyed;
+
+    if (
+        testInBothDirections &&
+        [contentBeforeEdit, contentBefore].some((c) => c?.includes("[") && !c?.includes("[]"))
+    ) {
+        // The test includes a non-collapsed selection -> test it in both
+        // directions.
+        config.testInBothDirections = false;
+        config.reverseSelection = true;
+        await testEditor(config);
+    }
 }
 /**
  * @todo: remove this?

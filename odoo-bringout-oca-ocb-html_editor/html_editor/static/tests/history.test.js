@@ -7,7 +7,15 @@ import { animationFrame, mockUserAgent, tick } from "@odoo/hoot-mock";
 import { setupEditor, testEditor } from "./_helpers/editor";
 import { getContent, setSelection } from "./_helpers/selection";
 import { expectElementCount } from "./_helpers/ui_expectations";
-import { addStep, deleteBackward, insertText, redo, undo } from "./_helpers/user_actions";
+import {
+    addStep,
+    deleteBackward,
+    ensureDistinctHistoryStep,
+    insertText,
+    redo,
+    splitBlock,
+    undo,
+} from "./_helpers/user_actions";
 import { execCommand } from "./_helpers/userCommands";
 
 describe("reset", () => {
@@ -15,7 +23,7 @@ describe("reset", () => {
         const TestPlugin = class extends Plugin {
             static id = "test";
             resources = {
-                normalize_handlers: () => {
+                normalize_processors: () => {
                     this.editable.firstChild.setAttribute("data-test-normalize", "1");
                 },
             };
@@ -165,8 +173,11 @@ describe("redo", () => {
             contentBefore: "<p>[]</p>",
             stepFunction: async (editor) => {
                 await insertText(editor, "a");
+                await ensureDistinctHistoryStep();
                 await insertText(editor, "b");
+                await ensureDistinctHistoryStep();
                 await insertText(editor, "c");
+                await ensureDistinctHistoryStep();
                 undo(editor);
                 undo(editor);
                 await insertText(editor, "d");
@@ -184,8 +195,11 @@ describe("redo", () => {
             contentBefore: "<p>[]</p>",
             stepFunction: async (editor) => {
                 await insertText(editor, "a");
+                await ensureDistinctHistoryStep();
                 await insertText(editor, "b");
+                await ensureDistinctHistoryStep();
                 await insertText(editor, "c");
+                await ensureDistinctHistoryStep();
                 undo(editor);
                 undo(editor);
                 await insertText(editor, "d");
@@ -234,9 +248,11 @@ describe("redo", () => {
         editor.shared.selection.setCursorEnd(p1);
         // DO
         await insertText(editor, "A");
+        await ensureDistinctHistoryStep();
         expect(getContent(el)).toBe("<p>aA[]</p><p>b</p>", { message: "insert A" });
         editor.shared.selection.setCursorEnd(p2);
         await insertText(editor, "B");
+        await ensureDistinctHistoryStep();
         expect(getContent(el)).toBe("<p>aA</p><p>bB[]</p>", { message: "insert B" });
         // UNDO
         await press(["ctrl", "z"]);
@@ -564,11 +580,20 @@ describe("shortcut", () => {
     test("undo/redo with shortcut", async () => {
         const { editor, el } = await setupEditor(`<p>[]</p>`);
 
-        await insertText(editor, "abc");
+        await insertText(editor, "a");
+        await ensureDistinctHistoryStep();
+        await insertText(editor, "b");
+        await ensureDistinctHistoryStep();
+        await insertText(editor, "c");
+        await ensureDistinctHistoryStep();
         await press(["ctrl", "z"]);
         await press(["cmd", "z"]);
         expect(getContent(el)).toBe("<p>ab[]</p>");
+        await press(["ctrl", "z"]);
+        expect(getContent(el)).toBe("<p>a[]</p>");
 
+        await press(["ctrl", "y"]);
+        expect(getContent(el)).toBe("<p>ab[]</p>");
         await press(["ctrl", "y"]);
         expect(getContent(el)).toBe("<p>abc[]</p>");
 
@@ -580,8 +605,15 @@ describe("shortcut", () => {
         mockUserAgent("mac");
         const { editor, el } = await setupEditor(`<p>[]</p>`);
 
-        await insertText(editor, "abc");
+        await insertText(editor, "a");
+        await ensureDistinctHistoryStep();
+        await insertText(editor, "b");
+        await ensureDistinctHistoryStep();
+        await insertText(editor, "c");
+
+        expect(getContent(el)).toBe("<p>abc[]</p>");
         await press(["cmd", "z"]);
+        expect(getContent(el)).toBe("<p>ab[]</p>");
         await press(["cmd", "z"]);
         expect(getContent(el)).toBe("<p>a[]</p>");
 
@@ -615,18 +647,18 @@ describe("shortcut", () => {
         expect(getContent(el)).toBe("<p>b[]</p>");
     });
 
-    test("use handleNewRecords resource", async () => {
+    test("use on_new_records_handled_handlers resource", async () => {
         const onChange = () => {
             expect.step("onchange");
         };
         const resources = {
-            handleNewRecords: () => {
+            on_new_records_handled_handlers: () => {
                 expect.step("handleNewRecords");
             },
-            content_updated_handlers: () => {
+            on_content_updated_handlers: () => {
                 expect.step("contentUpdated");
             },
-            normalize_handlers: (root) => {
+            normalize_processors: (root) => {
                 expect.step("normalize");
                 root.classList.add("test");
             },
@@ -656,7 +688,7 @@ describe("destroy", () => {
             static dependencies = ["history", "dom"];
             static id = "test";
             resources = {
-                savable_mutation_record_predicates: this.isMutationRecordSavable.bind(this),
+                is_mutation_record_savable_predicates: this.isMutationRecordSavable.bind(this),
             };
             isMutationRecordSavable(record) {
                 if (
@@ -668,7 +700,6 @@ describe("destroy", () => {
                     expect.step("dispatch");
                     return false;
                 }
-                return true;
             }
             destroy() {
                 this.dependencies.dom.insert(
@@ -738,6 +769,7 @@ describe("custom mutation", () => {
         const { el, editor } = await setupEditor(`<p>[]c</p>`);
         const restoreSavePoint = editor.shared.history.makeSavePoint();
         await insertText(editor, "a");
+        await ensureDistinctHistoryStep();
 
         editor.shared.history.applyCustomMutation({
             apply: () => {
@@ -748,6 +780,7 @@ describe("custom mutation", () => {
             },
         });
         await insertText(editor, "b");
+        await ensureDistinctHistoryStep();
         expect.verifySteps(["custom apply"]);
         expect(getContent(el)).toBe(`<p>ab[]c</p>`);
 
@@ -1004,6 +1037,7 @@ describe("unobserved mutations", () => {
             /** @type {HTMLElement} */
             const textNode = editor.editable.querySelector("p").firstChild;
             withAddStep(editor, () => (textNode.textContent = "a"));
+            await ensureDistinctHistoryStep();
             editor.shared.history.ignoreDOMMutations(() => (textNode.textContent = "b"));
             withAddStep(editor, () => (textNode.textContent = "c"));
             editor.shared.history.undo();
@@ -1203,10 +1237,53 @@ describe("mutations order", () => {
         const p = el.querySelector("p");
         p.replaceChildren(editor.document.createTextNode("a"), editor.document.createTextNode("b"));
         editor.shared.history.addStep();
+        await ensureDistinctHistoryStep();
         expect(getContent(el)).toBe(`<p>[]ab</p>`);
         p.replaceChildren();
         editor.shared.history.addStep();
         editor.shared.history.undo();
         expect(getContent(el)).toBe(`<p>[]ab</p>`);
+    });
+});
+
+describe("grouped undo/redo", () => {
+    test("should undo, then redo all changes on common text node", async () => {
+        const { editor, el } = await setupEditor("<p>[]</p>");
+        await insertText(editor, "abc");
+        const abc = getContent(el);
+        await splitBlock(editor);
+        const abc_ = getContent(el);
+        await insertText(editor, "def");
+        const abc_def = getContent(el);
+        await splitBlock(editor);
+        const abc_def_ = getContent(el);
+        await insertText(editor, "ghi");
+        const abc_def_ghi = getContent(el);
+        await splitBlock(editor);
+        const abc_def_ghi_ = getContent(el);
+        await expectElementCount("p", 4);
+        expect(abc_def_ghi_).toBe(
+            `<p>abc</p><p>def</p><p>ghi</p><p o-we-hint-text='Type "/" for commands' class="o-we-hint">[]<br></p>`
+        );
+        await undo(editor);
+        expect(getContent(el)).toBe(abc_def_ghi);
+        await undo(editor);
+        expect(getContent(el)).toBe(abc_def_);
+        await undo(editor);
+        expect(getContent(el)).toBe(abc_def);
+        await undo(editor);
+        expect(getContent(el)).toBe(abc_);
+        await undo(editor);
+        expect(getContent(el)).toBe(abc);
+        await redo(editor);
+        expect(getContent(el)).toBe(abc_);
+        await redo(editor);
+        expect(getContent(el)).toBe(abc_def);
+        await redo(editor);
+        expect(getContent(el)).toBe(abc_def_);
+        await redo(editor);
+        expect(getContent(el)).toBe(abc_def_ghi);
+        await redo(editor);
+        expect(getContent(el)).toBe(abc_def_ghi_);
     });
 });

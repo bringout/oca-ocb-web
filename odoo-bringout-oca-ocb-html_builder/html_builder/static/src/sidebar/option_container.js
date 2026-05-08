@@ -1,30 +1,26 @@
-import { BorderConfigurator } from "../plugins/border_configurator_option";
-import { ShadowOption } from "../plugins/shadow_option";
+import { useExternalListener, useRef } from "@web/owl2/utils";
 import { getSnippetName, useOptionsSubEnv } from "@html_builder/utils/utils";
 import { onWillStart, onWillUpdateProps } from "@odoo/owl";
 import { user } from "@web/core/user";
 import { useService } from "@web/core/utils/hooks";
 import { useOperation } from "../core/operation_plugin";
-import {
-    BaseOptionComponent,
-    useApplyVisibility,
-    useGetItemValue,
-    useVisibilityObserver,
-} from "../core/utils";
+import { BaseOptionComponent } from "../core/base_option_component";
+import { useApplyVisibility, useGetItemValue, useVisibilityObserver } from "../core/utils";
+import { uniqueId } from "@web/core/utils/functions";
+import { browser } from "@web/core/browser/browser";
 
 export class OptionsContainer extends BaseOptionComponent {
     static template = "html_builder.OptionsContainer";
-    static components = {
-        BorderConfigurator,
-        ShadowOption,
-    };
+    static dependencies = ["builderOptions", "remove", "clone"];
     static props = {
-        snippetModel: { type: Object },
+        toggleOverlayPreview: { type: Function, optional: true },
         options: { type: Array },
         editingElement: true, // HTMLElement from iframe
-        isRemovable: false,
+        isRemovable: { type: Boolean, optional: true },
+        toggleFold: { type: Function, optional: true },
+        folded: { type: Boolean, optional: true },
         removeDisabledReason: { type: String, optional: true },
-        isClonable: false,
+        isClonable: { type: Boolean, optional: true },
         cloneDisabledReason: { type: String, optional: true },
         optionTitleComponents: { type: Array, optional: true },
         containerTopButtons: { type: Array },
@@ -32,30 +28,41 @@ export class OptionsContainer extends BaseOptionComponent {
         headerMiddleButtons: { type: Array, optional: true },
     };
     static defaultProps = {
+        toggleOverlayPreview: () => {},
         containerTitle: {},
         headerMiddleButtons: [],
         optionTitleComponents: [],
+        isRemovable: false,
+        isClonable: false,
     };
 
     setup() {
         useOptionsSubEnv(() => [this.props.editingElement]);
         super.setup();
+        this.containerId = uniqueId("option-container-");
         this.notification = useService("notification");
         this.getItemValue = useGetItemValue();
         useVisibilityObserver("content", useApplyVisibility("root"));
 
+        this.rootRef = useRef("root");
+        useExternalListener(browser, "focusin", this.updateOverlayPreview);
+        useExternalListener(browser, "pointermove", this.updateOverlayPreview);
+        useExternalListener(this.document, "pointermove", this.updateOverlayPreview);
+        this.showingOverlayPreview = false;
+
         this.callOperation = useOperation();
 
+        this.options = [];
         this.hasGroup = {};
         onWillStart(async () => {
-            await this.updateAccessGroup(this.props.options);
+            this.options = await this.filterAccessGroup(this.props.options);
         });
         onWillUpdateProps(async (nextProps) => {
-            await this.updateAccessGroup(nextProps.options);
+            this.options = await this.filterAccessGroup(nextProps.options);
         });
     }
 
-    async updateAccessGroup(options) {
+    async filterAccessGroup(options) {
         const proms = [];
         const groups = [...new Set(options.flatMap((o) => o.groups || []))];
         for (const group of groups) {
@@ -66,6 +73,7 @@ export class OptionsContainer extends BaseOptionComponent {
             );
         }
         await Promise.all(proms);
+        return options.filter((option) => this.hasAccess(option.groups));
     }
 
     hasAccess(groups) {
@@ -77,7 +85,7 @@ export class OptionsContainer extends BaseOptionComponent {
 
     get title() {
         let title;
-        for (const option of this.props.options) {
+        for (const option of this.options) {
             title = option.title || title;
         }
         const titleExtraInfo = this.props.containerTitle.getTitleExtraInfo
@@ -87,38 +95,26 @@ export class OptionsContainer extends BaseOptionComponent {
         return (title || getSnippetName(this.env.getEditingElement())) + titleExtraInfo;
     }
 
-    selectElement() {
-        this.env.editor.shared["builderOptions"].updateContainers(this.props.editingElement);
-    }
-
-    toggleOverlayPreview(el, show) {
-        if (show) {
-            this.env.editor.shared.overlayButtons.hideOverlayButtons();
-            this.env.editor.shared.builderOverlay.showOverlayPreview(el);
-        } else {
-            this.env.editor.shared.overlayButtons.showOverlayButtons();
-            this.env.editor.shared.builderOverlay.hideOverlayPreview(el);
+    /** @param {PointerEvent | FocusEvent} ev */
+    updateOverlayPreview(ev) {
+        const shouldShow = this.rootRef.el?.contains(ev.target);
+        if (shouldShow === this.showingOverlayPreview) {
+            return;
         }
-    }
-
-    onPointerEnter() {
-        this.toggleOverlayPreview(this.props.editingElement, true);
-    }
-
-    onPointerLeave() {
-        this.toggleOverlayPreview(this.props.editingElement, false);
+        this.props.toggleOverlayPreview(this.props.editingElement, shouldShow);
+        this.showingOverlayPreview = shouldShow;
     }
 
     // Actions of the buttons in the title bar.
     removeElement() {
         this.callOperation(() => {
-            this.env.editor.shared.remove.removeElement(this.props.editingElement);
+            this.dependencies.remove.removeElement(this.props.editingElement);
         });
     }
 
     cloneElement() {
         this.callOperation(async () => {
-            await this.env.editor.shared.clone.cloneElement(this.props.editingElement, {
+            await this.dependencies.clone.cloneElement(this.props.editingElement, {
                 activateClone: false,
             });
         });

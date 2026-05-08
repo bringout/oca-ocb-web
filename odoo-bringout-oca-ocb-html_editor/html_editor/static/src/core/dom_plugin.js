@@ -7,13 +7,10 @@ import {
     makeContentsInline,
     removeClass,
     removeStyle,
-    splitTextNode,
     unwrapContents,
-    wrapInlinesInBlocks,
 } from "../utils/dom";
 import {
     allowsParagraphRelatedElements,
-    getDeepestPosition,
     isContentEditable,
     isContentEditableAncestor,
     isEmptyBlock,
@@ -26,8 +23,10 @@ import {
     isShrunkBlock,
     isTangible,
     isUnprotecting,
-    listElementSelector,
     isEditorTab,
+    isPhrasingContent,
+    isVisible,
+    getDeepestEditablePosition,
 } from "../utils/dom_info";
 import {
     childNodes,
@@ -38,9 +37,12 @@ import {
     lastLeaf,
 } from "../utils/dom_traversal";
 import { FONT_SIZE_CLASSES, TEXT_STYLE_CLASSES } from "../utils/formatting";
-import { DIRECTIONS, childNodeIndex, nodeSize, rightPos } from "../utils/position";
-import { normalizeCursorPosition } from "@html_editor/utils/selection";
-import { baseContainerGlobalSelector } from "@html_editor/utils/base_container";
+import { childNodeIndex, nodeSize, rightPos } from "../utils/position";
+import { normalizeCursorPosition, callbacksForCursorUpdate } from "@html_editor/utils/selection";
+import {
+    baseContainerGlobalSelector,
+    createBaseContainer,
+} from "@html_editor/utils/base_container";
 import { isHtmlContentSupported } from "@html_editor/core/selection_plugin";
 
 /**
@@ -69,6 +71,20 @@ function getConnectedParents(nodes) {
  * @property { DomPlugin['removeSystemProperties'] } removeSystemProperties
  */
 
+/**
+ * @typedef {((insertedNodes: Node[]) => void)[]} on_inserted_handlers
+ * @typedef {((el: HTMLElement) => void)[]} on_will_set_tag_handlers
+ *
+ * @typedef {((container: Element, block: Element) => container)[]} before_insert_processors
+ * @typedef {((nodeToInsert: Node, container: HTMLElement) => nodeToInsert)[]} node_to_insert_processors
+ *
+ * @typedef {((el: HTMLElement) => boolean)[]} are_inlines_allowed_at_root_predicates
+ *
+ * @typedef {string[]} system_attributes
+ * @typedef {string[]} system_classes
+ * @typedef {string[]} system_style_properties
+ */
+
 export class DomPlugin extends Plugin {
     static id = "dom";
     static dependencies = ["baseContainer", "selection", "history", "split", "delete", "lineBreak"];
@@ -79,7 +95,9 @@ export class DomPlugin extends Plugin {
         "setBlock",
         "setTagName",
         "removeSystemProperties",
+        "wrapInlinesInBlocks",
     ];
+    /** @type {import("plugins").EditorResources} */
     resources = {
         user_commands: [
             {
@@ -94,11 +112,15 @@ export class DomPlugin extends Plugin {
             },
         ],
         /** Handlers */
-        clean_for_save_handlers: ({ root }) => {
+        clean_for_save_processors: (root) => {
             this.removeEmptyClassAndStyleAttributes(root);
         },
         clipboard_content_processors: this.removeEmptyClassAndStyleAttributes.bind(this),
-        functional_empty_node_predicates: [isSelfClosingElement, isEditorTab],
+        is_functional_empty_node_predicates: (node) => {
+            if (isSelfClosingElement(node) || isEditorTab(node)) {
+                return true;
+            }
+        },
     };
 
     setup() {
@@ -113,6 +135,90 @@ export class DomPlugin extends Plugin {
     }
 
     // Shared
+
+    /**
+     * Wrap inline children nodes in Blocks, optionally updating cursors for
+     * later selection restore. A paragraph is used for phrasing node, and a div
+     * is used otherwise.
+     *
+     * @param {HTMLElement} element - block element
+     * @param {Cursors} [cursors]
+     */
+    wrapInlinesInBlocks(
+        element,
+        { baseContainerNodeName = "P", cursors = { update: () => {} } } = {}
+    ) {
+        // Helpers to manipulate preserving selection.
+        const wrapInBlock = (node, cursors) => {
+            const nextSibling = node.nextSibling;
+            const parent = node.parentElement;
+            let block;
+            if (isPhrasingContent(node)) {
+                block = createBaseContainer(baseContainerNodeName, node.ownerDocument, [node]);
+            } else {
+                block = node.ownerDocument.createElement("DIV");
+                node.remove();
+                block.append(node);
+            }
+            cursors.update(callbacksForCursorUpdate.append(block, node));
+            cursors.update(callbacksForCursorUpdate.before(node, block));
+            nextSibling ? nextSibling.before(block) : parent.append(block);
+            return block;
+        };
+        const appendToCurrentBlock = (currentBlock, node, cursors) => {
+            if (currentBlock.matches(baseContainerGlobalSelector) && !isPhrasingContent(node)) {
+                const block = currentBlock.ownerDocument.createElement("DIV");
+                cursors.update(callbacksForCursorUpdate.before(currentBlock, block));
+                currentBlock.before(block);
+                for (const child of childNodes(currentBlock)) {
+                    cursors.update(callbacksForCursorUpdate.append(block, child));
+                    block.append(child);
+                }
+                cursors.update(callbacksForCursorUpdate.remove(currentBlock));
+                currentBlock.remove();
+                currentBlock = block;
+            }
+            cursors.update(callbacksForCursorUpdate.append(currentBlock, node));
+            currentBlock.append(node);
+            return currentBlock;
+        };
+        const removeNode = (node, cursors) => {
+            cursors.update(callbacksForCursorUpdate.remove(node));
+            node.remove();
+        };
+
+        const children = childNodes(element);
+        const visibleNodes = new Set(children.filter(isVisible));
+
+        let currentBlock;
+        let shouldBreakLine = true;
+        for (const node of children) {
+            if (isBlock(node)) {
+                shouldBreakLine = true;
+            } else if (
+                !visibleNodes.has(node) &&
+                !this.getResource("unremovable_node_predicates").some((predicate) =>
+                    predicate(node)
+                )
+            ) {
+                removeNode(node, cursors);
+            } else if (node.nodeName === "BR") {
+                if (shouldBreakLine) {
+                    wrapInBlock(node, cursors);
+                } else {
+                    // BR preceded by inline content: discard it and make sure
+                    // next inline goes in a new Block
+                    removeNode(node, cursors);
+                    shouldBreakLine = true;
+                }
+            } else if (shouldBreakLine) {
+                currentBlock = wrapInBlock(node, cursors);
+                shouldBreakLine = false;
+            } else {
+                currentBlock = appendToCurrentBlock(currentBlock, node, cursors);
+            }
+        }
+    }
 
     /**
      * @param {string | DocumentFragment | Element | null} content
@@ -134,18 +240,19 @@ export class DomPlugin extends Plugin {
             container.textContent = content;
         } else {
             if (content.nodeType === Node.ELEMENT_NODE) {
-                this.dispatchTo("normalize_handlers", content);
+                this.processThrough("normalize_processors", content);
             } else {
                 for (const child of children(content)) {
-                    this.dispatchTo("normalize_handlers", child);
+                    this.processThrough("normalize_processors", child);
                 }
             }
             container.replaceChildren(content);
         }
 
         const block = closestBlock(selection.anchorNode);
-        for (const cb of this.getResource("before_insert_processors")) {
-            container = cb(container, block);
+        container = this.processThrough("before_insert_processors", container, block);
+        if (!container.hasChildNodes()) {
+            return [];
         }
         selection = this.dependencies.selection.getEditableSelection();
 
@@ -153,7 +260,12 @@ export class DomPlugin extends Plugin {
         let insertBefore = false;
         if (selection.startContainer.nodeType === Node.TEXT_NODE) {
             insertBefore = !selection.startOffset;
-            splitTextNode(selection.startContainer, selection.startOffset, DIRECTIONS.LEFT);
+            if (
+                selection.startOffset !== 0 &&
+                selection.startOffset !== selection.startContainer.length
+            ) {
+                selection.startContainer.splitText(selection.startOffset);
+            }
             startNode = selection.startContainer;
         }
 
@@ -161,15 +273,19 @@ export class DomPlugin extends Plugin {
         // In case the html inserted starts with a list and will be inserted within
         // a list, unwrap the list elements from the list.
         const hasSingleChild = nodeSize(container) === 1;
-        if (
-            closestElement(selection.anchorNode, listElementSelector) &&
-            isListElement(container.firstChild)
-        ) {
+        const closestList = (node) => {
+            if (isBlock(node)) {
+                return node && isListItemElement(node);
+            }
+            return closestList(node.parentElement);
+        };
+
+        if (closestList(selection.anchorNode) && isListElement(container.firstChild)) {
             unwrapContents(container.firstChild);
         }
         // Similarly if the html inserted ends with a list.
         if (
-            closestElement(selection.focusNode, listElementSelector) &&
+            closestList(selection.focusNode) &&
             isListElement(container.lastChild) &&
             !hasSingleChild
         ) {
@@ -182,6 +298,7 @@ export class DomPlugin extends Plugin {
             (isParagraphRelatedElement(node) || isListItemElement(node)) &&
             !isEmptyBlock(block) &&
             !isEmptyBlock(node) &&
+            isContentEditable(block) &&
             (isContentEditable(node) ||
                 (!node.isConnected && !closestElement(node, "[contenteditable]"))) &&
             !this.dependencies.split.isUnsplittable(node) &&
@@ -195,12 +312,19 @@ export class DomPlugin extends Plugin {
             !this.isEditionBoundary(selection.anchorNode);
 
         // Empty block must contain a br element to allow cursor placement.
+        const firstLeafNode = firstLeaf(container);
         if (
-            container.lastElementChild &&
-            isBlock(container.lastElementChild) &&
-            !container.lastElementChild.hasChildNodes()
+            isBlock(firstLeafNode) &&
+            !(closestElement(firstLeafNode, "[contenteditable]")?.contentEditable === "false")
         ) {
-            fillEmpty(container.lastElementChild);
+            fillEmpty(firstLeafNode);
+        }
+        const lastLeafNode = lastLeaf(container);
+        if (
+            isBlock(lastLeafNode) &&
+            !(closestElement(lastLeafNode, "[contenteditable]")?.contentEditable === "false")
+        ) {
+            fillEmpty(lastLeafNode);
         }
 
         // In case the html inserted is all contained in a single root <p> or <li>
@@ -245,9 +369,9 @@ export class DomPlugin extends Plugin {
             }
         }
 
+        const textNode = this.document.createTextNode("");
         if (startNode.nodeType === Node.ELEMENT_NODE) {
             if (selection.anchorOffset === 0) {
-                const textNode = this.document.createTextNode("");
                 if (isSelfClosingElement(startNode)) {
                     startNode.parentNode.insertBefore(textNode, startNode);
                 } else {
@@ -313,7 +437,7 @@ export class DomPlugin extends Plugin {
                 // Split blocks at the edges if inserting new blocks (preventing
                 // <p><p>text</p></p> or <li><li>text</li></li> scenarios).
                 while (
-                    !this.isEditionBoundary(currentNode.parentElement) &&
+                    !this.isEditionBoundary(currentNode) &&
                     (!allowsParagraphRelatedElements(currentNode.parentElement) ||
                         (isListItemElement(currentNode.parentElement) &&
                             !this.dependencies.split.isUnsplittable(nodeToInsert)))
@@ -322,6 +446,9 @@ export class DomPlugin extends Plugin {
                         // If we have to insert an unsplittable element, we cannot afford to
                         // unwrap it we need to search for a more suitable spot to put it
                         if (this.dependencies.split.isUnsplittable(nodeToInsert)) {
+                            if (this.isEditionBoundary(currentNode.parentElement)) {
+                                break;
+                            }
                             currentNode = currentNode.parentElement;
                             doesCurrentNodeAllowsP = allowsParagraphRelatedElements(currentNode);
                             continue;
@@ -346,9 +473,7 @@ export class DomPlugin extends Plugin {
                             fillShrunkPhrasingParent(otherNode);
                         }
                         // After the content insertion, the right-part of a
-                        // split is evaluated for removal, if it is unnecessary
-                        // (to guarantee a paragraph-related element
-                        // after the last unsplittable inserted element).
+                        // split is evaluated for removal.
                         candidatesForRemoval.push(right);
                     } else {
                         if (isBlock(currentNode)) {
@@ -371,10 +496,8 @@ export class DomPlugin extends Plugin {
             }
             // Ensure that all adjacent paragraph elements are converted to
             // <li> when inserting in a list.
-            const container = closestBlock(currentNode);
-            for (const processor of this.getResource("node_to_insert_processors")) {
-                nodeToInsert = processor({ nodeToInsert, container });
-            }
+            const block = closestBlock(currentNode);
+            nodeToInsert = this.processThrough("node_to_insert_processors", nodeToInsert, block);
             if (insertBefore) {
                 currentNode.before(nodeToInsert);
                 insertBefore = false;
@@ -387,17 +510,19 @@ export class DomPlugin extends Plugin {
             }
             currentNode = nodeToInsert;
         }
+        // Remove the empty text node created earlier
+        textNode.remove();
         allInsertedNodes.push(...lastInsertedNodes);
-        this.getResource("after_insert_handlers").forEach((handler) => handler(allInsertedNodes));
+        this.trigger("on_inserted_handlers", allInsertedNodes);
         let insertedNodesParents = getConnectedParents(allInsertedNodes);
         for (const parent of insertedNodesParents) {
             if (
-                !this.config.allowInlineAtRoot &&
+                !this.areInlinesAllowedAtRoot(parent) &&
                 this.isEditionBoundary(parent) &&
                 allowsParagraphRelatedElements(parent)
             ) {
                 // Ensure that edition boundaries do not have inline content.
-                wrapInlinesInBlocks(parent, {
+                this.wrapInlinesInBlocks(parent, {
                     baseContainerNodeName: this.dependencies.baseContainer.getDefaultNodeName(),
                 });
             }
@@ -409,62 +534,35 @@ export class DomPlugin extends Plugin {
                 !(isProtected(parent) && !isUnprotecting(parent)) &&
                 parent.isContentEditable
             ) {
-                cleanTrailingBR(parent, [
-                    (node) => {
-                        // Don't remove the last BR in cases where the
-                        // previous sibling is an unsplittable block
-                        // (i.e. a table, a non-editable div, ...)
-                        // to allow placing the cursor after that unsplittable
-                        // element. This can be removed when the cursor
-                        // is properly handled around these elements.
-                        const previousSibling = node.previousSibling;
-                        return (
-                            previousSibling &&
-                            isBlock(previousSibling) &&
-                            this.dependencies.split.isUnsplittable(previousSibling)
-                        );
-                    },
-                ]);
+                cleanTrailingBR(parent);
             }
         }
         for (const candidateForRemoval of candidatesForRemoval) {
-            // Ensure that a paragraph related element is present after the last
-            // unsplittable inserted element
             if (
                 candidateForRemoval.isConnected &&
                 (isParagraphRelatedElement(candidateForRemoval) ||
                     isListItemElement(candidateForRemoval)) &&
                 candidateForRemoval.parentElement.isContentEditable &&
-                isEmptyBlock(candidateForRemoval) &&
-                ((candidateForRemoval.previousElementSibling &&
-                    !this.dependencies.split.isUnsplittable(
-                        candidateForRemoval.previousElementSibling
-                    )) ||
-                    (candidateForRemoval.nextElementSibling &&
-                        !this.dependencies.split.isUnsplittable(
-                            candidateForRemoval.nextElementSibling
-                        )))
+                isEmptyBlock(candidateForRemoval)
             ) {
                 candidateForRemoval.remove();
             }
         }
-        for (const insertedNode of allInsertedNodes.reverse()) {
-            if (insertedNode.isConnected) {
-                currentNode = insertedNode;
-                break;
-            }
+        const lastInsertedNode = allInsertedNodes.findLast((node) => node.isConnected);
+        if (!lastInsertedNode) {
+            return;
         }
         let lastPosition =
-            isParagraphRelatedElement(currentNode) ||
-            isListItemElement(currentNode) ||
-            isListElement(currentNode)
-                ? rightPos(lastLeaf(currentNode))
-                : rightPos(currentNode);
+            isParagraphRelatedElement(lastInsertedNode) ||
+            isListItemElement(lastInsertedNode) ||
+            isListElement(lastInsertedNode)
+                ? rightPos(lastLeaf(lastInsertedNode))
+                : rightPos(lastInsertedNode);
         lastPosition = normalizeCursorPosition(lastPosition[0], lastPosition[1], "right");
 
         if (!this.config.allowInlineAtRoot && this.isEditionBoundary(lastPosition[0])) {
             // Correct the position if it happens to be in the editable root.
-            lastPosition = getDeepestPosition(...lastPosition);
+            lastPosition = getDeepestEditablePosition(...lastPosition);
         }
         this.dependencies.selection.setSelection(
             { anchorNode: lastPosition[0], anchorOffset: lastPosition[1] },
@@ -481,6 +579,16 @@ export class DomPlugin extends Plugin {
             return true;
         }
         return isContentEditableAncestor(node);
+    }
+
+    areInlinesAllowedAtRoot(node) {
+        const results = this.getResource("are_inlines_allowed_at_root_predicates")
+            .map((p) => p(node))
+            .filter((r) => r !== undefined);
+        if (!results.length) {
+            return this.config.allowInlineAtRoot;
+        }
+        return results.every((r) => r);
     }
 
     /**
@@ -573,10 +681,36 @@ export class DomPlugin extends Plugin {
         this.dependencies.selection.setSelection({ anchorNode, anchorOffset });
     }
 
+    /**
+     * Determines if a block element can be safely retagged.
+     *
+     * Certain blocks (like 'o_savable') should not be retagged because doing so
+     * will recreate the block, potentially causing issues. This function checks
+     * if retagging a block is safe.
+     *
+     * @param {HTMLElement} block
+     * @returns {boolean}
+     */
+    isRetaggingSafe(block) {
+        return !(
+            (isParagraphRelatedElement(block) ||
+                isListItemElement(block) ||
+                isPhrasingContent(block)) &&
+            this.dependencies.delete.isUnremovable(block)
+        );
+    }
+
     getBlocksToSet() {
-        const targetedBlocks = [...this.dependencies.selection.getTargetedBlocks()];
+        const isCollapsed = this.dependencies.selection.getEditableSelection().isCollapsed;
+        const targetedNodes = this.dependencies.selection.getTargetedNodes();
+        const lastTargetedNode = targetedNodes.slice(-1)[0];
+        const targetedBlocks = [...new Set(targetedNodes.map(closestBlock).filter(Boolean))];
         return targetedBlocks.filter(
             (block) =>
+                // If the selection ends in a block, the block is not visibly
+                // selected so exclude it.
+                (isCollapsed || block !== lastTargetedNode) &&
+                this.isRetaggingSafe(block) &&
                 !descendants(block).some((descendant) => targetedBlocks.includes(descendant)) &&
                 block.isContentEditable
         );
@@ -592,28 +726,35 @@ export class DomPlugin extends Plugin {
      * @param {string} [param0.extraClass]
      */
     setBlock({ tagName, extraClass = "" }) {
-        let newCandidate = this.document.createElement(tagName.toUpperCase());
-        if (extraClass) {
-            newCandidate.classList.add(extraClass);
-        }
-        if (this.dependencies.baseContainer.isCandidateForBaseContainer(newCandidate)) {
-            const baseContainer = this.dependencies.baseContainer.createBaseContainer(
-                newCandidate.nodeName
-            );
-            this.copyAttributes(newCandidate, baseContainer);
-            newCandidate = baseContainer;
-        }
+        const createNewCandidate = () => {
+            let newCandidate = this.document.createElement(tagName.toUpperCase());
+            if (extraClass) {
+                newCandidate.classList.add(extraClass);
+            }
+            if (this.dependencies.baseContainer.isCandidateForBaseContainer(newCandidate)) {
+                const baseContainer = this.dependencies.baseContainer.createBaseContainer({
+                    nodeName: newCandidate.nodeName,
+                });
+                this.copyAttributes(newCandidate, baseContainer);
+                newCandidate = baseContainer;
+            }
+            return newCandidate;
+        };
+        let newCandidate = createNewCandidate();
+        this.dependencies.split.splitBlockSegments();
         const cursors = this.dependencies.selection.preserveSelection();
         const newEls = [];
         for (const block of this.getBlocksToSet()) {
             if (
                 isParagraphRelatedElement(block) ||
                 isListItemElement(block) ||
+                isPhrasingContent(block) ||
                 block.nodeName === "BLOCKQUOTE"
             ) {
                 if (newCandidate.matches(baseContainerGlobalSelector) && isListItemElement(block)) {
                     continue;
                 }
+                this.trigger("on_will_set_tag_handlers", block, tagName, cursors);
                 const newEl = this.setTagName(block, tagName);
                 cursors.remapNode(block, newEl);
                 // We want to be able to edit the case `<h2 class="h3">`
@@ -631,13 +772,13 @@ export class DomPlugin extends Plugin {
             } else {
                 // eg do not change a <div> into a h1: insert the h1
                 // into it instead.
-                newCandidate.append(...childNodes(block));
+                newCandidate.replaceChildren(...childNodes(block));
                 block.append(newCandidate);
                 cursors.remapNode(block, newCandidate);
+                newCandidate = createNewCandidate();
             }
         }
         cursors.restore();
-        this.dispatchTo("set_tag_handlers", newEls);
         this.dependencies.history.addStep();
     }
 

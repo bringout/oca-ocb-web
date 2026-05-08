@@ -1,17 +1,26 @@
-import { Component, onMounted, onWillUnmount, onWillRender, useRef, useState } from "@odoo/owl";
+import { onWillRender, useRef, useState } from "@web/owl2/utils";
+import { Component, onMounted, onWillUnmount } from "@odoo/owl";
 import { loadBundle, loadCSS } from "@web/core/assets";
 import { isBrowserFirefox } from "@web/core/browser/feature_detection";
 import { Dialog } from "@web/core/dialog/dialog";
 import { getActiveHotkey } from "@web/core/hotkeys/hotkey_service";
 import { localization } from "@web/core/l10n/localization";
+import { _t } from "@web/core/l10n/translation";
 import { getFirstAndLastTabableElements } from "@web/core/ui/ui_service";
-import { useChildRef } from "@web/core/utils/hooks";
+import { cookie } from "@web/core/browser/cookie";
+import { useAutofocus, useChildRef } from "@web/core/utils/hooks";
 import { SnippetViewer } from "./snippet_viewer";
+
+/**
+ * @typedef {((arg: { iframe: HTMLIFrameElement }) => void)[]} snippet_preview_dialog_stylesheets_processors
+ * @typedef {string[]} snippet_preview_dialog_bundles
+ */
 
 export class AddSnippetDialog extends Component {
     static template = "html_builder.AddSnippetDialog";
     static components = { Dialog };
     static props = {
+        title: { type: String, optional: true },
         selectedSnippet: { type: Object },
         selectSnippet: { type: Function },
         snippetModel: { type: Object },
@@ -20,7 +29,12 @@ export class AddSnippetDialog extends Component {
         editor: { type: Object },
     };
 
+    static defaultProps = {
+        title: _t("Insert a block"),
+    };
+
     setup() {
+        useAutofocus();
         this.iframeRef = useRef("iframe");
         this.modalRef = useChildRef();
         this.state = useState({
@@ -28,6 +42,7 @@ export class AddSnippetDialog extends Component {
             groupSelected: this.props.selectedSnippet.groupName,
             showIframe: false,
             hasNoSearchResults: false,
+            isMobilePreviewMode: false,
         });
         this.snippetViewerProps = {
             state: this.state,
@@ -48,14 +63,21 @@ export class AddSnippetDialog extends Component {
         let root;
         onMounted(async () => {
             const isFirefox = isBrowserFirefox();
-            if (isFirefox) {
-                // Make sure empty preview iframe is loaded.
+            if (isFirefox && !(this.iframeRef.el?.contentDocument.readyState === "complete")) {
+                // Make sure empty preview iframe is loaded. This was necessary
+                // in Firefox < 148 as it created and parsed a new document.
                 // This event is never triggered on Chrome.
                 await new Promise((resolve) => {
                     this.iframeRef.el.addEventListener("load", resolve, { once: true });
                 });
             }
 
+            // Ensure preview styles are applied before mounting the snippets.
+            // Otherwise layout-dependent measurements (e.g., carousel height in
+            // preview) can be wrong.
+            await this.insertStyle();
+
+            this.renderIframeHead();
             const iframeDocument = this.iframeRef.el.contentDocument;
             iframeDocument.body.parentElement.classList.add("o_add_snippets_preview");
             iframeDocument.body.style.setProperty("direction", localization.direction);
@@ -67,7 +89,7 @@ export class AddSnippetDialog extends Component {
             });
             root.mount(iframeDocument.body);
 
-            await this.insertStyle();
+            this.insertColorScheme();
             this.state.showIframe = true;
         });
 
@@ -81,6 +103,11 @@ export class AddSnippetDialog extends Component {
             root.destroy();
         });
     }
+
+    /**
+     * Allow to insert content inside the Iframe's head
+     */
+    renderIframeHead() {}
 
     /**
      * Loads and injects the required styles into the iframe's <head>.
@@ -97,7 +124,7 @@ export class AddSnippetDialog extends Component {
             }
             return loadBundle(bundleName, loadOptions);
         };
-        this.props.editor.dispatchTo("snippet_preview_dialog_stylesheets_handlers", {
+        this.props.editor.processThrough("snippet_preview_dialog_stylesheets_processors", {
             iframe: this.iframeRef.el,
         });
         const editorPreviewAssetsBundles = this.props.editor.getResource(
@@ -108,8 +135,12 @@ export class AddSnippetDialog extends Component {
             ...editorPreviewAssetsBundles.map((assetsBundle) =>
                 loadCSSBundleFromEditor(assetsBundle, loadOptions)
             ),
-            loadBundle("html_builder.iframe_add_dialog", loadOptions),
+            ...this.getDefaultAssets().map((assetName) => loadBundle(assetName, loadOptions)),
         ]);
+    }
+
+    getDefaultAssets() {
+        return ["html_builder.iframe_add_dialog"];
     }
 
     get snippetGroups() {
@@ -123,6 +154,22 @@ export class AddSnippetDialog extends Component {
         const iframeDocument = this.iframeRef.el.contentDocument;
         iframeDocument.body.scrollTop = 0;
     }
+
+    /**
+     * Retrieves the color-scheme cookie and injects it into the iframe's
+     * <head> and add a custom class. This is necessary to allow the dark mode
+     * to be handled correctly across browsers.
+     */
+    insertColorScheme() {
+        const colorScheme = cookie.get("color_scheme") || "light";
+        const metaElement = document.createElement("meta");
+        const iframeDocument = this.iframeRef.el.contentDocument;
+        metaElement.setAttribute("name", "color-scheme");
+        metaElement.content = colorScheme;
+        iframeDocument.head.appendChild(metaElement);
+        iframeDocument.body.parentElement.classList.add("o_add_snippets_preview--" + colorScheme);
+    }
+
     /**
      * Handles the tablist navigation.
      *
@@ -148,6 +195,9 @@ export class AddSnippetDialog extends Component {
      */
     onIframeDocumentKeydown(ev) {
         const hotkey = getActiveHotkey(ev);
+        if (hotkey === "escape") {
+            this.env.dialogData.close({ dismiss: true });
+        }
         if (!["tab", "shift+tab"].includes(hotkey)) {
             return;
         }
@@ -162,5 +212,9 @@ export class AddSnippetDialog extends Component {
             ev.preventDefault();
             ev.stopPropagation();
         }
+    }
+
+    toggleMobilePreview() {
+        this.state.isMobilePreviewMode = !this.state.isMobilePreviewMode;
     }
 }

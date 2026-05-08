@@ -11,11 +11,11 @@ describe("classAction", () => {
         addBuilderOption({
             selector: ".test-options-target",
             template: xml`
-                    <BuilderButtonGroup>
-                        <BuilderButton classAction="''"/>
-                        <BuilderButton classAction="'x'"/>
-                    </BuilderButtonGroup>
-                `,
+                <BuilderButtonGroup>
+                    <BuilderButton classAction="''"/>
+                    <BuilderButton classAction="'x'"/>
+                </BuilderButtonGroup>
+            `,
         });
         await setupHTMLBuilder(`<div class="test-options-target x">a</div>`);
         await contains(":iframe .test-options-target").click();
@@ -30,11 +30,11 @@ describe("classAction", () => {
         addBuilderOption({
             selector: ".test-options-target",
             template: xml`
-                    <BuilderButtonGroup>
-                        <BuilderButton classAction="'x'"/>
-                        <BuilderButton classAction="'x y z'"/>
-                    </BuilderButtonGroup>
-                `,
+                <BuilderButtonGroup>
+                    <BuilderButton classAction="'x'"/>
+                    <BuilderButton classAction="'x y z'"/>
+                </BuilderButtonGroup>
+            `,
         });
         await setupHTMLBuilder(`<div class="test-options-target x">b</div>`);
         await contains(":iframe .test-options-target").click();
@@ -58,11 +58,11 @@ describe("classAction", () => {
         addBuilderOption({
             selector: ".test-options-target",
             template: xml`
-                    <BuilderButton classAction="'x'"/>
-                    <BuilderButtonGroup>
-                        <BuilderButton classAction="'y'"/>
-                    </BuilderButtonGroup>
-                `,
+                <BuilderButton classAction="'x'"/>
+                <BuilderButtonGroup>
+                    <BuilderButton classAction="'y'"/>
+                </BuilderButtonGroup>
+            `,
         });
         await setupHTMLBuilder(`<div class="test-options-target">a</div>`);
         await contains(":iframe .test-options-target").click();
@@ -84,20 +84,20 @@ describe("styleAction", () => {
         addBuilderOption({
             selector: ".test-options-target",
             template: xml`
-                    <BuilderNumberInput styleAction="'width'" unit="'px'"
-                    />
-                `,
+                <BuilderNumberInput styleAction="'width'" unit="'px'"
+                />
+            `,
         });
         await setupHTMLBuilder(`<div class="test-options-target" style="width: 10px;">a</div>`);
         await contains(":iframe .test-options-target").click();
-        expect("input").toHaveValue("10");
+        expect("input").toHaveValue(10);
         expect(".options-container").toBeDisplayed();
         expect(":iframe .test-options-target").toHaveStyle({ width: "10px" });
         expect(":iframe .test-options-target").toHaveAttribute("style", "width: 10px;"); // no !important
 
         await contains("input").click();
         await fill("1");
-        expect("input").toHaveValue("101");
+        expect("input").toHaveValue(101);
         expect(":iframe .test-options-target").toHaveStyle({ width: "101px" });
         expect(":iframe .test-options-target").toHaveAttribute("style", "width: 101px;"); // no !important
 
@@ -108,9 +108,9 @@ describe("styleAction", () => {
         addBuilderOption({
             selector: ".test-options-target",
             template: xml`
-                    <BuilderNumberInput styleAction="{ mainParam: 'border-width', extraClass: 'border' }" unit="'px'" min="0" composable="true"
-                    />
-                `,
+                <BuilderNumberInput styleAction="{ mainParam: 'border-width', extraClass: 'border' }" unit="'px'" min="0" composable="true"
+                />
+            `,
         });
         await setupHTMLBuilder(`<div class="test-options-target border">a</div>`, {
             styleContent: ".border { border: solid; border-width: 1px !important; }",
@@ -141,9 +141,9 @@ describe("styleAction", () => {
         addBuilderOption({
             selector: ".test-options-target",
             template: xml`
-                    <BuilderNumberInput styleAction="{ mainParam: 'border-width', extraClass: 'border' }" unit="'px'" min="0" composable="true"
-                    />
-                `,
+                <BuilderNumberInput styleAction="{ mainParam: 'border-width', extraClass: 'border' }" unit="'px'" min="0" composable="true"
+                />
+            `,
         });
         await setupHTMLBuilder(`<div class="test-options-target">a</div>`, {
             styleContent: ".border { border: solid; border-width: 1px !important; }",
@@ -214,11 +214,11 @@ describe("styleAction", () => {
         addBuilderOption({
             selector: ".test-options-target",
             template: xml`
-                    <BuilderButtonGroup styleAction="'width'">
-                        <BuilderButton styleActionValue="''">Default</BuilderButton>
-                        <BuilderButton styleActionValue="'50%'">50%</BuilderButton>
-                    </BuilderButtonGroup>
-                `,
+                <BuilderButtonGroup styleAction="'width'">
+                    <BuilderButton styleActionValue="''">Default</BuilderButton>
+                    <BuilderButton styleActionValue="'50%'">50%</BuilderButton>
+                </BuilderButtonGroup>
+            `,
         });
         await setupHTMLBuilder(`<div class="test-options-target x">a</div>`);
         await contains(":iframe .test-options-target").click();
@@ -227,13 +227,13 @@ describe("styleAction", () => {
         expect("[data-style-action-value='']").toHaveClass("active");
         expect("[data-style-action-value='50%']").not.toHaveClass("active");
         expect(":iframe .test-options-target").toHaveOuterHTML(
-            `<div class="test-options-target x o-paragraph"> a </div>`
+            `<div class="test-options-target x"> a </div>`
         );
 
         await contains("[data-style-action-value='50%']").click();
 
         expect(":iframe .test-options-target").toHaveOuterHTML(
-            `<div class="test-options-target x o-paragraph" style="width: 50% !important;"> a </div>`
+            `<div class="test-options-target x" style="width: 50% !important;"> a </div>`
         );
         expect("[data-style-action-value='']").not.toHaveClass("active");
         expect("[data-style-action-value='50%']").toHaveClass("active");

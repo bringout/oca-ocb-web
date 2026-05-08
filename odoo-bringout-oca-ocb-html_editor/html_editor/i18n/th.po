@@ -3,21 +3,23 @@
 # * html_editor
 #
 # "Tiffany Chang (tic)" <tic@odoo.com>, 2025.
+# Weblate <noreply-mt-weblate@weblate.org>, 2025.
+# Odoo Translation Bot <c3p@odoo.com>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 18.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-30 18:36+0000\n"
-"PO-Revision-Date: 2025-09-16 21:24+0000\n"
-"Last-Translator: \"Tiffany Chang (tic)\" <tic@odoo.com>\n"
-"Language-Team: Thai <https://translate.odoo.com/projects/odoo-19/html_editor/"
-"th/>\n"
+"POT-Creation-Date: 2026-03-12 18:36+0000\n"
+"PO-Revision-Date: 2026-01-13 13:03+0000\n"
+"Last-Translator: Odoo Translation Bot <c3p@odoo.com>\n"
+"Language-Team: Thai <https://translate.odoo.com/projects/odoo-s19-1/"
+"html_editor/th/>\n"
 "Language: th\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.12.2\n"
+"X-Generator: Weblate 5.14.3\n"
 
 #. module: html_editor
 #. odoo-javascript
@@ -37,15 +39,21 @@ msgstr "'แท็กชื่อ' จะแสดงเป็นคำแนะ
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.xml:0
-msgid "(URL or Embed)"
-msgstr "(URL หรือ ฝัง)"
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "'s description from"
+msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid ", submited by"
+msgid "'s version from"
 msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.xml:0
+msgid "(URL or Embed)"
+msgstr "(URL หรือ ฝัง)"
 
 #. module: html_editor
 #. odoo-javascript
@@ -208,6 +216,12 @@ msgstr "โหลดรูปภาพทั้งหมดแล้ว"
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/main/table/table_menu.js:0
+msgid "Alternate row colors"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_dialog/file_selector.js:0
 msgid "An error occurred while fetching the entered URL."
 msgstr "เกิดข้อผิดพลาดขณะดึงข้อมูล URL ที่ป้อน"
@@ -216,7 +230,7 @@ msgstr "เกิดข้อผิดพลาดขณะดึงข้อม
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "Angle"
-msgstr ""
+msgstr "มุม"
 
 #. module: html_editor
 #. odoo-javascript
@@ -271,7 +285,7 @@ msgstr "แนบไฟล์ URL"
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 msgid "Autoconvert to relative link"
-msgstr ""
+msgstr "แปลงอัตโนมัติเป็นลิงก์ที่เกี่ยวข้อง"
 
 #. module: html_editor
 #. odoo-javascript
@@ -322,7 +336,7 @@ msgstr "ป้ายคำเตือน"
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_base
 msgid "Base"
-msgstr ""
+msgstr "หลัก"
 
 #. module: html_editor
 #. odoo-javascript
@@ -332,14 +346,8 @@ msgstr "ส่วนหัวของส่วนใหญ่"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "Border"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "Border Size"
+#: code:addons/html_editor/static/src/core/format_plugin.js:0
+msgid "Bold (Ctrl + B)"
 msgstr ""
 
 #. module: html_editor
@@ -350,27 +358,51 @@ msgstr "รายการหัวข้อย่อย"
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/main/list/list_plugin.js:0
+msgid "Bulleted list (Ctrl + Shift + 8)"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_plugin.js:0
 msgid "Button"
 msgstr "ปุ่ม"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Button Primary"
 msgstr "ปุ่มหลัก"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Button Secondary"
 msgstr "ปุ่มรอง"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/chatgpt/chatgpt_translate_dialog.xml:0
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
 msgid "Cancel"
 msgstr "ยกเลิก"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/media/media_dialog/upload_progress_toast/upload_progress_toast.xml:0
+msgid "Cancel Upload"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/align/align_plugin.js:0
+msgid "Center align"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/dynamic_field_plugin.js:0
+msgid "Change the placeholder or the expression for an existing field"
+msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
@@ -380,9 +412,21 @@ msgstr "รายการตรวจสอบ"
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/main/list/list_plugin.js:0
+msgid "Checklist (Ctrl + Shift + 9)"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/fields/x2many_field/x2many_image_field.xml:0
 msgid "Clear"
 msgstr "ล้าง"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/table/table_menu.js:0
+msgid "Clear alternate colors"
+msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
@@ -398,7 +442,15 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/media/media_dialog/upload_progress_toast/upload_progress_toast.xml:0
+#: code:addons/html_editor/static/src/main/table/table_menu.xml:0
+msgid ""
+"Click to open options\n"
+"Drag to move"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
 #: code:addons/html_editor/static/src/others/embedded_components/core/file/readonly_file.js:0
 msgid "Close"
 msgstr "ปิด"
@@ -406,12 +458,13 @@ msgstr "ปิด"
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/font_plugin.js:0
+#: code:addons/html_editor/static/src/others/embedded_components/backend/syntax_highlighting/syntax_highlighting.xml:0
 msgid "Code"
 msgstr "โค้ด"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/others/embedded_components/plugins/syntax_highlighting_plugin/code_toolbar.xml:0
+#: code:addons/html_editor/static/src/others/embedded_components/backend/syntax_highlighting/code_toolbar.xml:0
 msgid "Code copied to the clipboard."
 msgstr ""
 
@@ -423,8 +476,26 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
+msgid "Colors"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/column_plugin.js:0
 msgid "Columnize"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "Comparing current description with"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
+msgid "Conic"
 msgstr ""
 
 #. module: html_editor
@@ -459,15 +530,15 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/others/embedded_components/plugins/syntax_highlighting_plugin/code_toolbar.xml:0
-msgid "Copy"
+#: code:addons/html_editor/static/src/others/embedded_components/backend/syntax_highlighting/code_toolbar.xml:0
+msgid "Convert to paragraph"
 msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "Copy Link"
-msgstr "คัดลอกลิงก์"
+#: code:addons/html_editor/static/src/others/embedded_components/backend/syntax_highlighting/code_toolbar.xml:0
+msgid "Copy"
+msgstr "คัดลอก"
 
 #. module: html_editor
 #. odoo-javascript
@@ -502,12 +573,12 @@ msgstr "สร้าง URL"
 #. module: html_editor
 #: model:ir.model.fields,field_description:html_editor.field_html_editor_converter_test_sub__create_uid
 msgid "Created by"
-msgstr ""
+msgstr "สร้างโดย"
 
 #. module: html_editor
 #: model:ir.model.fields,field_description:html_editor.field_html_editor_converter_test_sub__create_date
 msgid "Created on"
-msgstr ""
+msgstr "สร้างเมื่อ"
 
 #. module: html_editor
 #. odoo-javascript
@@ -518,7 +589,7 @@ msgstr ""
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/color_picker_gradient_tab.xml:0
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Custom"
 msgstr "กำหนดเอง"
 
@@ -530,12 +601,25 @@ msgstr "Dailymotion"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/font/color_picker_gradient_tab.xml:0
-msgid "Define a custom gradient"
+#: code:addons/html_editor/static/src/backend/dynamic_field/dynamic_field_plugin.js:0
+msgid "Data"
 msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
+msgid "Default"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/font/color_picker_gradient_tab.xml:0
+msgid "Define a custom gradient"
+msgstr "กำหนดการไล่สีที่กำหนดเอง"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/media/media_dialog/file_selector.js:0
 #: code:addons/html_editor/static/src/main/table/table_menu.js:0
 msgid "Delete"
 msgstr "ลบ"
@@ -548,6 +632,12 @@ msgstr "คำอธิบาย"
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "Diff view mode"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 msgid "Direct download"
 msgstr ""
@@ -555,6 +645,7 @@ msgstr ""
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+#: code:addons/html_editor/static/src/main/chatgpt/chatgpt_translate_dialog.xml:0
 #: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 #: code:addons/html_editor/static/src/main/media/image_crop.xml:0
 #: code:addons/html_editor/static/src/main/media/image_description.xml:0
@@ -579,8 +670,6 @@ msgstr "ละทิ้ง"
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_integer__display_name
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_many2one__display_name
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_monetary__display_name
-#: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_qweb__display_name
-#: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_relative__display_name
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_selection__display_name
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_text__display_name
 #: model:ir.model.fields,field_description:html_editor.field_ir_ui_view__display_name
@@ -595,12 +684,6 @@ msgid "Documents"
 msgstr "เอกสาร"
 
 #. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/others/dynamic_placeholder_plugin.js:0
-msgid "Dynamic Placeholder"
-msgstr "ตัวยึดตำแหน่งแบบไดนามิก"
-
-#. module: html_editor
 #. odoo-python
 #: code:addons/html_editor/controllers/main.py:0
 msgid "ERROR: couldn't get download urls from media library."
@@ -609,6 +692,7 @@ msgstr "ข้อผิดพลาด: ไม่สามารถรับ URL
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/fields/x2many_field/x2many_image_field.xml:0
+#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 msgid "Edit"
 msgstr "แก้ไข"
 
@@ -617,6 +701,12 @@ msgstr "แก้ไข"
 #: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 msgid "Edit Link"
 msgstr "แก้ไขลิงก์"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/dynamic_field_plugin.js:0
+msgid "Edit field"
+msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
@@ -670,47 +760,48 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "Extend to the closest corner"
-msgstr ""
+msgstr "ขยายไปยังมุมที่ใกล้ที่สุด"
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "Extend to the closest side"
-msgstr ""
+msgstr "ขยายไปยังด้านที่ใกล้ที่สุด"
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "Extend to the farthest corner"
-msgstr ""
+msgstr "ขยายไปยังมุมที่ไกลที่สุด"
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "Extend to the farthest side"
+msgstr "ขยายออกไปด้านที่ไกลที่สุด"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.xml:0
+msgid "Facebook"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/dynamic_field_plugin.js:0
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
+msgid "Field"
 msgstr ""
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_html_field_history_mixin
 msgid "Field html History"
-msgstr ""
+msgstr "ฟิลด์ประวัติ html"
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_dialog/upload_progress_toast/upload_progress_toast.js:0
 msgid "File could not be saved"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/main/media/media_dialog/upload_progress_toast/upload_progress_toast.xml:0
-msgid "File has been uploaded"
-msgstr "ไฟล์ได้รับการอัปโหลด"
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "Fill Color"
 msgstr ""
 
 #. module: html_editor
@@ -741,12 +832,12 @@ msgstr "รูปแบบ"
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/color_picker_gradient_tab.js:0
 msgid "Gradient"
-msgstr ""
+msgstr "การไล่สี"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_http
 msgid "HTTP Routing"
-msgstr ""
+msgstr "การกำหนด HTTP"
 
 #. module: html_editor
 #. odoo-javascript
@@ -828,12 +919,6 @@ msgstr "หัวเรื่อง 6"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.js:0
-msgid "Hide Dailymotion logo"
-msgstr "ซ่อนโลโก้ Dailymotion"
-
-#. module: html_editor
-#. odoo-javascript
 #: code:addons/html_editor/static/src/others/embedded_components/plugins/toggle_block_plugin/toggle_block_plugin.js:0
 msgid "Hide Text under foldable toggles"
 msgstr ""
@@ -852,12 +937,6 @@ msgstr "ซ่อนการควบคุมผู้เล่น"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.js:0
-msgid "Hide sharing button"
-msgstr "ซ่อนปุ่มแชร์"
-
-#. module: html_editor
-#. odoo-javascript
 #: code:addons/html_editor/static/src/others/embedded_components/plugins/table_of_content_plugin/table_of_content_plugin.js:0
 msgid "Highlight the structure (headings)"
 msgstr ""
@@ -871,12 +950,12 @@ msgstr "ประวัติ"
 #. module: html_editor
 #: model:ir.model.fields,field_description:html_editor.field_html_field_history_mixin__html_field_history
 msgid "History data"
-msgstr ""
+msgstr "ข้อมูลประวัติ"
 
 #. module: html_editor
 #: model:ir.model.fields,field_description:html_editor.field_html_field_history_mixin__html_field_history_metadata
 msgid "History metadata"
-msgstr ""
+msgstr "ข้อมูลเมตาของประวัติ"
 
 #. module: html_editor
 #. odoo-javascript
@@ -911,8 +990,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_integer__id
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_many2one__id
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_monetary__id
-#: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_qweb__id
-#: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_relative__id
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_selection__id
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_text__id
 #: model:ir.model.fields,field_description:html_editor.field_ir_ui_view__id
@@ -973,7 +1050,7 @@ msgstr "แทรกป้ายความปลอดภัย"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/others/dynamic_placeholder_plugin.js:0
+#: code:addons/html_editor/static/src/backend/dynamic_field/dynamic_field_plugin.js:0
 msgid "Insert a field"
 msgstr "แทรกฟิลด์"
 
@@ -982,6 +1059,12 @@ msgstr "แทรกฟิลด์"
 #: code:addons/html_editor/static/src/main/separator_plugin.js:0
 msgid "Insert a horizontal rule separator"
 msgstr "แทรกตัวคั่นกฎแนวนอน"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/banner_plugin.js:0
+msgid "Insert a monospace banner"
+msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
@@ -1057,14 +1140,38 @@ msgstr "แทรกด้านซ้าย"
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/main/link/link_plugin.js:0
+msgid "Insert link (Ctrl + K)"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/table/table_menu.js:0
 msgid "Insert right"
 msgstr "แทรกด้านขวา"
 
 #. module: html_editor
-#. odoo-python
-#: code:addons/html_editor/models/ir_ui_view.py:0
-msgid "Invalid field value for %(field_name)s: %(value)s"
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/media/signature_plugin.js:0
+msgid "Insert your signature"
+msgstr "แทรกลายเซ็นของคุณ"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.xml:0
+msgid "Instagram"
+msgstr "Instagram"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/core/format_plugin.js:0
+msgid "Italic (Ctrl + I)"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/align/align_plugin.js:0
+msgid "Justify"
 msgstr ""
 
 #. module: html_editor
@@ -1075,38 +1182,44 @@ msgstr "ป้าย"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Large"
 msgstr "ใหญ่"
 
 #. module: html_editor
 #: model:ir.model.fields,field_description:html_editor.field_html_editor_converter_test_sub__write_uid
 msgid "Last Updated by"
-msgstr ""
+msgstr "อัปเดตครั้งล่าสุดโดย"
 
 #. module: html_editor
 #: model:ir.model.fields,field_description:html_editor.field_html_editor_converter_test_sub__write_date
 msgid "Last Updated on"
+msgstr "อัปเดตครั้งล่าสุดเมื่อ"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/align/align_plugin.js:0
+msgid "Left align"
 msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "Linear"
-msgstr ""
+msgstr "เชิงเส้น"
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_plugin.js:0
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Link"
 msgstr "ลิงก์"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
-msgid "Link copied to clipboard."
-msgstr "คัดลอกลิงก์ไปยังคลิปบอร์ดแล้ว"
+#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
+msgid "Link Popover"
+msgstr ""
 
 #. module: html_editor
 #. odoo-python
@@ -1139,7 +1252,7 @@ msgstr "กำลังโหลด..."
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_popover.js:0
 msgid "Logout"
-msgstr ""
+msgstr "ล็อกเอาท์"
 
 #. module: html_editor
 #. odoo-javascript
@@ -1155,19 +1268,13 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/others/dynamic_placeholder_plugin.js:0
-msgid "Marketing Tools"
-msgstr "เครื่องมือทางการตลาด"
-
-#. module: html_editor
-#. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_plugin.js:0
 msgid "Media"
 msgstr "มีเดีย"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Medium"
 msgstr "วิธีที่เข้ามา"
 
@@ -1185,7 +1292,31 @@ msgstr "ไฟล์ที่หายไป"
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
+msgid "Model"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/powerbox/powerbox_plugin.js:0
+msgid "Modules"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/banner_plugin.js:0
+msgid "Monospace"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/banner_plugin.js:0
+msgid "Monospace Banner"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/powerbox/search_powerbox_plugin.js:0
 #: code:addons/html_editor/static/src/others/embedded_components/backend/video/video.xml:0
 msgid "More options"
 msgstr ""
@@ -1223,7 +1354,7 @@ msgstr "รูปภาพของฉัน"
 #. module: html_editor
 #: model:ir.model.fields,field_description:html_editor.field_html_editor_converter_test_sub__name
 msgid "Name"
-msgstr ""
+msgstr "ชื่อ"
 
 #. module: html_editor
 #. odoo-javascript
@@ -1263,6 +1394,18 @@ msgid "No pictograms found."
 msgstr "ไม่พบรูปภาพ"
 
 #. module: html_editor
+#. odoo-python
+#: code:addons/html_editor/controllers/main.py:0
+msgid "Non-internal users can only upload image."
+msgstr ""
+
+#. module: html_editor
+#. odoo-python
+#: code:addons/html_editor/controllers/main.py:0
+msgid "Non-internal users can't upload large files."
+msgstr ""
+
+#. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/font_plugin.js:0
 msgid "Normal"
@@ -1276,9 +1419,15 @@ msgstr "รายการที่มีเลข"
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/main/list/list_plugin.js:0
+msgid "Numbered list (Ctrl + Shift + 7)"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_dialog/attachment_error.xml:0
 msgid "Ok"
-msgstr ""
+msgstr "ตกลง"
 
 #. module: html_editor
 #. odoo-python
@@ -1339,13 +1488,13 @@ msgstr "วางเป็น URL"
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "Position X"
-msgstr ""
+msgstr "ตำแหน่ง X"
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "Position Y"
-msgstr ""
+msgstr "ตำแหน่ง Y"
 
 #. module: html_editor
 #. odoo-javascript
@@ -1355,6 +1504,7 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
 #: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.xml:0
 msgid "Preview"
 msgstr "ตัวอย่าง"
@@ -1374,17 +1524,17 @@ msgstr "แถบความคืบหน้า"
 #. module: html_editor
 #: model:ir.model.fields.selection,name:html_editor.selection__html_editor_converter_test__selection_str__c
 msgid "Qu'est-ce qu'il fout ce maudit pancake, tabernacle ?"
-msgstr ""
+msgstr "Qu'est-ce qu'il fout ce maudit pancake, tabernacle ?"
 
 #. module: html_editor
 #: model:ir.model.fields.selection,name:html_editor.selection__html_editor_converter_test__selection_str__a
 msgid "Qu'il n'est pas arrivé à Toronto"
-msgstr ""
+msgstr "Qu'il n'est pas arrivé à Toronto"
 
 #. module: html_editor
 #: model:ir.model.fields.selection,name:html_editor.selection__html_editor_converter_test__selection_str__b
 msgid "Qu'il était supposé arriver à Toronto"
-msgstr ""
+msgstr "Qu'il était supposé arriver à Toronto"
 
 #. module: html_editor
 #. odoo-javascript
@@ -1395,88 +1545,78 @@ msgstr "อ้างอิง"
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb
 msgid "Qweb"
-msgstr ""
+msgstr "QWeb"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field
 msgid "Qweb Field"
-msgstr ""
+msgstr "ฟิลด์ QWeb"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_contact
 msgid "Qweb Field Contact"
-msgstr ""
+msgstr "ฟิลด์ติดต่อ QWeb"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_date
 msgid "Qweb Field Date"
-msgstr ""
+msgstr "ฟิลด์วันที่ QWeb"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_datetime
 msgid "Qweb Field Datetime"
-msgstr ""
+msgstr "ฟิลด์วันที่เวลา Qweb"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_duration
 msgid "Qweb Field Duration"
-msgstr ""
+msgstr "ฟิลด์ระยะเวลา QWeb"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_float
 msgid "Qweb Field Float"
-msgstr ""
+msgstr "ฟิลด์ทศนิยม Qweb"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_html
 msgid "Qweb Field HTML"
-msgstr ""
+msgstr "ฟิลด์ HTML Qweb"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_image
 msgid "Qweb Field Image"
-msgstr ""
+msgstr "ฟิลด์รูปภาพ QWeb"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_integer
 msgid "Qweb Field Integer"
-msgstr ""
+msgstr "ฟิลด์จำนวนเต็ม Qweb"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_many2one
 msgid "Qweb Field Many to One"
-msgstr ""
+msgstr "ฟิลด์ Qweb Many to One"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_monetary
 msgid "Qweb Field Monetary"
-msgstr ""
-
-#. module: html_editor
-#: model:ir.model,name:html_editor.model_ir_qweb_field_relative
-msgid "Qweb Field Relative"
-msgstr ""
+msgstr "ฟิลด์ Qweb Monetary"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_selection
 msgid "Qweb Field Selection"
-msgstr ""
+msgstr "การเลือกฟิลด์ QWeb"
 
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_text
 msgid "Qweb Field Text"
-msgstr ""
-
-#. module: html_editor
-#: model:ir.model,name:html_editor.model_ir_qweb_field_qweb
-msgid "Qweb Field qweb"
-msgstr ""
+msgstr "ฟิลด์ข้อความ Qweb"
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "Radial"
-msgstr ""
+msgstr "เรเดียล"
 
 #. module: html_editor
 #. odoo-javascript
@@ -1488,7 +1628,7 @@ msgstr "ทำซ้ำ"
 #. odoo-javascript
 #: code:addons/html_editor/static/src/others/embedded_components/backend/video/video.xml:0
 msgid "Remove"
-msgstr ""
+msgstr "นำออก"
 
 #. module: html_editor
 #. odoo-javascript
@@ -1519,6 +1659,12 @@ msgstr "ลบคอลัมน์"
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_popover.js:0
 msgid "Removes referrer information sent to the target site"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
+msgid "Repeating"
 msgstr ""
 
 #. module: html_editor
@@ -1620,6 +1766,18 @@ msgstr "เรียกคืนประวัติ"
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "Revisions"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/align/align_plugin.js:0
+msgid "Right align"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/image_crop.xml:0
 msgid "Rotate Left"
 msgstr "หมุนซ้าย"
@@ -1634,7 +1792,7 @@ msgstr "หมุนขวา"
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_dialog/search_media.xml:0
 msgid "Search"
-msgstr ""
+msgstr "ค้นหา"
 
 #. module: html_editor
 #. odoo-javascript
@@ -1677,6 +1835,18 @@ msgstr ""
 #: code:addons/html_editor/static/src/main/media/media_dialog/media_dialog.js:0
 msgid "Select a media"
 msgstr "เลือกสื่อ"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
+msgid "Select button shape"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
+msgid "Select button size"
+msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
@@ -1740,8 +1910,8 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "Shape"
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "Show comparison"
 msgstr ""
 
 #. module: html_editor
@@ -1753,27 +1923,24 @@ msgstr "แสดงภาพที่ปรับให้เหมาะสม
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid ""
-"Showing all differences between the current version and the selected one "
-"updated by"
+msgid "Showing"
 msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "Showing the document as it was on"
-msgstr ""
+#: code:addons/html_editor/static/src/main/media/signature_plugin.js:0
+msgid "Signature"
+msgstr "ลายเซ็น"
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 msgid "Size"
-msgstr ""
+msgstr "ไซส์"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Small"
 msgstr "เล็ก"
 
@@ -1798,7 +1965,7 @@ msgstr "ขออภัย ข้อความของคุณยาวเ�
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "Split view"
+msgid "Split"
 msgstr ""
 
 #. module: html_editor
@@ -1811,6 +1978,12 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.js:0
 msgid "Start at"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/core/format_plugin.js:0
+msgid "Strikethrough (Ctrl + 5)"
 msgstr ""
 
 #. module: html_editor
@@ -1848,6 +2021,12 @@ msgstr "โต๊ะ"
 #: code:addons/html_editor/static/src/others/embedded_components/core/table_of_content/table_of_content.xml:0
 #: code:addons/html_editor/static/src/others/embedded_components/plugins/table_of_content_plugin/table_of_content_plugin.js:0
 msgid "Table of Contents"
+msgstr "สารบัญ"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
+msgid "Technical name"
 msgstr ""
 
 #. module: html_editor
@@ -1864,8 +2043,8 @@ msgstr "ข้อความ"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "Text Color"
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
+msgid "Text shown if field is empty"
 msgstr ""
 
 #. module: html_editor
@@ -1884,7 +2063,7 @@ msgstr "URL ดูเหมือนถูกต้อง"
 #. odoo-python
 #: code:addons/html_editor/models/ir_qweb_fields.py:0
 msgid "The datetime %(value)s does not match the format %(format)s"
-msgstr ""
+msgstr "วันที่และเวลา %(value)s ไม่ตรงกับรูปแบบ %(format)s"
 
 #. module: html_editor
 #. odoo-python
@@ -1893,6 +2072,8 @@ msgid ""
 "The document was already saved from someone with a different history for "
 "model \"%(model)s\", field \"%(field)s\" with id \"%(id)d\"."
 msgstr ""
+"เอกสารนี้ได้รับการบันทึกแล้วจากบุคคลอื่นที่ใช้ประวัติที่แตกต่างกันสำหรับโมเดล \"%(model)s\", ฟิลด์ "
+"\"%(field)s\" ที่มี ID \"%(id)d\""
 
 #. module: html_editor
 #. odoo-javascript
@@ -1971,6 +2152,12 @@ msgstr ""
 #: code:addons/html_editor/static/src/core/format_plugin.js:0
 msgid "Toggle bold"
 msgstr "สลับตัวหนา"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "Toggle comparison view"
+msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
@@ -2061,7 +2248,7 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "Type"
-msgstr ""
+msgstr "ประเภท"
 
 #. module: html_editor
 #. odoo-javascript
@@ -2089,6 +2276,12 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/core/format_plugin.js:0
+msgid "Underline (Ctrl + U)"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/core/history_plugin.js:0
 msgid "Undo"
 msgstr "เลิกทำ"
@@ -2096,7 +2289,13 @@ msgstr "เลิกทำ"
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "Unified view"
+msgid "Unified"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
+msgid "Update"
 msgstr ""
 
 #. module: html_editor
@@ -2125,8 +2324,8 @@ msgstr "ไม่รองรับรูปแบบของภาพที่
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "Version date"
+#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.js:0
+msgid "Vertical"
 msgstr ""
 
 #. module: html_editor
@@ -2163,25 +2362,7 @@ msgstr "วิดีโอจะถูกปิดเสียงเมื่อ
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_ui_view
 msgid "View"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "View Content"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "View comparison"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "View content"
-msgstr ""
+msgstr "ดู"
 
 #. module: html_editor
 #. odoo-javascript
@@ -2222,12 +2403,14 @@ msgid ""
 "You can not replace a field by this image. If you want to use this image, "
 "first save it on your computer and then upload it here."
 msgstr ""
+"คุณไม่สามารถแทนที่ฟิลด์ด้วยภาพนี้ได้ หากคุณต้องการใช้ภาพนี้ โปรดบันทึกลงในคอมพิวเตอร์ของคุณก่อน "
+"จากนั้นให้อัปโหลดที่นี่"
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_dialog/image_selector.xml:0
 msgid "You can not use this image in a field"
-msgstr ""
+msgstr "คุณไม่สามารถใช้รูปภาพนี้ในฟิลด์ได้"
 
 #. module: html_editor
 #. odoo-javascript
@@ -2246,23 +2429,10 @@ msgid ""
 msgstr "คุณมีคำขอถึงจำนวนสูงสุดสำหรับบริการนี้แล้ว ลองอีกครั้งในภายหลัง"
 
 #. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/others/dynamic_placeholder_plugin.js:0
-msgid ""
-"You need to select a model before opening the dynamic placeholder selector."
-msgstr "คุณต้องเลือกรุ่นก่อนที่จะเปิดตัวเลือกตัวยึดตำแหน่งแบบไดนามิก"
-
-#. module: html_editor
 #. odoo-python
 #: code:addons/html_editor/controllers/main.py:0
 msgid "You need to specify either data or url to create an attachment."
 msgstr "คุณต้องระบุข้อมูลหรือ URL เพื่อสร้างไฟล์แนบ"
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.xml:0
-msgid "Youku"
-msgstr "Youku"
 
 #. module: html_editor
 #. odoo-javascript
@@ -2302,6 +2472,12 @@ msgstr "และ"
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "by"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "deg"
 msgstr ""
@@ -2316,7 +2492,7 @@ msgstr "เอกสาร"
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 msgid "e.g. https://www.odoo.com"
-msgstr ""
+msgstr "เช่น https://www.odoo.com"
 
 #. module: html_editor
 #. odoo-javascript
@@ -2332,20 +2508,14 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "on"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 msgid "or"
 msgstr "หรือ"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "px"
+#: code:addons/html_editor/static/src/main/font/font_plugin.js:0
+msgid "title"
 msgstr ""
 
 #. module: html_editor
@@ -2357,45 +2527,4 @@ msgstr "วิดีโอ"
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_websocket
 msgid "websocket message handling"
-msgstr ""
-
-#~ msgid "Comparison"
-#~ msgstr "การเปรียบเทียบ"
-
-#~ msgid "Content"
-#~ msgstr "เนื้อหา"
-
-#~ msgid ""
-#~ "Discover a world of awesomeness in our copyright-free image haven. No "
-#~ "legal drama, just nice images!"
-#~ msgstr "ค้นพบคลังรูปภาพที่ปลอดลิขสิทธิ์ของเรา ไม่มีดราม่าทางกฎหมาย มีแต่ภาพสวยๆเท่านั้น!"
-
-#~ msgid "Embed a video"
-#~ msgstr "ฝังวิดีโอ"
-
-#~ msgid "Error"
-#~ msgstr "ผิดพลาด"
-
-#~ msgid "Icon"
-#~ msgstr "ไอคอน"
-
-#~ msgid "Image"
-#~ msgstr "รูปภาพ"
-
-#~ msgid "Insert Video"
-#~ msgstr "แทรกวิดีโอ"
-
-#~ msgid "Insert a Video"
-#~ msgstr "แทรกวิดีโอ"
-
-#~ msgid "Insert your signature"
-#~ msgstr "แทรกลายเซ็นของคุณ"
-
-#~ msgid "Save"
-#~ msgstr "บันทึก"
-
-#~ msgid "Signature"
-#~ msgstr "ลายเซ็น"
-
-#~ msgid "Video Link"
-#~ msgstr "การเชื่อมโยงวิดีโอ"
+msgstr "การจัดการข้อความของ websocket"

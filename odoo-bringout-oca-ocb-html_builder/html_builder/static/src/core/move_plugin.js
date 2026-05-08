@@ -10,9 +10,26 @@ import { isElementInViewport } from "@html_builder/utils/utils";
 import { scrollTo } from "@html_builder/utils/scrolling";
 import { localization } from "@web/core/l10n/localization";
 
+/**
+ * @typedef {import("plugins").CSSSelector} CSSSelector
+ * @typedef {import("@html_builder/core/drag_and_drop_plugin").DragState} DragState
+ */
+/**
+ * @typedef {{
+ *     selector: CSSSelector;
+ *     exclude?: CSSSelector;
+ *     direction: "horizontal" | "vertical";
+ *     noScroll?: boolean;
+ * }[]} is_movable_selectors
+ * @typedef {((arg: {
+ *      movedEl: HTMLElement,
+ *      dragState: DragState,
+ * }) => void)[]} on_element_arrow_moved_handlers
+ */
 export class MovePlugin extends Plugin {
     static id = "move";
     static dependencies = ["visibility"];
+    /** @type {import("plugins").BuilderResources} */
     resources = {
         has_overlay_options: { hasOption: (el) => this.isMovable(el) },
         get_overlay_buttons: withSequence(0, {
@@ -21,7 +38,7 @@ export class MovePlugin extends Plugin {
         on_cloned_handlers: this.onCloned.bind(this),
         on_will_remove_handlers: this.onWillRemove.bind(this),
         on_element_dropped_handlers: this.onElementDropped.bind(this),
-        is_movable_selector: [
+        is_movable_selectors: [
             {
                 selector: "section, .s_showcase .row .row:not(.s_col_no_resize) > div",
                 direction: "vertical",
@@ -46,7 +63,7 @@ export class MovePlugin extends Plugin {
         const horizontalSelector = [];
         const horizontalExclude = [];
         const noScrollSelector = [];
-        for (const movableSelector of this.getResource("is_movable_selector")) {
+        for (const movableSelector of this.getResource("is_movable_selectors")) {
             const { selector, exclude, direction, noScroll } = movableSelector;
             if (selector) {
                 const selectors = direction === "vertical" ? verticalSelector : horizontalSelector;
@@ -92,6 +109,26 @@ export class MovePlugin extends Plugin {
         );
     }
 
+    /**
+     * Returns true if the element is a column visually spanning the full row
+     * (including offsets).
+     *
+     * @param {HTMLElement} el
+     * @returns {boolean}
+     */
+    isFullWidthColumn(el) {
+        const rowEl = el.parentElement;
+        if (!rowEl || !rowEl.classList.contains("row")) {
+            return false;
+        }
+        const rowRect = rowEl.getBoundingClientRect();
+        const columnRect = el.getBoundingClientRect();
+        const { marginLeft, marginRight } = getComputedStyle(el);
+        const totalWidth = columnRect.width + parseFloat(marginLeft) + parseFloat(marginRight);
+        // Allow a small margin to cope with rounding.
+        return totalWidth >= rowRect.width - 1;
+    }
+
     getActiveOverlayButtons(target) {
         if (!this.isMovable(target)) {
             this.overlayTarget = null;
@@ -105,8 +142,9 @@ export class MovePlugin extends Plugin {
 
         if (!this.areArrowsHidden()) {
             const isVertical =
-                this.overlayTarget.matches(this.verticalMove.selector) &&
-                !this.overlayTarget.matches(this.verticalMove.exclude);
+                (this.overlayTarget.matches(this.verticalMove.selector) &&
+                    !this.overlayTarget.matches(this.verticalMove.exclude)) ||
+                this.isFullWidthColumn(this.overlayTarget);
             const previousSiblingEl = this.dependencies.visibility.getVisibleSibling(
                 this.overlayTarget,
                 "prev"
@@ -119,8 +157,12 @@ export class MovePlugin extends Plugin {
             if (previousSiblingEl) {
                 const direction = isVertical ? "up" : reverseButtons ? "right" : "left";
                 const button = {
-                    class: `fa fa-fw fa-angle-${direction}`,
-                    title: isVertical ? _t("Move up") : this.isEditableRTL ? _t("Move right") : _t("Move left"),
+                    class: `fa fa-fw fw-bolder fa-angle-${direction}`,
+                    title: isVertical
+                        ? _t("Move up")
+                        : this.isEditableRTL
+                        ? _t("Move right")
+                        : _t("Move left"),
                     handler: this.onMoveClick.bind(this, "prev"),
                 };
                 buttons.push(button);
@@ -129,8 +171,12 @@ export class MovePlugin extends Plugin {
             if (nextSiblingEl) {
                 const direction = isVertical ? "down" : reverseButtons ? "left" : "right";
                 const button = {
-                    class: `fa fa-fw fa-angle-${direction}`,
-                    title: isVertical ? _t("Move down") : this.isEditableRTL ? _t("Move left") : _t("Move right"),
+                    class: `fa fa-fw fw-bolder fa-angle-${direction}`,
+                    title: isVertical
+                        ? _t("Move down")
+                        : this.isEditableRTL
+                        ? _t("Move left")
+                        : _t("Move right"),
                     handler: this.onMoveClick.bind(this, "next"),
                 };
                 buttons.push(button);
@@ -206,6 +252,9 @@ export class MovePlugin extends Plugin {
      * @param {String} direction "prev" or "next"
      */
     onMoveClick(direction) {
+        const dragState = {};
+        dragState.originPreviousEl = this.overlayTarget.previousElementSibling;
+        dragState.originNextEl = this.overlayTarget.nextElementSibling;
         const isMobile = this.config.isMobileView(this.overlayTarget);
         let hasMobileOrder = !!this.overlayTarget.style.order;
         const parentEl = this.overlayTarget.parentNode;
@@ -240,6 +289,10 @@ export class MovePlugin extends Plugin {
                 this.overlayTarget
             );
         }
+        this.trigger("on_element_arrow_moved_handlers", {
+            movedEl: this.overlayTarget,
+            dragState,
+        });
 
         // Scroll to the element.
         if (!this.noScroll && !isElementInViewport(this.overlayTarget)) {

@@ -13,6 +13,7 @@ from odoo import _
 from odoo.exceptions import ValidationError
 from odoo.http import request
 from odoo.tools.image import image_process
+from odoo.tools.translate import adapt_translated_field_value
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +25,7 @@ player_regexes = {
     'youtube': r'^(?:(?:https?:)?//)?(?:www\.|m\.)?(?:youtu\.be/|youtube(-nocookie)?\.com/(?:embed/|v/|shorts/|live/|watch\?v=|watch\?.+&v=))((?:\w|-){11})\S*$',
     'vimeo': r'//(player.)?vimeo.com/([a-z]*/)?(?P<id>[^/\?]+)(?:/(?P<hash>[^/\?]+))?(?:\?(?P<params>[^\s]+))?$',
     'dailymotion': r'(https?:\/\/)(www\.)?(dailymotion\.com\/(embed\/video\/|embed\/|video\/|hub\/.*#video=)|geo\.dailymotion\.com\/player\.html\?video=|dai\.ly\/)(?P<id>[A-Za-z0-9]{6,7})',
-    'instagram': r'(?:(.*)instagram.com|instagr\.am)/p/(.[a-zA-Z0-9-_\.]*)',
-    'youku': r'(?:(https?:\/\/)?(v\.youku\.com/v_show/id_|player\.youku\.com/player\.php/sid/|player\.youku\.com/embed/|cloud\.youku\.com/services/sharev\?vid=|video\.tudou\.com/v/)|youku:)(?P<id>[A-Za-z0-9]+)(?:\.html|/v\.swf|)',
+    'instagram': r'(?:(.*)instagram\.com|instagr\.am)/(?:p|reel)/([a-zA-Z0-9\-_\.]+)',
     "facebook": r'^(?:(?:https?:)?//)?(?:www\.)?facebook\.com(?:/(?:[^/]+/)?videos/|/watch/?\?v=|/reel/|/plugins/video\.php\?[^ ]*?href=.*?(?:videos|reel)%2[Ff])(?P<id>\d+)',
 }
 
@@ -50,9 +50,6 @@ def get_video_source_data(video_url):
         instagram_match = re.search(player_regexes['instagram'], video_url)
         if instagram_match:
             return ('instagram', instagram_match[2], instagram_match)
-        youku_match = re.search(player_regexes['youku'], video_url)
-        if youku_match:
-            return ('youku', youku_match.group("id"), youku_match)
         facebook_match = re.search(player_regexes["facebook"], video_url)
         if facebook_match:
             return ("facebook", facebook_match.group("id"), facebook_match)
@@ -120,22 +117,11 @@ def get_video_url_data(video_url, autoplay=False, loop=False,
         if start_from:
             embed_url = f"{embed_url}#t={start_from}"
     elif platform == 'dailymotion':
-        params['autoplay'] = autoplay and 1 or 0
-        if autoplay:
-            params['mute'] = 1
-        if hide_controls:
-            params['controls'] = 0
-        if hide_dm_logo:
-            params['ui-logo'] = 0
-        if hide_dm_share:
-            params['sharing-enable'] = 0
         if start_from:
             params["startTime"] = start_from.rstrip("s")
         embed_url = f"//geo.dailymotion.com/player.html?video={video_id}&{url_encode(params)}"
     elif platform == 'instagram':
         embed_url = f'//www.instagram.com/p/{video_id}/embed/'
-    elif platform == 'youku':
-        embed_url = f'//player.youku.com/embed/{video_id}'
     elif platform == "facebook":
         embed_url = f"//facebook.com/plugins/video.php?href=https://www.facebook.com/username/videos/{video_id}/"
 
@@ -212,7 +198,16 @@ def handle_history_divergence(record, html_field_name, vals):
     # Do not handle history divergence if in module installation mode.
     if record.env.context.get('install_module'):
         return
-    incoming_html = vals[html_field_name]
+
+    if record._fields[html_field_name].translate:
+        vals[html_field_name] = adapt_translated_field_value(
+            record.env, vals[html_field_name],
+            lambda lang, v: _handle_history_divergence(record.with_context(lang=lang), html_field_name, v))
+    else:
+        vals[html_field_name] = _handle_history_divergence(record, html_field_name, vals[html_field_name])
+
+
+def _handle_history_divergence(record, html_field_name, incoming_html):
     incoming_history_matches = re.search(diverging_history_regex, incoming_html or '')
     # When there is no incoming history id, it means that the value does not
     # comes from the odoo editor or the collaboration was not activated. In
@@ -230,7 +225,7 @@ def handle_history_divergence(record, html_field_name, vals):
                 'notificationPayload': {'last_step_id': None},
             }
             request.env['bus.bus']._sendone(channel, 'editor_collaboration', bus_data)
-        return
+        return incoming_html
     incoming_history_ids = incoming_history_matches[1].split(',')
     last_step_id = incoming_history_ids[-1]
 
@@ -259,4 +254,4 @@ def handle_history_divergence(record, html_field_name, vals):
                 ))
 
     # Save only the latest id.
-    vals[html_field_name] = incoming_html[0:incoming_history_matches.start(1)] + last_step_id + incoming_html[incoming_history_matches.end(1):]
+    return incoming_html[0:incoming_history_matches.start(1)] + last_step_id + incoming_html[incoming_history_matches.end(1):]

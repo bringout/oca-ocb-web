@@ -1,21 +1,23 @@
 import { addBuilderOption, setupHTMLBuilder } from "@html_builder/../tests/helpers";
+import { BaseOptionComponent } from "@html_builder/core/base_option_component";
 import { expect, test, describe } from "@odoo/hoot";
 import { xml } from "@odoo/owl";
-import { contains, onRpc } from "@web/../tests/web_test_helpers";
+import { contains } from "@web/../tests/web_test_helpers";
 
 describe.current.tags("desktop");
 
 test("clean for save of option with selector that matches an element on the page", async () => {
-    onRpc("ir.ui.view", "save", ({ args }) => true);
     addBuilderOption({
         selector: ".test-options-target",
-        template: xml`
+        Component: class extends BaseOptionComponent {
+            static template = xml`
                 <BuilderButtonGroup>
                     <BuilderButton classAction="'x'"/>
                 </BuilderButtonGroup>
-            `,
-        cleanForSave: (_) => {
-            expect.step("clean for save option");
+            `;
+            static cleanForSave() {
+                expect.step("clean for save option");
+            }
         },
     });
     const { getEditor } = await setupHTMLBuilder(`<div class="test-options-target">a</div>`);
@@ -29,26 +31,27 @@ test("clean for save of option with selector that matches an element on the page
 });
 
 test("clean for save of option with selector and exclude that matches an element on the page", async () => {
-    onRpc("ir.ui.view", "save", ({ args }) => true);
     addBuilderOption({
         selector: ".test-options-target",
-        template: xml`
+        exclude: "div",
+        Component: class extends BaseOptionComponent {
+            static template = xml`
                 <BuilderButtonGroup>
                     <BuilderButton classAction="'x'"/>
                 </BuilderButtonGroup>
-            `,
-        exclude: "div",
-        cleanForSave: (_) => {
-            expect.step("clean for save option");
+            `;
+            cleanForSave = (_) => {
+                expect.step("clean for save option");
+            };
         },
     });
     addBuilderOption({
         selector: ".test-options-target",
         template: xml`
-                <BuilderButtonGroup>
-                    <BuilderButton classAction="'y'"/>
-                </BuilderButtonGroup>
-            `,
+            <BuilderButtonGroup>
+                <BuilderButton classAction="'y'"/>
+            </BuilderButtonGroup>
+        `,
     });
     const { getEditor } = await setupHTMLBuilder(`<div class="test-options-target">a</div>`);
     const editor = getEditor();

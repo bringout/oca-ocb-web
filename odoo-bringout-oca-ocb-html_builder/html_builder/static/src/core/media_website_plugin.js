@@ -5,13 +5,19 @@ import { shouldEditableMediaBeEditable } from "@html_builder/utils/utils_css";
 import { _t } from "@web/core/l10n/translation";
 import { Tooltip } from "@web/core/tooltip/tooltip";
 
+/**
+ * @typedef { Object } MediaWebsiteShared
+ * @property { MediaWebsitePlugin['replaceMedia'] } replaceMedia
+ */
+
 export class MediaWebsitePlugin extends Plugin {
     static id = "media_website";
-    static dependencies = ["media", "selection", "builderOptions"];
+    static dependencies = ["media", "selection", "builderOptions", "operation"];
     static shared = ["replaceMedia"];
 
+    /** @type {import("plugins").BuilderResources} */
     resources = {
-        on_replaced_media_handlers: ({ newMediaEl }) =>
+        on_media_replaced_handlers: ({ newMediaEl }) =>
             // Activate the new media options.
             this.dependencies.builderOptions.setNextTarget(newMediaEl),
         on_snippet_dropped_handlers: this.onSnippetDropped.bind(this),
@@ -72,13 +78,15 @@ export class MediaWebsitePlugin extends Plugin {
     }
 
     /**
-     * Replaces the double-cliked media element.
+     * Replaces the double-clicked media element.
      *
      * @param {HTMLElement} mediaEl the media element to replace
      */
     async onDblClickEditableMedia(mediaEl) {
-        this.removeCurrentTooltip();
-        await this.replaceMedia(mediaEl);
+        this.dependencies.operation.next(async () => {
+            this.removeCurrentTooltip();
+            await this.replaceMedia(mediaEl);
+        });
     }
 
     /**
@@ -89,8 +97,18 @@ export class MediaWebsitePlugin extends Plugin {
     async replaceMedia(mediaEl) {
         const sel = this.dependencies.selection.getEditableSelection();
         const editableEl =
-            closestElement(mediaEl || sel.startContainer, ".o_editable") || this.editable;
-        await this.dependencies.media.openMediaDialog({ node: mediaEl }, editableEl);
+            closestElement(mediaEl || sel.startContainer, ".o_savable") || this.editable;
+        const params = this.processThrough(
+            "replace_media_dialog_params_processors",
+            this.getMediaDialogProps({ mediaEl, editableEl })
+        );
+        await this.dependencies.media.openMediaDialog(params, editableEl);
+    }
+
+    getMediaDialogProps({ mediaEl, editableEl }) {
+        return {
+            node: mediaEl,
+        };
     }
 
     /**
@@ -101,13 +119,20 @@ export class MediaWebsitePlugin extends Plugin {
     openImageTooltip(mediaEl) {
         // Remove the displayed tooltip if any first.
         this.removeCurrentTooltip();
-        this.removeCurrentTooltip = this.popover.add(mediaEl, Tooltip, {
-            tooltip: _t("Double-click to edit"),
-        });
-        setTimeout(this.removeCurrentTooltip, 1500);
+        this.removeCurrentTooltip = this.popover.add(
+            mediaEl,
+            Tooltip,
+            {
+                tooltip: _t("Double-click to edit"),
+            },
+            {
+                sequence: 0,
+            }
+        );
+        setTimeout(this.removeCurrentTooltip, 3000);
     }
 
-    async onSnippetDropped({ snippetEl }) {
+    async onSnippetDropped({ snippetEl, dragState }) {
         if (!snippetEl.matches(".media_iframe_video")) {
             return;
         }
@@ -119,6 +144,7 @@ export class MediaWebsitePlugin extends Plugin {
                     isVideoSelected = true;
                     snippetEl.insertAdjacentElement("afterend", selectedVideoEl);
                     snippetEl.remove();
+                    dragState.replacedSnippetEl = selectedVideoEl;
                 },
             });
             onClose.then(() => {

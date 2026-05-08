@@ -1,29 +1,9 @@
 import { tourState } from "@web_tour/js/tour_state";
 import * as hoot from "@odoo/hoot-dom";
-import { serializeChanges, serializeMutation } from "@web_tour/js/utils/tour_utils";
 import { TourHelpers } from "@web_tour/js/tour_automatic/tour_helpers";
 import { TourStep } from "@web_tour/js/tour_step";
 import { getTag } from "@web/core/utils/xml";
-import { MacroMutationObserver } from "@web/core/macro";
 
-async function waitForMutations(target = document, timeout = 1000 / 16) {
-    return new Promise((resolve) => {
-        let observer;
-        let timer;
-        const mutationList = [];
-        function onMutation(mutations) {
-            mutationList.push(...(mutations || []));
-            clearTimeout(timer);
-            timer = setTimeout(() => {
-                observer.disconnect();
-                resolve(mutationList);
-            }, timeout);
-        }
-        observer = new MacroMutationObserver(onMutation);
-        observer.observe(target);
-        onMutation([]);
-    });
-}
 export class TourStepAutomatic extends TourStep {
     skipped = false;
     error = "";
@@ -31,36 +11,6 @@ export class TourStepAutomatic extends TourStep {
         super(data, tour);
         this.index = index;
         this.tourConfig = tourState.getCurrentConfig();
-    }
-
-    async checkForUndeterminisms(initialElement, delay) {
-        if (delay <= 0 || !initialElement) {
-            return;
-        }
-        const tagName = initialElement.tagName?.toLowerCase();
-        if (["body", "html"].includes(tagName) || !tagName) {
-            return;
-        }
-        const snapshot = initialElement.cloneNode(true);
-        const mutations = await waitForMutations(initialElement, delay);
-        let reason;
-        if (!hoot.isVisible(initialElement)) {
-            reason = `Initial element is no longer visible`;
-        } else if (!initialElement.isEqualNode(snapshot)) {
-            reason =
-                `Initial element has changed:\n` +
-                JSON.stringify(serializeChanges(snapshot, initialElement), null, 2);
-        } else if (mutations.length) {
-            const changes = [...new Set(mutations.map(serializeMutation))];
-            reason =
-                `Initial element has mutated ${mutations.length} times:\n` +
-                JSON.stringify(changes, null, 2);
-        }
-        if (reason) {
-            throw new Error(
-                `Potential non deterministic behavior found in ${delay}ms for trigger ${this.trigger}.\n${reason}`
-            );
-        }
     }
 
     get describeWhyIFailed() {
@@ -135,11 +85,21 @@ export class TourStepAutomatic extends TourStep {
             return !this.isUIBlocked &&
                 this.elementIsEnabled &&
                 this.elementIsInModal &&
-                this.parentFrameIsReady
+                this.parentFrameIsReady &&
+                this.frontendBodyIsReady
                 ? this.element
                 : false;
         }
         return false;
+    }
+
+    /** Wait interactions are bound to elements */
+    get frontendBodyIsReady() {
+        if (document.documentElement.hasAttribute("data-website-id")) {
+            return document.body.getAttribute("is-ready") === "true";
+        } else {
+            return true;
+        }
     }
 
     get isUIBlocked() {
@@ -160,20 +120,51 @@ export class TourStepAutomatic extends TourStep {
             : true;
     }
 
+    /**
+     * When a modal is in the overlay and that the current step has an action,
+     * this method checks if the trigger element is in the more front overlay.
+     */
     get elementIsInModal() {
-        if (this.hasAction) {
-            const overlays = hoot.queryFirst(
-                ".popover, .o-we-command, .o-we-toolbar, .o_notification"
-            );
-            const modal = hoot.queryFirst(".modal:visible:not(.o_inactive_modal):last");
-            if (modal && !overlays && !this.trigger.startsWith("body")) {
-                return (
-                    modal.contains(hoot.getParentFrame(this.element)) ||
-                    modal.contains(this.element)
-                );
+        function isIn(element, parent) {
+            if (!parent) {
+                return false;
             }
+            return parent.contains(hoot.getParentFrame(element)) || parent.contains(element);
         }
-        return true;
+
+        if (!this.hasAction) {
+            return true;
+        }
+        const modal = hoot.queryFirst(".modal:visible:not(.o_inactive_modal):last");
+        if (!modal || this.trigger.startsWith("body")) {
+            return true;
+        }
+        // Case 1: the trigger element is in modal
+        if (isIn(this.element, modal)) {
+            return true;
+        }
+        // Case 2: the trigger element is in notification
+        const notificationContainer = hoot.queryFirst(".o_notification_manager");
+        if (isIn(this.element, notificationContainer)) {
+            return true;
+        }
+        // Case 3: the trigger element is in overlay
+        const overlayContainer = hoot.queryFirst(".o-overlay-container");
+        if (isIn(this.element, overlayContainer)) {
+            // And the modal also, then we check if the parent overlay is in front the modal.
+            if (isIn(modal, overlayContainer)) {
+                const modalOverlay = modal.closest(".o-overlay-item");
+                const overlays = Array.from(modalOverlay.parentElement.children).filter((el) =>
+                    el.classList.contains("o-overlay-item")
+                );
+                const overlaysInFrontModal = overlays.slice(overlays.indexOf(modalOverlay) + 1);
+                return overlaysInFrontModal.some((overlay) => isIn(this.element, overlay));
+            }
+            // For any other cases, it's not possible to check if the trigger element
+            // is in front of behind the modal
+            return true;
+        }
+        return false;
     }
 
     get elementIsEnabled() {

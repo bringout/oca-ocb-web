@@ -19,14 +19,16 @@ import { SplitPlugin } from "./core/split_plugin";
 import { UserCommandPlugin } from "./core/user_command_plugin";
 import { AlignPlugin } from "./main/align/align_plugin";
 import { BannerPlugin } from "./main/banner_plugin";
-import { ChatGPTTranslatePlugin } from "./main/chatgpt/chatgpt_translate_plugin";
+import { CodeBlockPlugin } from "./main/code_block_plugin";
 import { ColumnPlugin } from "./main/column_plugin";
 import { EmojiPlugin } from "./main/emoji_plugin";
 import { ColorPlugin } from "./main/font/color_plugin";
 import { ColorUIPlugin } from "./main/font/color_ui_plugin";
 import { FeffPlugin } from "./main/feff_plugin";
-import { FontPlugin } from "./main/font/font_plugin";
+import { FontSizePlugin } from "./main/font/font_size_plugin";
+import { FontTypePlugin } from "./main/font/font_type_plugin";
 import { FontFamilyPlugin } from "./main/font/font_family_plugin";
+import { TranslatePlugin } from "./main/translate/translate_plugin";
 import { HintPlugin } from "./main/hint_plugin";
 import { InlineCodePlugin } from "./main/inline_code";
 import { LinkPastePlugin } from "./main/link/link_paste_plugin";
@@ -51,7 +53,6 @@ import { SearchPowerboxPlugin } from "./main/powerbox/search_powerbox_plugin";
 import { StarPlugin } from "./main/star_plugin";
 import { TableAlignPlugin } from "./main/table/table_align_plugin";
 import { TablePlugin } from "./main/table/table_plugin";
-import { TableResizePlugin } from "./main/table/table_resize_plugin";
 import { TableUIPlugin } from "./main/table/table_ui_plugin";
 import { TabulationPlugin } from "./main/tabulation_plugin";
 import { TextDirectionPlugin } from "./main/text_direction_plugin";
@@ -69,7 +70,6 @@ import { ToggleBlockPlugin } from "@html_editor/others/embedded_components/plugi
 import { EmbeddedVideoPlugin } from "@html_editor/others/embedded_components/plugins/video_plugin/embedded_video_plugin";
 import { EmbeddedYoutubePlugin } from "./others/embedded_components/plugins/video_plugin/embedded_youtube_plugin";
 import { CaptionPlugin } from "@html_editor/others/embedded_components/plugins/caption_plugin/caption_plugin";
-import { EmbeddedFilePlugin } from "@html_editor/others/embedded_components/plugins/embedded_file_plugin/embedded_file_plugin";
 import { SyntaxHighlightingPlugin } from "@html_editor/others/embedded_components/plugins/syntax_highlighting_plugin/syntax_highlighting_plugin";
 import { QWebPlugin } from "./others/qweb_plugin";
 import { EditorVersionPlugin } from "./core/editor_version_plugin";
@@ -77,52 +77,8 @@ import { ImagePostProcessPlugin } from "./main/media/image_post_process_plugin";
 import { DoubleClickImagePreviewPlugin } from "./main/media/dblclick_image_preview_plugin";
 import { StylePlugin } from "./core/style_plugin";
 import { ContentEditablePlugin } from "./core/content_editable_plugin";
-
-/**
- * @typedef { Object } SharedMethods
- *
- * Core
- * @property { import("./core/base_container_plugin").BaseContainerShared } baseContainer
- * @property { import("./core/clipboard_plugin").ClipboardShared } clipboard
- * @property { import("./core/delete_plugin").DeleteShared } delete
- * @property { import("./core/dialog_plugin").DialogShared } dialog
- * @property { import("./core/dom_plugin").DomShared } dom
- * @property { import("./core/format_plugin").FormatShared } format
- * @property { import("./core/history_plugin").HistoryShared } history
- * @property { import("./core/line_break_plugin").LineBreakShared } lineBreak
- * @property { import("./core/overlay_plugin").OverlayShared } overlay
- * @property { import("./core/protected_node_plugin").ProtectedNodeShared } protectedNode
- * @property { import("./core/sanitize_plugin").SanitizeShared } sanitize
- * @property { import("./core/selection_plugin").SelectionShared } selection
- * @property { import("./core/split_plugin").SplitShared } split
- * @property { import("./core/style_plugin").StyleShared } style
- * @property { import("./core/user_command_plugin").UserCommandShared } userCommand
-
- *
- * Main
- * @property { import("./main/font/color_plugin").ColorShared } color
- * @property { import("./main/font/color_ui_plugin").ColorUIShared } colorUi
- * @property { import("./main/link/link_plugin").LinkShared } link
- * @property { import ("./main/link/link_selection_plugin").LinkSelectionShared } linkSelection
- * @property { import ("./main/media/media_plugin").MediaShared } media
- * @property { import("./main/powerbox/powerbox_plugin").PowerboxShared } powerbox
- * @property { import ("./main/table/table_plugin").TableShared } table
- * @property { import ("./main/toolbar/toolbar_plugin").ToolbarShared } toolbar
- * @property { import ("./main/emoji_plugin").EmojiShared } emoji
- * @property { import ("./main/local_overlay_plugin").LocalOverlayShared } localOverlay
- * @property { import ("./main/tabulation_plugin").TabulationShared } tabulation
- * @property { import ("./main/feff_plugin").FeffShared } feff
- * @property { import ("./main/media/image_plugin").ImageShared } image
- * @property { import ("./main/media/image_crop_plugin").ImageCropShared } imageCrop
- * @property { import ("./main/media/image_post_process_plugin").ImagePostProcessShared } imagePostProcess
- * @property { import ("./main/banner_plugin").BannerShared } banner
- * @property { import ("./main/media/image_save_plugin").ImageSaveShared } imageSave
- *
- * Others
- * @property { import("./others/collaboration/collaboration_odoo_plugin").CollaborationOdooShared } collaborationOdoo
- * @property { import("./others/collaboration/collaboration_plugin").CollaborationShared } collaboration
- * @property { import("./others/dynamic_placeholder_plugin").DynamicPlaceholderShared } dynamicPlaceholder
- */
+import { SelectionPlaceholderPlugin } from "./main/selection_placeholder_plugin";
+import { ResizePlugin } from "./main/resize_plugin";
 
 export const CORE_PLUGINS = [
     BaseContainerPlugin,
@@ -149,12 +105,13 @@ export const CORE_PLUGINS = [
 export const MAIN_PLUGINS = [
     ...CORE_PLUGINS,
     BannerPlugin,
-    ChatGPTTranslatePlugin,
+    CodeBlockPlugin,
     ColorPlugin,
     ColorUIPlugin,
     SeparatorPlugin,
     ColumnPlugin,
     EmojiPlugin,
+    TranslatePlugin,
     HintPlugin,
     AlignPlugin,
     ListPlugin,
@@ -170,7 +127,8 @@ export const MAIN_PLUGINS = [
     TableUIPlugin,
     TabulationPlugin,
     ToolbarPlugin,
-    FontPlugin, // note: if before ListPlugin, there are a few split tests that fails
+    FontTypePlugin,
+    FontSizePlugin, // note: if before ListPlugin, there are a few split tests that fails
     FontFamilyPlugin,
     IconPlugin,
     IconColorPlugin,
@@ -189,8 +147,10 @@ export const MAIN_PLUGINS = [
     PositionPlugin,
     TextDirectionPlugin,
     InlineCodePlugin,
-    TableResizePlugin,
+    FilePlugin,
     PlaceholderPlugin,
+    SelectionPlaceholderPlugin,
+    ResizePlugin,
 ];
 
 export const COLLABORATION_PLUGINS = [
@@ -207,11 +167,10 @@ export const EMBEDDED_COMPONENT_PLUGINS = [
     EmbeddedVideoPlugin,
     EmbeddedYoutubePlugin,
     CaptionPlugin,
-    EmbeddedFilePlugin,
     SyntaxHighlightingPlugin,
 ];
 
-export const NO_EMBEDDED_COMPONENTS_FALLBACK_PLUGINS = [FilePlugin, VideoPlugin, YoutubePlugin];
+export const NO_EMBEDDED_COMPONENTS_FALLBACK_PLUGINS = [VideoPlugin, YoutubePlugin];
 
 export const EXTRA_PLUGINS = [
     ...COLLABORATION_PLUGINS,
@@ -220,3 +179,5 @@ export const EXTRA_PLUGINS = [
     EditorVersionPlugin,
     QWebPlugin,
 ];
+
+export const TOUCH_EXCLUDED_PLUGINS = [MoveNodePlugin];

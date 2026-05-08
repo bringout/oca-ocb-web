@@ -2,10 +2,13 @@ import { Component } from "@odoo/owl";
 import {
     basicContainerBuilderComponentProps,
     getAllActionsAndOperations,
+    revertPreview,
     useBuilderComponent,
     useDependencyDefinition,
     useDomState,
     useHasPreview,
+    useOperationWithReload,
+    useReloadAction,
 } from "../utils";
 import { BuilderComponent } from "./builder_component";
 import { SelectMany2X } from "./select_many2x";
@@ -21,12 +24,15 @@ export class BuilderMany2One extends Component {
         limit: { type: Number, optional: true },
         id: { type: String, optional: true },
         allowUnselect: { type: Boolean, optional: true },
+        unselectBtnTitle: { type: String, optional: true },
         defaultMessage: { type: String, optional: true },
         createAction: { type: String, optional: true },
+        nullText: { type: String, optional: true },
     };
     static defaultProps = {
         ...BuilderComponent.defaultProps,
         allowUnselect: true,
+        unselectBtnTitle: "Unselect",
     };
     static components = { BuilderComponent, SelectMany2X };
 
@@ -39,6 +45,10 @@ export class BuilderMany2One extends Component {
         this.applyOperation = this.env.editor.shared.history.makePreviewableAsyncOperation(
             this.callApply.bind(this)
         );
+        // Detect if any action requires a reload.
+        const { reload } = useReloadAction(getAllActions);
+        this.reload = reload;
+        this.operationWithReload = useOperationWithReload(this.callApply.bind(this), reload);
         const getAction = this.env.editor.shared.builderActions.getAction;
         const actionWithGetValue = getAllActions().find(
             ({ actionId }) => getAction(actionId).getValue
@@ -50,16 +60,22 @@ export class BuilderMany2One extends Component {
             const selectedString = getValue(el);
             const selected = selectedString && JSON.parse(selectedString);
             if (selected && !("display_name" in selected && "name" in selected)) {
-                Object.assign(
-                    selected,
-                    (
+                let value;
+                if (!selected.id) {
+                    value = {
+                        display_name: this.props.nullText,
+                        name: this.props.nullText,
+                    };
+                } else {
+                    value = (
                         await this.cachedModel.ormRead(
                             this.props.model,
                             [selected.id],
                             ["display_name", "name"]
                         )
-                    )[0]
-                );
+                    )[0];
+                }
+                Object.assign(selected, value);
             }
 
             return { selected };
@@ -105,9 +121,12 @@ export class BuilderMany2One extends Component {
         return Promise.all(proms);
     }
     select(newSelected) {
-        this.callOperation(this.applyOperation.commit, {
-            userInputValue: newSelected && JSON.stringify(newSelected),
-        });
+        const args = { userInputValue: newSelected && JSON.stringify(newSelected) };
+        if (this.reload) {
+            this.callOperation(this.operationWithReload, args);
+        } else {
+            this.callOperation(this.applyOperation.commit, args);
+        }
     }
     preview(newSelected) {
         this.callOperation(this.applyOperation.preview, {
@@ -120,9 +139,7 @@ export class BuilderMany2One extends Component {
         });
     }
     revert() {
-        // The `next` will cancel the previous operation, which will revert
-        // the operation in case of a preview.
-        this.env.editor.shared.operation.next();
+        revertPreview(this.env.editor);
     }
     create(name) {
         const args = { editingElement: this.env.getEditingElement(), value: name };

@@ -17,6 +17,27 @@ $o-we-colors: (
     "warning": $o-we-color-warning,
 ) !default;
 
+$o-social-colors: (
+    'facebook': #3B5999,
+    'twitter': #000000,
+    'linkedin': #0077B5,
+    'google-plus': #DD4B39,
+    'youtube': #ff0000,
+    'github': #1a1e22,
+    'instagram': #cf2872,
+    'whatsapp': #25d366,
+    'pinterest': #C8232C,
+    'tiktok': #000000,
+    'discord':#5865f2,
+    "kickstarter":#0f2105,
+    "google-play": #4285F4,
+    "strava": #fc4c02,
+    "bluesky": #1185FE,
+    "threads": #000000,
+);
+
+$o-we-contrast-border-color: mix(white, $o-we-color-accent, 40%) !default;
+
 // Needed to be changed to be high enough to not overflow when a user
 // has a page with a lot of content (10000px was proven to be too small)
 $o-we-handles-offset-to-hide: 100000px !default;
@@ -26,12 +47,31 @@ $o-we-handles-accent-color-preview: $o-enterprise-color !default;
 $o-we-handle-edge-size: $o-we-handles-btn-size !default;
 $o-we-handle-border-width: 2px !default;
 $o-we-handle-inside-line-width: 3px !default;
+$o-we-handle-contrast-border: 1px solid $o-we-contrast-border-color !default;
+
+$o-we-hover-overlay-color: $o-we-contrast-border-color !default;
 
 $o-we-dropzone-size: 30px !default; // $grid-gutter-width (todo: allow to use the variable)
-$o-we-dropzone-border-width: 2px !default;
-$o-we-dropzone-border: $o-we-dropzone-border-width dashed $o-brand-odoo !default;
+$o-we-dropzone-border-width: 1px !default;
+$o-we-dropzone-border: $o-we-dropzone-border-width dashed $o-we-contrast-border-color !default;
+$o-we-dropzone-border-radius: 3px !default;
 $o-we-dropzone-accent-color: $o-we-color-accent !default;
 $o-we-dropzone-bg-color: rgba($o-we-dropzone-accent-color, .5) !default;
+$o-we-dropzone-z-index: 1029 !default;
+$o-we-dropzone-font-size: 18px !default;
+$o-we-dropzone-text-color: white !default;
+$o-we-dropzone-sanitized-color: rgba(#646464, .5) !default;
+
+$o-we-inner-content-dropzone-size: 4px !default;
+$o-we-inner-content-dropzone-border: $o-we-inner-content-dropzone-size/2 solid $o-we-contrast-border-color, !default;
+
+@mixin o-we-dropzone-base-style {
+    background: $o-we-dropzone-bg-color;
+    outline: $o-we-dropzone-border;
+    outline-offset: -$o-we-dropzone-border-width;
+    border: 1px solid $o-we-dropzone-accent-color;
+    border-radius: $o-we-dropzone-border-radius;
+}
 
 $o-we-toolbar-height: 40px !default;
 $o-we-toolbar-color-accent: #018597 !default;
@@ -201,7 +241,13 @@ $o-we-sidebar-content-field-toggle-control-bg: $o-we-fg-lighter !default;
         @extend .o_cc;
         @extend .o_cc#{$-related-color};
     } @else {
-        @include o-bg-color(o-color($-related-color), $with-extras: $with-extras, $background: $background, $important: false);
+        $-color: o-color($-related-color);
+        @if $-color {
+            // Remove the background image so manually set backgrounds (color or
+            // gradient) take precedence over a theme preset with a gradient.
+            background-image: none;
+        }
+        @include o-bg-color($-color, $with-extras: $with-extras, $background: $background, $important: false);
     }
 }
 
@@ -577,5 +623,43 @@ $o-bg-shapes: (
     &:focus, &:focus-within {
         border-color: var(--o-hb-input-active-border, #{$o-we-sidebar-content-field-input-border-color});
         color: var(--o-hb-row-color-active, #{$o-we-fg-lighter});
+    }
+}
+
+$-editor-messages-margin-x: 2%;
+
+@mixin o-editor-messages {
+    @include o-we-dropzone-base-style;
+    min-height: $o-we-dropzone-size;
+    text-align: center;
+
+    &, &.text-muted {
+        color: $o-we-dropzone-text-color !important;
+    }
+
+    &:before {
+        content: attr(data-editor-message);
+        display: block;
+        font-size: $o-we-dropzone-font-size;
+         // Required to prevent the theme font family from being applied.
+        font-family: $o-we-font-family;
+    }
+
+    // Show the default editor message only for "empty" elements
+    &:not(:empty) {
+        &[data-editor-message-default]:before {
+            content: none;
+        }
+    }
+
+    &:after {
+        content: attr(data-editor-sub-message);
+        display: block;
+        font-size: $o-we-dropzone-font-size - 2;
+        font-family: $o-we-font-family;
+    }
+
+    &::before, &::after {
+        text-shadow: 0 0 5px $o-we-dropzone-accent-color;
     }
 }

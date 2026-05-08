@@ -3,13 +3,14 @@
 # * html_editor
 #
 # "Dylan Kiss (dyki)" <dyki@odoo.com>, 2025.
+# Weblate <noreply-mt-weblate@weblate.org>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 18.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-30 18:36+0000\n"
-"PO-Revision-Date: 2025-09-24 19:23+0000\n"
-"Last-Translator: \"Dylan Kiss (dyki)\" <dyki@odoo.com>\n"
+"POT-Creation-Date: 2026-03-12 18:36+0000\n"
+"PO-Revision-Date: 2025-11-08 19:03+0000\n"
+"Last-Translator: Weblate <noreply-mt-weblate@weblate.org>\n"
 "Language-Team: Greek <https://translate.odoo.com/projects/odoo-19/"
 "html_editor/el/>\n"
 "Language: el\n"
@@ -35,15 +36,21 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.xml:0
-msgid "(URL or Embed)"
-msgstr "(Διεύθυνση URL ή ενσωματωμένο)"
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "'s description from"
+msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid ", submited by"
+msgid "'s version from"
 msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.xml:0
+msgid "(URL or Embed)"
+msgstr "(Διεύθυνση URL ή ενσωματωμένο)"
 
 #. module: html_editor
 #. odoo-javascript
@@ -206,6 +213,12 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/main/table/table_menu.js:0
+msgid "Alternate row colors"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_dialog/file_selector.js:0
 msgid "An error occurred while fetching the entered URL."
 msgstr ""
@@ -320,7 +333,7 @@ msgstr ""
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_base
 msgid "Base"
-msgstr ""
+msgstr "Βάση"
 
 #. module: html_editor
 #. odoo-javascript
@@ -330,14 +343,8 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "Border"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "Border Size"
+#: code:addons/html_editor/static/src/core/format_plugin.js:0
+msgid "Bold (Ctrl + B)"
 msgstr ""
 
 #. module: html_editor
@@ -348,27 +355,51 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/main/list/list_plugin.js:0
+msgid "Bulleted list (Ctrl + Shift + 8)"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_plugin.js:0
 msgid "Button"
 msgstr "Πλήκτρο"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Button Primary"
 msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Button Secondary"
 msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/chatgpt/chatgpt_translate_dialog.xml:0
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
 msgid "Cancel"
 msgstr "Ακύρωση"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/media/media_dialog/upload_progress_toast/upload_progress_toast.xml:0
+msgid "Cancel Upload"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/align/align_plugin.js:0
+msgid "Center align"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/dynamic_field_plugin.js:0
+msgid "Change the placeholder or the expression for an existing field"
+msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
@@ -378,9 +409,21 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/main/list/list_plugin.js:0
+msgid "Checklist (Ctrl + Shift + 9)"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/fields/x2many_field/x2many_image_field.xml:0
 msgid "Clear"
 msgstr "Καθαρισμός"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/table/table_menu.js:0
+msgid "Clear alternate colors"
+msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
@@ -396,7 +439,15 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/media/media_dialog/upload_progress_toast/upload_progress_toast.xml:0
+#: code:addons/html_editor/static/src/main/table/table_menu.xml:0
+msgid ""
+"Click to open options\n"
+"Drag to move"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
 #: code:addons/html_editor/static/src/others/embedded_components/core/file/readonly_file.js:0
 msgid "Close"
 msgstr "Κλείσιμο"
@@ -404,12 +455,13 @@ msgstr "Κλείσιμο"
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/font_plugin.js:0
+#: code:addons/html_editor/static/src/others/embedded_components/backend/syntax_highlighting/syntax_highlighting.xml:0
 msgid "Code"
 msgstr "Κωδικός"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/others/embedded_components/plugins/syntax_highlighting_plugin/code_toolbar.xml:0
+#: code:addons/html_editor/static/src/others/embedded_components/backend/syntax_highlighting/code_toolbar.xml:0
 msgid "Code copied to the clipboard."
 msgstr ""
 
@@ -421,8 +473,26 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
+msgid "Colors"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/column_plugin.js:0
 msgid "Columnize"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "Comparing current description with"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
+msgid "Conic"
 msgstr ""
 
 #. module: html_editor
@@ -457,15 +527,15 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/others/embedded_components/plugins/syntax_highlighting_plugin/code_toolbar.xml:0
-msgid "Copy"
+#: code:addons/html_editor/static/src/others/embedded_components/backend/syntax_highlighting/code_toolbar.xml:0
+msgid "Convert to paragraph"
 msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "Copy Link"
-msgstr ""
+#: code:addons/html_editor/static/src/others/embedded_components/backend/syntax_highlighting/code_toolbar.xml:0
+msgid "Copy"
+msgstr "Αντιγραφή"
 
 #. module: html_editor
 #. odoo-javascript
@@ -500,12 +570,12 @@ msgstr ""
 #. module: html_editor
 #: model:ir.model.fields,field_description:html_editor.field_html_editor_converter_test_sub__create_uid
 msgid "Created by"
-msgstr ""
+msgstr "Δημιουργήθηκε από"
 
 #. module: html_editor
 #: model:ir.model.fields,field_description:html_editor.field_html_editor_converter_test_sub__create_date
 msgid "Created on"
-msgstr ""
+msgstr "Δημιουργήθηκε στις"
 
 #. module: html_editor
 #. odoo-javascript
@@ -516,7 +586,7 @@ msgstr ""
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/color_picker_gradient_tab.xml:0
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Custom"
 msgstr "Προσωποποιημένο"
 
@@ -528,12 +598,25 @@ msgstr "Dailymotion"
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/dynamic_field_plugin.js:0
+msgid "Data"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
+msgid "Default"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/color_picker_gradient_tab.xml:0
 msgid "Define a custom gradient"
 msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/main/media/media_dialog/file_selector.js:0
 #: code:addons/html_editor/static/src/main/table/table_menu.js:0
 msgid "Delete"
 msgstr "Διαγραφή"
@@ -546,6 +629,12 @@ msgstr "Περιγραφή"
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "Diff view mode"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 msgid "Direct download"
 msgstr ""
@@ -553,6 +642,7 @@ msgstr ""
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+#: code:addons/html_editor/static/src/main/chatgpt/chatgpt_translate_dialog.xml:0
 #: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 #: code:addons/html_editor/static/src/main/media/image_crop.xml:0
 #: code:addons/html_editor/static/src/main/media/image_description.xml:0
@@ -577,26 +667,18 @@ msgstr "Απόρριψη"
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_integer__display_name
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_many2one__display_name
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_monetary__display_name
-#: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_qweb__display_name
-#: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_relative__display_name
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_selection__display_name
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_text__display_name
 #: model:ir.model.fields,field_description:html_editor.field_ir_ui_view__display_name
 #: model:ir.model.fields,field_description:html_editor.field_ir_websocket__display_name
 msgid "Display Name"
-msgstr ""
+msgstr "Εμφάνιση Ονόματος"
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/file_plugin.js:0
 msgid "Documents"
 msgstr "Έγγραφα"
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/others/dynamic_placeholder_plugin.js:0
-msgid "Dynamic Placeholder"
-msgstr ""
 
 #. module: html_editor
 #. odoo-python
@@ -607,6 +689,7 @@ msgstr ""
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/fields/x2many_field/x2many_image_field.xml:0
+#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 msgid "Edit"
 msgstr "Επεξεργασία"
 
@@ -614,6 +697,12 @@ msgstr "Επεξεργασία"
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 msgid "Edit Link"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/dynamic_field_plugin.js:0
+msgid "Edit field"
 msgstr ""
 
 #. module: html_editor
@@ -689,6 +778,19 @@ msgid "Extend to the farthest side"
 msgstr ""
 
 #. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.xml:0
+msgid "Facebook"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/dynamic_field_plugin.js:0
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
+msgid "Field"
+msgstr ""
+
+#. module: html_editor
 #: model:ir.model,name:html_editor.model_html_field_history_mixin
 msgid "Field html History"
 msgstr ""
@@ -697,18 +799,6 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_dialog/upload_progress_toast/upload_progress_toast.js:0
 msgid "File could not be saved"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/main/media/media_dialog/upload_progress_toast/upload_progress_toast.xml:0
-msgid "File has been uploaded"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "Fill Color"
 msgstr ""
 
 #. module: html_editor
@@ -744,7 +834,7 @@ msgstr ""
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_http
 msgid "HTTP Routing"
-msgstr ""
+msgstr "HTTP Routing"
 
 #. module: html_editor
 #. odoo-javascript
@@ -826,12 +916,6 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.js:0
-msgid "Hide Dailymotion logo"
-msgstr "Απόκρυψη του λογοτύπου Dailymotion"
-
-#. module: html_editor
-#. odoo-javascript
 #: code:addons/html_editor/static/src/others/embedded_components/plugins/toggle_block_plugin/toggle_block_plugin.js:0
 msgid "Hide Text under foldable toggles"
 msgstr ""
@@ -847,12 +931,6 @@ msgstr "Απόκρυψη κουμπιού πλήρης οθόνης"
 #: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.js:0
 msgid "Hide player controls"
 msgstr "Απόκρυψη των χειριστηρίων αναπαραγωγής"
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.js:0
-msgid "Hide sharing button"
-msgstr "Απόκρυψη κουμπιού κοινής χρήσης"
 
 #. module: html_editor
 #. odoo-javascript
@@ -909,14 +987,12 @@ msgstr ""
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_integer__id
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_many2one__id
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_monetary__id
-#: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_qweb__id
-#: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_relative__id
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_selection__id
 #: model:ir.model.fields,field_description:html_editor.field_ir_qweb_field_text__id
 #: model:ir.model.fields,field_description:html_editor.field_ir_ui_view__id
 #: model:ir.model.fields,field_description:html_editor.field_ir_websocket__id
 msgid "ID"
-msgstr ""
+msgstr "Κωδικός"
 
 #. module: html_editor
 #. odoo-javascript
@@ -971,7 +1047,7 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/others/dynamic_placeholder_plugin.js:0
+#: code:addons/html_editor/static/src/backend/dynamic_field/dynamic_field_plugin.js:0
 msgid "Insert a field"
 msgstr ""
 
@@ -979,6 +1055,12 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/separator_plugin.js:0
 msgid "Insert a horizontal rule separator"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/banner_plugin.js:0
+msgid "Insert a monospace banner"
 msgstr ""
 
 #. module: html_editor
@@ -1055,14 +1137,38 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/main/link/link_plugin.js:0
+msgid "Insert link (Ctrl + K)"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/table/table_menu.js:0
 msgid "Insert right"
 msgstr ""
 
 #. module: html_editor
-#. odoo-python
-#: code:addons/html_editor/models/ir_ui_view.py:0
-msgid "Invalid field value for %(field_name)s: %(value)s"
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/media/signature_plugin.js:0
+msgid "Insert your signature"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.xml:0
+msgid "Instagram"
+msgstr "Instagram"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/core/format_plugin.js:0
+msgid "Italic (Ctrl + I)"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/align/align_plugin.js:0
+msgid "Justify"
 msgstr ""
 
 #. module: html_editor
@@ -1073,37 +1179,43 @@ msgstr "Ετικέτα"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Large"
 msgstr "Μεγάλο"
 
 #. module: html_editor
 #: model:ir.model.fields,field_description:html_editor.field_html_editor_converter_test_sub__write_uid
 msgid "Last Updated by"
-msgstr ""
+msgstr "Τελευταία Ενημέρωση από"
 
 #. module: html_editor
 #: model:ir.model.fields,field_description:html_editor.field_html_editor_converter_test_sub__write_date
 msgid "Last Updated on"
+msgstr "Τελευταία Ενημέρωση στις"
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/align/align_plugin.js:0
+msgid "Left align"
 msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "Linear"
-msgstr ""
+msgstr "Γραμμική"
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_plugin.js:0
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Link"
 msgstr "Σύνδεσμος"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
-msgid "Link copied to clipboard."
+#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
+msgid "Link Popover"
 msgstr ""
 
 #. module: html_editor
@@ -1137,7 +1249,7 @@ msgstr "Φόρτωση..."
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_popover.js:0
 msgid "Logout"
-msgstr ""
+msgstr "Αποσύνδεση"
 
 #. module: html_editor
 #. odoo-javascript
@@ -1153,19 +1265,13 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/others/dynamic_placeholder_plugin.js:0
-msgid "Marketing Tools"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_plugin.js:0
 msgid "Media"
 msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Medium"
 msgstr "Μέσο"
 
@@ -1183,7 +1289,31 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
+msgid "Model"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/powerbox/powerbox_plugin.js:0
+msgid "Modules"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/banner_plugin.js:0
+msgid "Monospace"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/banner_plugin.js:0
+msgid "Monospace Banner"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/powerbox/search_powerbox_plugin.js:0
 #: code:addons/html_editor/static/src/others/embedded_components/backend/video/video.xml:0
 msgid "More options"
 msgstr ""
@@ -1221,7 +1351,7 @@ msgstr ""
 #. module: html_editor
 #: model:ir.model.fields,field_description:html_editor.field_html_editor_converter_test_sub__name
 msgid "Name"
-msgstr ""
+msgstr "Περιγραφή"
 
 #. module: html_editor
 #. odoo-javascript
@@ -1261,6 +1391,18 @@ msgid "No pictograms found."
 msgstr ""
 
 #. module: html_editor
+#. odoo-python
+#: code:addons/html_editor/controllers/main.py:0
+msgid "Non-internal users can only upload image."
+msgstr ""
+
+#. module: html_editor
+#. odoo-python
+#: code:addons/html_editor/controllers/main.py:0
+msgid "Non-internal users can't upload large files."
+msgstr ""
+
+#. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/font_plugin.js:0
 msgid "Normal"
@@ -1274,9 +1416,15 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/main/list/list_plugin.js:0
+msgid "Numbered list (Ctrl + Shift + 7)"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_dialog/attachment_error.xml:0
 msgid "Ok"
-msgstr ""
+msgstr "ΟΚ"
 
 #. module: html_editor
 #. odoo-python
@@ -1353,6 +1501,7 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
 #: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.xml:0
 msgid "Preview"
 msgstr "Προεπισκόπηση"
@@ -1451,11 +1600,6 @@ msgid "Qweb Field Monetary"
 msgstr ""
 
 #. module: html_editor
-#: model:ir.model,name:html_editor.model_ir_qweb_field_relative
-msgid "Qweb Field Relative"
-msgstr ""
-
-#. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_selection
 msgid "Qweb Field Selection"
 msgstr ""
@@ -1463,11 +1607,6 @@ msgstr ""
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_qweb_field_text
 msgid "Qweb Field Text"
-msgstr ""
-
-#. module: html_editor
-#: model:ir.model,name:html_editor.model_ir_qweb_field_qweb
-msgid "Qweb Field qweb"
 msgstr ""
 
 #. module: html_editor
@@ -1480,13 +1619,13 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/html_editor/static/src/core/history_plugin.js:0
 msgid "Redo"
-msgstr ""
+msgstr "Ακύρωση αναίρεσης"
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/others/embedded_components/backend/video/video.xml:0
 msgid "Remove"
-msgstr ""
+msgstr "Αφαίρεση"
 
 #. module: html_editor
 #. odoo-javascript
@@ -1517,6 +1656,12 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_popover.js:0
 msgid "Removes referrer information sent to the target site"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
+msgid "Repeating"
 msgstr ""
 
 #. module: html_editor
@@ -1618,6 +1763,18 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "Revisions"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/align/align_plugin.js:0
+msgid "Right align"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/image_crop.xml:0
 msgid "Rotate Left"
 msgstr ""
@@ -1632,7 +1789,7 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_dialog/search_media.xml:0
 msgid "Search"
-msgstr ""
+msgstr "Αναζήτηση"
 
 #. module: html_editor
 #. odoo-javascript
@@ -1674,6 +1831,18 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_dialog/media_dialog.js:0
 msgid "Select a media"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
+msgid "Select button shape"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
+msgid "Select button size"
 msgstr ""
 
 #. module: html_editor
@@ -1738,8 +1907,8 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "Shape"
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "Show comparison"
 msgstr ""
 
 #. module: html_editor
@@ -1751,27 +1920,24 @@ msgstr ""
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid ""
-"Showing all differences between the current version and the selected one "
-"updated by"
+msgid "Showing"
 msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "Showing the document as it was on"
-msgstr ""
+#: code:addons/html_editor/static/src/main/media/signature_plugin.js:0
+msgid "Signature"
+msgstr "Υπογραφή"
 
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 msgid "Size"
-msgstr ""
+msgstr "Μέγεθος"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.js:0
+#: code:addons/html_editor/static/src/utils/button_style.js:0
 msgid "Small"
 msgstr "Μικρό"
 
@@ -1796,7 +1962,7 @@ msgstr ""
 #. module: html_editor
 #. odoo-javascript
 #: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "Split view"
+msgid "Split"
 msgstr ""
 
 #. module: html_editor
@@ -1809,6 +1975,12 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.js:0
 msgid "Start at"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/core/format_plugin.js:0
+msgid "Strikethrough (Ctrl + 5)"
 msgstr ""
 
 #. module: html_editor
@@ -1850,6 +2022,12 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
+msgid "Technical name"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_popover.js:0
 msgid "Tells search engines not to follow this link"
 msgstr ""
@@ -1862,8 +2040,8 @@ msgstr "Κείμενο"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "Text Color"
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
+msgid "Text shown if field is empty"
 msgstr ""
 
 #. module: html_editor
@@ -1971,6 +2149,12 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "Toggle comparison view"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/media/icon_plugin.js:0
 msgid "Toggle icon spin"
 msgstr ""
@@ -2058,7 +2242,7 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "Type"
-msgstr ""
+msgstr "Τύπος"
 
 #. module: html_editor
 #. odoo-javascript
@@ -2086,14 +2270,26 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/core/history_plugin.js:0
-msgid "Undo"
+#: code:addons/html_editor/static/src/core/format_plugin.js:0
+msgid "Underline (Ctrl + U)"
 msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/core/history_plugin.js:0
+msgid "Undo"
+msgstr "Αναίρεση"
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "Unified view"
+msgid "Unified"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
+#: code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml:0
+msgid "Update"
 msgstr ""
 
 #. module: html_editor
@@ -2122,8 +2318,8 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "Version date"
+#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.js:0
+msgid "Vertical"
 msgstr ""
 
 #. module: html_editor
@@ -2160,25 +2356,7 @@ msgstr ""
 #. module: html_editor
 #: model:ir.model,name:html_editor.model_ir_ui_view
 msgid "View"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "View Content"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "View comparison"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "View content"
-msgstr ""
+msgstr "Προβολή"
 
 #. module: html_editor
 #. odoo-javascript
@@ -2243,23 +2421,10 @@ msgid ""
 msgstr ""
 
 #. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/others/dynamic_placeholder_plugin.js:0
-msgid ""
-"You need to select a model before opening the dynamic placeholder selector."
-msgstr ""
-
-#. module: html_editor
 #. odoo-python
 #: code:addons/html_editor/controllers/main.py:0
 msgid "You need to specify either data or url to create an attachment."
 msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
-#: code:addons/html_editor/static/src/main/media/media_dialog/video_selector.xml:0
-msgid "Youku"
-msgstr "Youku"
 
 #. module: html_editor
 #. odoo-javascript
@@ -2299,6 +2464,12 @@ msgstr "και"
 
 #. module: html_editor
 #. odoo-javascript
+#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
+msgid "by"
+msgstr ""
+
+#. module: html_editor
+#. odoo-javascript
 #: code:addons/html_editor/static/src/main/font/gradient_picker/gradient_picker.xml:0
 msgid "deg"
 msgstr ""
@@ -2313,7 +2484,7 @@ msgstr "εγγραφή"
 #. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 msgid "e.g. https://www.odoo.com"
-msgstr ""
+msgstr "π.χ. https://www.odoo.com"
 
 #. module: html_editor
 #. odoo-javascript
@@ -2329,20 +2500,14 @@ msgstr ""
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/components/history_dialog/history_dialog.xml:0
-msgid "on"
-msgstr ""
-
-#. module: html_editor
-#. odoo-javascript
 #: code:addons/html_editor/static/src/main/link/link_popover.xml:0
 msgid "or"
 msgstr "ή"
 
 #. module: html_editor
 #. odoo-javascript
-#: code:addons/html_editor/static/src/main/link/link_popover.xml:0
-msgid "px"
+#: code:addons/html_editor/static/src/main/font/font_plugin.js:0
+msgid "title"
 msgstr ""
 
 #. module: html_editor
@@ -2355,30 +2520,3 @@ msgstr "videos"
 #: model:ir.model,name:html_editor.model_ir_websocket
 msgid "websocket message handling"
 msgstr ""
-
-#~ msgid "Comparison"
-#~ msgstr "Σύγκριση"
-
-#~ msgid "Content"
-#~ msgstr "Περιεχόμενα"
-
-#~ msgid "Error"
-#~ msgstr "Σφάλμα"
-
-#~ msgid "Icon"
-#~ msgstr "Εικονίδιο"
-
-#~ msgid "Image"
-#~ msgstr "Εικόνα"
-
-#~ msgid "Professional"
-#~ msgstr "Επαγγελματίας"
-
-#~ msgid "Save"
-#~ msgstr "Αποθήκευση"
-
-#~ msgid "Send a message"
-#~ msgstr "Αποστολή ενός μηνύματος"
-
-#~ msgid "Signature"
-#~ msgstr "Υπογραφή"

@@ -1,21 +1,31 @@
 import { Plugin } from "@html_editor/plugin";
-import { unwrapContents } from "@html_editor/utils/dom";
 import { closestElement, descendants, selectElements } from "@html_editor/utils/dom_traversal";
+import { mergeAdjacentTextNodes, unwrapContents } from "@html_editor/utils/dom";
 import { findInSelection, callbacksForCursorUpdate } from "@html_editor/utils/selection";
 import { _t } from "@web/core/l10n/translation";
 import { LinkPopover } from "./link_popover";
 import { DIRECTIONS, leftPos, nodeSize, rightPos } from "@html_editor/utils/position";
 import { EMAIL_REGEX, URL_REGEX, cleanZWChars, deduceURLfromText } from "./utils";
-import { isElement, isVisible, isZwnbsp } from "@html_editor/utils/dom_info";
+import {
+    isElement,
+    isStylable,
+    isPhrasingContent,
+    isProtected,
+    isProtecting,
+    isVisible,
+    isZwnbsp,
+    isContentEditable,
+} from "@html_editor/utils/dom_info";
 import { KeepLast } from "@web/core/utils/concurrency";
 import { rpc } from "@web/core/network/rpc";
 import { memoize } from "@web/core/utils/functions";
 import { withSequence } from "@html_editor/utils/resource";
 import { isBlock, closestBlock } from "@html_editor/utils/blocks";
 import { isHtmlContentSupported } from "@html_editor/core/selection_plugin";
-import { FONT_SIZE_CLASSES } from "@html_editor/utils/formatting";
 import { isBrowserFirefox } from "@web/core/browser/feature_detection";
 
+/** @typedef {import("@odoo/owl").Component} Component */
+/** @typedef {import("plugins").CSSSelector} CSSSelector */
 /**
  * @typedef {import("@html_editor/core/selection_plugin").EditorSelection} EditorSelection
  */
@@ -82,8 +92,17 @@ async function fetchInternalMetaData(url) {
 
     const result = await keepLastPromise
         .add(fetch(urlParsed))
-        .then((response) => response.text())
-        .then(async (content) => {
+        .then((response) => ({
+            contentPromise: response.text(),
+            type: response.headers.get("content-type"),
+        }))
+        .then(async ({ contentPromise, type }) => {
+            if (type.startsWith("image/")) {
+                return {
+                    imgSrc: urlParsed,
+                };
+            }
+            const content = await contentPromise;
             const html_parser = new window.DOMParser();
             const doc = html_parser.parseFromString(content, "text/html");
             const internalUrlMetaData = await rpc("/html_editor/link_preview_internal", {
@@ -125,6 +144,19 @@ async function fetchAttachmentMetaData(url, ormService) {
  * @property { LinkPlugin['insertLink'] } insertLink
  */
 
+/**
+ * @typedef {((link: HTMLLinkElement) => boolean | undefined)[]} is_link_editable_predicates
+ * @typedef {((link: HTMLLinkElement) => boolean | undefined)[]} is_empty_link_legit_predicates
+ * @typedef {(() => boolean | undefined)[]} is_link_allowed_on_selection_predicates
+ * @typedef {CSSSelector[]} immutable_link_selectors
+ * @typedef {{
+ *      PopoverClass: Component;
+ *      isAvailable: (linkEl: HTMLLinkElement) => boolean;
+ *      getProps: (props) => props;
+ *  }[]} link_popovers
+ * @typedef {((linkEl: HTMLAnchorElement) => void)[]} on_link_created_handlers
+ */
+
 export class LinkPlugin extends Plugin {
     static id = "link";
     static dependencies = [
@@ -138,12 +170,14 @@ export class LinkPlugin extends Plugin {
         "color",
         "baseContainer",
         "feff",
+        "delete",
     ];
     static defaultConfig = {
         allowStripDomain: true,
     };
     // @phoenix @todo: do we want to have createLink and insertLink methods in link plugin?
     static shared = ["createLink", "insertLink", "getPathAsUrlCommand"];
+    /** @type {import("plugins").EditorResources} */
     resources = {
         user_commands: [
             {
@@ -185,15 +219,17 @@ export class LinkPlugin extends Plugin {
 
         toolbar_groups: [
             withSequence(40, { id: "link", namespaces: ["compact", "expanded"] }),
-            withSequence(30, { id: "image_link", namespaces: ["image"] }),
+            withSequence(30, { id: "image_link", namespaces: ["image", "icon"] }),
         ],
         toolbar_items: [
             {
                 id: "link",
+                description: _t("Insert link (Ctrl + K)"),
                 groupId: "link",
                 commandId: "openLinkTools",
                 isActive: isLinkActive,
-                isDisabled: () => !this.isLinkAllowedOnSelection(),
+                isDisabled: (sel, nodes) =>
+                    !this.isLinkAllowedOnSelection() || nodes.some((node) => !isStylable(node)),
             },
             {
                 id: "unlink",
@@ -206,7 +242,8 @@ export class LinkPlugin extends Plugin {
                 groupId: "image_link",
                 commandId: "openLinkTools",
                 isActive: isLinkActive,
-                isDisabled: () => !this.isLinkAllowedOnSelection(),
+                isDisabled: (sel, nodes) =>
+                    !this.isLinkAllowedOnSelection() || nodes.some((node) => !isStylable(node)),
             },
             {
                 id: "unlink",
@@ -247,6 +284,8 @@ export class LinkPlugin extends Plugin {
             }),
         ],
 
+        advanced_popover_options: [],
+
         immutable_link_selectors: [
             '[data-bs-toggle="tab"]',
             '[data-bs-toggle="collapse"]',
@@ -256,26 +295,65 @@ export class LinkPlugin extends Plugin {
             ":has(>[data-oe-model])",
             ".o_prevent_link_editor a",
         ],
-        legit_empty_link_predicates: (linkEl) => linkEl.hasAttribute("data-mimetype"),
+        is_empty_link_legit_predicates: (linkEl) => {
+            if (linkEl.hasAttribute("data-mimetype")) {
+                return true;
+            }
+        },
+        is_node_splittable_predicates: (node) => {
+            if (node.nodeName === "A") {
+                return false;
+            }
+        },
+        // When the selection fully covers a link, we consider that the link is selected.
+        is_node_fully_selected_predicates: (node, selection) => {
+            if (
+                node.nodeName === "A" &&
+                !node.classList.contains("btn") &&
+                cleanZWChars(selection.toString()) === cleanZWChars(node.innerText)
+            ) {
+                return true;
+            }
+        },
 
         /** Handlers */
-        beforeinput_handlers: withSequence(5, this.onBeforeInput.bind(this)),
-        input_handlers: this.onInputDeleteNormalizeLink.bind(this),
-        before_delete_handlers: this.updateCurrentLinkSyncState.bind(this),
-        delete_handlers: this.onInputDeleteNormalizeLink.bind(this),
-        before_paste_handlers: this.updateCurrentLinkSyncState.bind(this),
-        after_paste_handlers: this.onPasteNormalizeLink.bind(this),
-        selectionchange_handlers: this.handleSelectionChange.bind(this),
-        clean_for_save_handlers: ({ root }) => this.removeEmptyLinks(root),
-        normalize_handlers: this.normalizeLink.bind(this),
-        after_insert_handlers: this.handleAfterInsert.bind(this),
+        on_beforeinput_handlers: [
+            withSequence(5, this.onBeforeInputPrepareConvertToLink.bind(this)),
+            this.onBeforeInputFixFirefoxSelection.bind(this),
+            withSequence(20, this.onBeforeInputConvertToLink.bind(this)),
+        ],
+        on_input_handlers: [
+            this.onInputDeleteNormalizeLink.bind(this),
+            this.onInputConvertToLink.bind(this),
+        ],
+        on_will_delete_handlers: this.updateCurrentLinkSyncState.bind(this),
+        on_deleted_handlers: this.onInputDeleteNormalizeLink.bind(this),
+        on_will_paste_handlers: this.updateCurrentLinkSyncState.bind(this),
+        on_pasted_handlers: this.onPasteNormalizeLink.bind(this),
+        on_selectionchange_handlers: this.handleSelectionChange.bind(this),
+        on_inserted_handlers: this.handleAfterInsert.bind(this),
+        on_will_remove_handlers: () => this.closeLinkTools(),
 
         /** Overrides */
         split_element_block_overrides: this.handleSplitBlock.bind(this),
         insert_line_break_element_overrides: this.handleInsertLineBreak.bind(this),
         delete_image_overrides: this.deleteImageLink.bind(this),
+        delete_backward_overrides: withSequence(15, this.handleDeleteBackward.bind(this)),
         double_click_overrides: this.doubleClickLinkOverrides.bind(this),
         triple_click_overrides: this.tripleClickButtonOverrides.bind(this),
+
+        /** Processors */
+        clean_for_save_processors: (root) => this.removeEmptyLinks(root),
+        normalize_processors: this.normalizeLink.bind(this),
+        to_inline_code_processors: (node) => {
+            this.removeEmptyLinks(node);
+            for (const btn of selectElements(node, "a.btn")) {
+                // Remove all attributes from the button link except "href"
+                [...btn.attributes].forEach(
+                    (attr) => attr.name !== "href" && btn.removeAttribute(attr.name)
+                );
+            }
+        },
     };
 
     setup() {
@@ -362,8 +440,8 @@ export class LinkPlugin extends Plugin {
         for (const [param, value] of Object.entries(this.config.defaultLinkAttributes || {})) {
             link.setAttribute(param, `${value}`);
         }
-        link.innerText = label;
-        this.dispatchTo("create_link_handlers", link);
+        link.textContent = label;
+        this.trigger("on_link_created_handlers", link);
         return link;
     }
 
@@ -376,7 +454,7 @@ export class LinkPlugin extends Plugin {
         let link = closestElement(selection.anchorNode, "a");
         if (link) {
             link.setAttribute("href", url);
-            link.innerText = label;
+            link.textContent = label;
         } else {
             link = this.createLink(url, label);
             this.dependencies.dom.insert(link);
@@ -400,6 +478,10 @@ export class LinkPlugin extends Plugin {
             description: _t("Create an URL."),
             icon: "fa-link",
             run: () => {
+                this.trigger(
+                    "on_will_paste_handlers",
+                    this.dependencies.selection.getEditableSelection()
+                );
                 this.dependencies.dom.insert(this.createLink(url, text));
                 this.dependencies.history.addStep();
             },
@@ -408,7 +490,7 @@ export class LinkPlugin extends Plugin {
     }
 
     isLinkAllowedOnSelection() {
-        if (this.getResource("link_compatible_selection_predicates").some((p) => p())) {
+        if (this.checkPredicates("is_link_allowed_on_selection_predicates") ?? false) {
             return true;
         }
         const targetedNodes = this.dependencies.selection.getTargetedNodes();
@@ -419,8 +501,23 @@ export class LinkPlugin extends Plugin {
             // Prevent a link across sibling blocks:
             targetedBlocks.every((node) =>
                 targetedNodes.every((other) => node.contains(other) || other.contains(node))
-            )
+            ) &&
+            targetedNodes.some(this.dependencies.selection.isNodeEditable)
         );
+    }
+
+    hasValidValue(attr, value) {
+        return Boolean(value);
+    }
+
+    applyAttributes(el, attributes = {}) {
+        for (const [attr, value] of Object.entries(attributes)) {
+            if (this.hasValidValue(attr, value)) {
+                el.setAttribute(attr, value);
+            } else {
+                el.removeAttribute(attr);
+            }
+        }
     }
 
     /**
@@ -455,145 +552,69 @@ export class LinkPlugin extends Plugin {
         this.linkInDocument = linkElement;
         if (!linkElement) {
             // create a new link element
-            linkElement = this.createLink(undefined, selection.textContent());
+            linkElement = this.createLink(undefined, selection.toString());
         }
 
-        const selectionTextContent = selection?.textContent();
-        const isImage = !!findInSelection(selection, "img");
+        const selectionTextContent = selection?.toString();
+        const isImage = !!findInSelection(selection, "img, .fa");
 
-        const applyCallback = (
-            url,
-            label,
-            classes,
-            customStyle,
-            linkTarget,
-            attachmentId,
-            relValue
-        ) => {
+        const applyCallback = (params) => {
+            const { attributes, label, attachmentId } = params;
             if (this.linkInDocument) {
-                if (url) {
-                    this.linkInDocument.href = url;
-                } else {
-                    this.linkInDocument.removeAttribute("href");
-                }
-                if (relValue) {
-                    this.linkInDocument.setAttribute("rel", relValue);
-                } else {
-                    this.linkInDocument.removeAttribute("rel");
-                }
-                if (linkTarget) {
-                    this.linkInDocument.setAttribute("target", linkTarget);
-                } else {
-                    this.linkInDocument.removeAttribute("target");
-                }
+                this.applyAttributes(this.linkInDocument, attributes);
                 if (!isImage) {
-                    if (classes) {
-                        this.linkInDocument.className = classes;
-                    } else {
-                        this.linkInDocument.removeAttribute("class");
-                    }
-                    if (customStyle) {
-                        this.linkInDocument.setAttribute("style", customStyle);
-                    } else {
-                        this.linkInDocument.removeAttribute("style");
-                    }
                     if (
                         this.linkInDocument.childElementCount == 0 &&
-                        cleanZWChars(this.linkInDocument.innerText) !== label
+                        cleanZWChars(this.linkInDocument.textContent) !== label
                     ) {
-                        this.linkInDocument.innerText = label;
+                        this.linkInDocument.textContent = label;
                         cursorsToRestore = null;
                     }
                 }
-            } else if (url) {
+            } else if (attributes.href) {
                 // prevent the link creation if the url field was empty
-                const sameTextOrImage =
-                    (selectionTextContent && selectionTextContent === label) || isImage;
-                if (sameTextOrImage || label) {
-                    // Create a new link with current selection as a content.
-                    const link = this.createLink(url);
-                    const fontSizeWrapper = closestElement(
-                        selection.commonAncestorContainer,
-                        (el) =>
-                            el.tagName === "SPAN" &&
-                            (FONT_SIZE_CLASSES.some((cls) => el.classList.contains(cls)) ||
-                                el.style?.fontSize)
-                    );
-                    if (relValue) {
-                        link.setAttribute("rel", relValue);
-                    }
+
+                // create a new link with current selection as a content
+                if ((selectionTextContent && selectionTextContent === label) || isImage) {
+                    const link = this.createLink(attributes.href);
                     const image = isImage && findInSelection(selection, "img");
                     const figure =
                         image?.parentElement?.matches("figure[contenteditable=false]") &&
                         image.parentElement;
-                    let content;
-
-                    // Split selection to include font-size <span>
-                    // inside <a> to preserve styling.
-                    if (fontSizeWrapper) {
-                        this.dependencies.split.splitSelection();
-                        const selectedNodes = this.dependencies.selection
-                            .getTargetedNodes()
-                            .filter(
-                                this.dependencies.selection.areNodeContentsFullySelected.bind(this)
-                            );
-                        content = this.dependencies.split.splitAroundUntil(
-                            selectedNodes,
-                            fontSizeWrapper
-                        );
-                        const [anchorNode, anchorOffset] = leftPos(content);
-                        // Force selection to correct spot after split to prevent wrong link placement.
-                        this.dependencies.selection.setSelection(
-                            { anchorNode, anchorOffset },
-                            { normalize: false }
-                        );
-                        if (!sameTextOrImage) {
-                            // If label changed, clear existing content and set new text.
-                            content.textContent = label;
-                        }
-                    } else if (sameTextOrImage) {
-                        if (figure) {
-                            figure.before(link);
-                            link.append(figure);
-                            if (link.parentElement === this.editable) {
-                                const baseContainer =
-                                    this.dependencies.baseContainer.createBaseContainer();
-                                link.before(baseContainer);
-                                baseContainer.append(link);
-                            }
-                        } else {
-                            content = this.dependencies.selection.extractContent(selection);
-                            selection = this.dependencies.selection.getEditableSelection();
-                            const anchorClosestElement = closestElement(selection.anchorNode);
-                            if (commonAncestor !== anchorClosestElement && !fontSizeWrapper) {
-                                // We force the cursor after the anchorClosestElement
-                                // To be sure the link is inserted in the correct place in the dom.
-                                const [anchorNode, anchorOffset] = rightPos(anchorClosestElement);
-                                this.dependencies.selection.setSelection(
-                                    { anchorNode, anchorOffset },
-                                    { normalize: false }
-                                );
-                            }
+                    if (figure) {
+                        figure.before(link);
+                        link.append(figure);
+                        if (link.parentElement === this.editable) {
+                            const baseContainer =
+                                this.dependencies.baseContainer.createBaseContainer();
+                            link.before(baseContainer);
+                            baseContainer.replaceChildren(link);
                         }
                     } else {
-                        content = this.document.createTextNode(label);
-                        if (customStyle) {
-                            link.setAttribute("style", customStyle);
-                        }
-                        if (linkTarget) {
-                            link.setAttribute("target", linkTarget);
-                        }
-                    }
-                    this.linkInDocument = link;
-                    if (classes) {
-                        link.className = classes;
-                    }
-                    if (!figure) {
+                        const content = this.dependencies.selection.extractContent(selection);
                         link.append(content);
                         link.normalize();
                         cursorsToRestore = null;
+                        selection = this.dependencies.selection.getEditableSelection();
+                        const anchorClosestElement = closestElement(selection.anchorNode);
+                        if (commonAncestor !== anchorClosestElement) {
+                            // We force the cursor after the anchorClosestElement
+                            // To be sure the link is inserted in the correct place in the dom.
+                            const [anchorNode, anchorOffset] = rightPos(anchorClosestElement);
+                            this.dependencies.selection.setSelection(
+                                { anchorNode, anchorOffset },
+                                { normalize: false }
+                            );
+                        }
                         this.dependencies.dom.insert(link);
                     }
+                    this.linkInDocument = link;
+                } else if (label) {
+                    const link = this.createLink(attributes.href, label);
+                    this.applyAttributes(link, attributes);
+                    this.linkInDocument = link;
+                    cursorsToRestore = null;
+                    this.dependencies.dom.insert(link);
                 }
             }
             if (attachmentId) {
@@ -606,6 +627,8 @@ export class LinkPlugin extends Plugin {
             document: this.document,
             linkElement,
             isImage: isImage,
+            containerElement: closestElement(selection.anchorNode),
+            ignoreDOMMutations: this.dependencies.history.ignoreDOMMutations,
             onApply: (...args) => {
                 delete this._isNavigatingByMouse;
                 applyCallback(...args);
@@ -641,19 +664,22 @@ export class LinkPlugin extends Plugin {
             getAttachmentMetadata: this.getAttachmentMetadata,
             recordInfo: this.config.getRecordInfo?.() || {},
             canEdit:
-                !this.linkInDocument || !this.linkInDocument.classList.contains("o_link_readonly"),
+                (!this.linkInDocument ||
+                    !this.linkInDocument.classList.contains("o_link_readonly")) &&
+                isContentEditable(linkElement),
             canRemove:
                 this.linkInDocument &&
                 this.linkInDocument.parentElement.isContentEditable &&
-                !this.isUnremovable(this.linkInDocument),
+                !this.dependencies.delete.isUnremovable(this.linkInDocument),
             canUpload: this.config.allowFile,
             onUpload: this.config.onAttachmentChange,
             type: this.type || "",
             LinkPopoverState: this.LinkPopoverState,
             showReplaceTitleBanner: this.newlyInsertedLinks.has(linkElement),
-            allowCustomStyle: this.config.allowCustomStyle,
+            includeStyling: !this.config.hideStylingInLinkPopover,
             allowTargetBlank: this.config.allowTargetBlank,
             allowStripDomain: this.config.allowStripDomain,
+            advancedAttributeOptions: this.getResource("advanced_popover_options"),
         };
 
         const popover = this.getActivePopover(linkElement);
@@ -690,18 +716,12 @@ export class LinkPlugin extends Plugin {
                     focusNode: link,
                     focusOffset: nodeSize(link),
                 });
-                const saveCustomStyle = link.getAttribute("style");
-                link.removeAttribute("style");
-                this.dependencies.color.removeAllColor();
-                if (
-                    saveCustomStyle &&
-                    this.config.allowCustomStyle &&
-                    link.className.includes("custom")
-                ) {
-                    link.setAttribute("style", saveCustomStyle);
+                if (!this.config.hideStylingInLinkPopover) {
+                    link.removeAttribute("style");
+                    this.dependencies.color.removeAllColor();
                 }
                 // Remove the current link (linkInDocument) if it has no content
-                if (cleanZWChars(link.innerText) === "" && !link.querySelector("img")) {
+                if (cleanZWChars(link.textContent) === "" && !link.querySelector("img, .fa")) {
                     const [anchorNode, anchorOffset] = rightPos(link);
                     // We force the cursor after the link before removing the link
                     // to ensure we don't lose the selection position.
@@ -732,9 +752,10 @@ export class LinkPlugin extends Plugin {
             // create a font tag inside it, and move the color to the font tag.
             // This ensures the color is applied to the font element instead of
             // the anchor element itself.
-            if (color && childNodes.every((n) => !isBlock(n))) {
+            if (color && childNodes.every(isPhrasingContent)) {
                 anchorEl.style.removeProperty("color");
-                const font = selectElements(anchorEl, "font").next().value;
+                const font =
+                    anchorEl.nodeName === "FONT" ? anchorEl : anchorEl.querySelector("font");
                 if (font && cleanZWChars(anchorEl.textContent) === font.textContent) {
                     continue;
                 }
@@ -798,9 +819,23 @@ export class LinkPlugin extends Plugin {
                 }
             }
         }
-        if (!selectionData.currentSelectionIsInEditable) {
+        const anchorNode = this.document.getSelection()?.anchorNode;
+        const isSelectionInProtected =
+            this.document.getSelection()?.isCollapsed &&
+            (isProtecting(anchorNode) || isProtected(anchorNode));
+        if (
+            !(
+                selectionData.documentSelectionIsInEditable &&
+                this.dependencies.selection.editableDocumentHasFocus()
+            ) ||
+            isSelectionInProtected
+        ) {
+            const popoverEl = document.querySelector(".o-we-linkpopover");
             const anchorNode = document.getSelection()?.anchorNode;
-            if (anchorNode && isElement(anchorNode) && anchorNode.closest(".o-we-linkpopover")) {
+            if (
+                (popoverEl && !selectionData.documentSelection) ||
+                (anchorNode && isElement(anchorNode) && anchorNode.closest(".o-we-linkpopover"))
+            ) {
                 return;
             }
             this.linkInDocument = null;
@@ -808,7 +843,7 @@ export class LinkPlugin extends Plugin {
         } else if (!selection.isCollapsed) {
             // Open the link tool only if we have an image selected and the selection
             // is fully contained in the image parent link.
-            const imageNode = findInSelection(selection, "img");
+            const imageNode = findInSelection(selection, "img, .fa");
             const parentElement = imageNode?.parentElement;
             const linkContainingImage = imageNode && closestElement(imageNode, "a");
             if (
@@ -824,9 +859,8 @@ export class LinkPlugin extends Plugin {
             }
         } else {
             const closestLinkElement = closestElement(selection.anchorNode, "A");
-            const isLinkEditable = this.getResource("is_link_editable_predicates").some((p) =>
-                p(closestLinkElement)
-            );
+            const isLinkEditable =
+                this.checkPredicates("is_link_editable_predicates", closestLinkElement) ?? false;
             if (closestLinkElement && closestLinkElement.isContentEditable) {
                 if (closestLinkElement !== this.linkInDocument || !this.currentOverlay.isOpen) {
                     this.openLinkTools(closestLinkElement);
@@ -862,15 +896,11 @@ export class LinkPlugin extends Plugin {
         this.dependencies.selection.setCursorEnd(linkElement);
     }
 
-    isUnremovable(linkEl) {
-        return this.getResource("unremovable_node_predicates").some((p) => p(linkEl));
-    }
-
     /**
      * Remove the link from the collapsed selection
      */
     removeLinkInDocument(link = this.linkInDocument) {
-        if (!link.parentElement.isContentEditable || this.isUnremovable(link)) {
+        if (!link.parentElement.isContentEditable || this.dependencies.delete.isUnremovable(link)) {
             return;
         }
         const cursors = this.dependencies.selection.preserveSelection();
@@ -880,13 +910,18 @@ export class LinkPlugin extends Plugin {
         }
         cursors.restore();
         this.linkInDocument = null;
+        this.dependencies.selection.focusEditable();
         this.dependencies.history.addStep();
     }
 
     removeLinkFromSelectionIsDisabled(selection) {
         for (const node of this.dependencies.selection.getTargetedNodes()) {
             const linkEl = closestElement(node, "a");
-            if (linkEl && !this.isLinkImmutable(linkEl) && !this.isUnremovable(linkEl)) {
+            if (
+                linkEl &&
+                !this.isLinkImmutable(linkEl) &&
+                !this.dependencies.delete.isUnremovable(linkEl)
+            ) {
                 return false;
             }
         }
@@ -964,11 +999,12 @@ export class LinkPlugin extends Plugin {
         }
         const startBlock = closestBlock(startLink);
         const endBlock = closestBlock(endLink);
+        const multipleLinks = startLink !== endLink;
         if (
             startLink &&
             startLink.isConnected &&
             startLink.parentElement.isContentEditable &&
-            !this.isUnremovable(startLink)
+            !this.dependencies.delete.isUnremovable(startLink)
         ) {
             anchorNode = this.dependencies.split.splitAroundUntil(anchorNode, startLink);
             anchorOffset = direction === DIRECTIONS.RIGHT ? 0 : nodeSize(anchorNode);
@@ -982,7 +1018,8 @@ export class LinkPlugin extends Plugin {
             endLink &&
             endLink.isConnected &&
             endLink.parentElement.isContentEditable &&
-            !this.isUnremovable(endLink)
+            !this.dependencies.delete.isUnremovable(endLink) &&
+            multipleLinks
         ) {
             focusNode = this.dependencies.split.splitAroundUntil(focusNode, endLink);
             focusOffset = direction === DIRECTIONS.RIGHT ? nodeSize(focusNode) : 0;
@@ -1000,7 +1037,7 @@ export class LinkPlugin extends Plugin {
                         a &&
                         a.isContentEditable &&
                         a.parentElement.isContentEditable &&
-                        !this.isUnremovable(a)
+                        !this.dependencies.delete.isUnremovable(a)
                 )
         );
         if (links.size) {
@@ -1026,7 +1063,7 @@ export class LinkPlugin extends Plugin {
             for (const child of node.childNodes) {
                 remove(child);
             }
-            if (!this.isUnremovable(node)) {
+            if (!this.dependencies.delete.isUnremovable(node)) {
                 node.before(...node.childNodes);
                 node.remove();
             }
@@ -1036,8 +1073,8 @@ export class LinkPlugin extends Plugin {
             if (
                 [...link.childNodes].some(isVisible) ||
                 !link.parentElement.isContentEditable ||
-                this.isUnremovable(link) ||
-                this.getResource("legit_empty_link_predicates").some((p) => p(link))
+                this.dependencies.delete.isUnremovable(link) ||
+                (this.checkPredicates("is_empty_link_legit_predicates", link) ?? false)
             ) {
                 continue;
             }
@@ -1061,37 +1098,51 @@ export class LinkPlugin extends Plugin {
         }
     }
 
-    onBeforeInput(ev) {
-        if (ev.inputType === "insertParagraph" || ev.inputType === "insertLineBreak") {
-            const nodeForSelectionRestore = this.handleAutomaticLinkInsertion();
-            if (nodeForSelectionRestore) {
-                this.dependencies.selection.setCursorStart(nodeForSelectionRestore);
-                this.dependencies.history.addStep();
-            }
+    onBeforeInputPrepareConvertToLink(ev) {
+        if (
+            ev.inputType === "insertParagraph" ||
+            ev.inputType === "insertLineBreak" ||
+            (ev.inputType === "insertText" && ev.data === " ")
+        ) {
+            this.convertToLink = this.prepareConvertToLink();
         }
-        if (ev.inputType === "insertText" && ev.data === " ") {
-            const nodeForSelectionRestore = this.handleAutomaticLinkInsertion();
-            if (nodeForSelectionRestore) {
-                // Since we manually insert a space here, we will be adding a history step
-                // after link creation with selection at the end of the link and another
-                // after inserting the space. So first undo will remove the space, and the
-                // second will undo the link creation.
-                this.dependencies.selection.setSelection({
-                    anchorNode: nodeForSelectionRestore,
-                    anchorOffset: 0,
-                });
-                this.dependencies.history.addStep();
-                nodeForSelectionRestore.textContent =
-                    "\u00A0" + nodeForSelectionRestore.textContent;
-                this.dependencies.selection.setSelection({
-                    anchorNode: nodeForSelectionRestore,
-                    anchorOffset: 1,
-                });
-                this.dependencies.history.addStep();
-                ev.preventDefault();
-            }
+    }
+
+    onBeforeInputFixFirefoxSelection(ev) {
+        // Firefox: avoid corrupted selection inside link.
+        const selection = this.document.getSelection();
+        if (
+            ev.inputType === "insertText" &&
+            selection.isCollapsed &&
+            selection.anchorNode.nodeType === Node.TEXT_NODE &&
+            selection.anchorNode.parentElement.tagName === "A"
+        ) {
+            // Reset hidden internal selection state.
+            const offset = selection.anchorOffset;
+            selection.collapse(selection.anchorNode, 0);
+            selection.collapse(selection.anchorNode, offset);
         }
         this.updateCurrentLinkSyncState();
+    }
+
+    onBeforeInputConvertToLink(ev) {
+        if (this.convertToLink) {
+            if (ev.inputType === "insertParagraph" || ev.inputType === "insertLineBreak") {
+                this.convertToLink();
+                this.dependencies.history.addStep();
+                delete this.convertToLink;
+            }
+        }
+    }
+
+    onInputConvertToLink(ev) {
+        if (this.convertToLink) {
+            if (ev.inputType === "insertText" && ev.data === " ") {
+                this.convertToLink();
+                this.dependencies.history.addStep();
+                delete this.convertToLink;
+            }
+        }
     }
 
     onInputDeleteNormalizeLink() {
@@ -1117,7 +1168,7 @@ export class LinkPlugin extends Plugin {
     deleteImageLink(imageToDelete) {
         if (
             imageToDelete.parentElement.tagName === "A" &&
-            !this.isUnremovable(imageToDelete.parentElement) &&
+            !this.dependencies.delete.isUnremovable(imageToDelete.parentElement) &&
             imageToDelete.parentElement.parentElement.isContentEditable
         ) {
             // If the link is empty after removing the image, remove it.
@@ -1132,10 +1183,13 @@ export class LinkPlugin extends Plugin {
     }
 
     /**
-     * Inserts a link in the editor. Called after pressing space or (shif +) enter.
+     * If a link must be inserted after pressing space or (shift +) enter,
+     * returns information that will be needed to insert the link.
      * Performs a regex check to determine if the url has correct syntax.
+     *
+     * @returns {Function} that performs the link conversion
      */
-    handleAutomaticLinkInsertion() {
+    prepareConvertToLink() {
         let selection = this.dependencies.selection.getEditableSelection();
         if (
             isHtmlContentSupported(selection) &&
@@ -1143,7 +1197,9 @@ export class LinkPlugin extends Plugin {
             selection.anchorNode.nodeType === Node.TEXT_NODE
         ) {
             // Merge adjacent text nodes.
-            selection.anchorNode.parentNode.normalize();
+            const cursor = this.dependencies.selection.preserveSelection();
+            mergeAdjacentTextNodes(selection.anchorNode.parentNode, cursor);
+            cursor.restore();
             selection = this.dependencies.selection.getEditableSelection();
             const textSliced = selection.anchorNode.textContent.slice(0, selection.anchorOffset);
             const textNodeSplitted = textSliced.split(/\s/);
@@ -1151,22 +1207,30 @@ export class LinkPlugin extends Plugin {
             // In case of multiple matches, only the last one will be converted.
             const match = [...potentialUrl.matchAll(new RegExp(URL_REGEX, "g"))].pop();
 
-            if (match && !EMAIL_REGEX.test(match[0])) {
-                const nodeForSelectionRestore = selection.anchorNode.splitText(
-                    selection.anchorOffset
-                );
-                const url = match[2] ? match[0] : "https://" + match[0];
+            if (match) {
+                selection.anchorNode.splitText(selection.anchorOffset);
+                let url;
+                if (!EMAIL_REGEX.test(match[0])) {
+                    url = match[2] ? match[0] : "https://" + match[0];
+                } else {
+                    url = "mailto:" + match[0];
+                }
                 const startOffset = selection.anchorOffset - potentialUrl.length + match.index;
                 const text = selection.anchorNode.textContent.slice(
                     startOffset,
                     startOffset + match[0].length
                 );
-                const link = this.createLink(url, text);
                 // split the text node and replace the url text with the link
                 const textNodeToReplace = selection.anchorNode.splitText(startOffset);
                 textNodeToReplace.splitText(match[0].length);
-                selection.anchorNode.parentElement.replaceChild(link, textNodeToReplace);
-                return nodeForSelectionRestore;
+                const link = this.createLink(url, text);
+                return () => {
+                    textNodeToReplace.splitText(match[0].length); // this will keep the space (that will have been added in the meantime)
+                    textNodeToReplace.parentNode.replaceChild(link, textNodeToReplace);
+                    if (link.getAttribute("href") === link.textContent) {
+                        this.newlyInsertedLinks.add(link);
+                    }
+                };
             }
         }
     }
@@ -1223,6 +1287,25 @@ export class LinkPlugin extends Plugin {
         return true;
     }
 
+    handleDeleteBackward({ startContainer, startOffset, endContainer, endOffset }) {
+        // Detect if selection is around FEFF after the end edge of a button.
+        if (startContainer !== endContainer || startOffset !== 0 || endOffset !== 1) {
+            return;
+        }
+        if (startContainer.nodeType !== Node.TEXT_NODE || startContainer.textContent != "\uFEFF") {
+            return;
+        }
+        if (!startContainer.previousSibling?.matches("a.btn")) {
+            return;
+        }
+        // Move before inner FEFF of the button.
+        this.dependencies.selection.setSelection({
+            anchorNode: startContainer.previousSibling,
+            anchorOffset: startContainer.previousSibling.childNodes.length - 1,
+        });
+        return true;
+    }
+
     handleAfterInsert(insertedNodes) {
         for (const node of insertedNodes) {
             if (node.nodeType === Node.ELEMENT_NODE) {
@@ -1249,7 +1332,10 @@ export class LinkPlugin extends Plugin {
                     }
                 ),
                 isAvailable: link_popover.isAvailable,
-                getProps: link_popover.getProps,
+                getProps: (...args) => ({
+                    ...link_popover.getProps(...args),
+                    publicAttachments: this.config.publicAttachments,
+                }),
             });
         });
     }
@@ -1317,11 +1403,15 @@ export class LinkPlugin extends Plugin {
             ? findInSelection(selection, "a.btn")
             : closestElement(selection.anchorNode, "a.btn");
         if (buttonElement) {
+            // We need to ignore the feffs the boundaries otherwise the browser will
+            // add the character outside of the button in case we triple click and
+            // we type something.
+            const buttonDescendants = descendants(buttonElement).filter((node) => !isZwnbsp(node));
             this.dependencies.selection.setSelection({
-                anchorNode: buttonElement,
+                anchorNode: buttonDescendants[0],
                 anchorOffset: 0,
-                focusNode: buttonElement,
-                focusOffset: nodeSize(buttonElement),
+                focusNode: buttonDescendants.at(-1),
+                focusOffset: nodeSize(buttonDescendants.at(-1)),
             });
             ev.preventDefault();
             return true;

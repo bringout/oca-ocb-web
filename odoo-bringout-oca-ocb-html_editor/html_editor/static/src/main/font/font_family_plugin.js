@@ -1,14 +1,15 @@
+import { reactive } from "@web/owl2/utils";
 import { Plugin } from "@html_editor/plugin";
 import { _t } from "@web/core/l10n/translation";
 import { FontFamilySelector } from "@html_editor/main/font/font_family_selector";
-import { reactive } from "@odoo/owl";
 import { closestElement } from "../../utils/dom_traversal";
-import { withSequence } from "@html_editor/utils/resource";
+import { READ, withSequence } from "@html_editor/utils/resource";
 import { isHtmlContentSupported } from "@html_editor/core/selection_plugin";
+import { isStylable } from "@html_editor/utils/dom_info";
 
 export const defaultFontFamily = {
     name: "Default system font",
-    nameShort: "Default",
+    nameShort: "Default font",
     fontFamily: false,
 };
 export const fontFamilyItems = [
@@ -18,20 +19,21 @@ export const fontFamilyItems = [
     { name: "Tahoma (sans-serif)", nameShort: "Tahoma", fontFamily: "Tahoma, sans-serif" },
     {
         name: "Trebuchet MS (sans-serif)",
-        nameShort: "Trebuchet",
+        nameShort: "Trebuchet MS",
         fontFamily: '"Trebuchet MS", sans-serif',
     },
     {
         name: "Courier New (monospace)",
-        nameShort: "Courier",
+        nameShort: "Courier New",
         fontFamily: '"Courier New", monospace',
     },
 ];
 
 export class FontFamilyPlugin extends Plugin {
     static id = "fontFamily";
-    static dependencies = ["split", "selection", "dom", "format", "font"];
+    static dependencies = ["split", "selection", "dom", "format"];
     fontFamily = reactive({ displayName: defaultFontFamily.nameShort });
+    /** @type {import("plugins").EditorResources} */
     resources = {
         toolbar_items: [
             withSequence(15, {
@@ -50,13 +52,15 @@ export class FontFamilyPlugin extends Plugin {
                         this.fontFamily.displayName = item.nameShort;
                     },
                 },
-                isAvailable: isHtmlContentSupported,
+                isDisabled: (sel, nodes) => nodes.some((node) => !isStylable(node)),
+                isAvailable: (selection) =>
+                    isHtmlContentSupported(selection) && (this.config.allowFontFamily ?? true),
             }),
         ],
         /** Handlers */
-        selectionchange_handlers: this.updateCurrentFontFamily.bind(this),
-        post_undo_handlers: this.updateCurrentFontFamily.bind(this),
-        post_redo_handlers: this.updateCurrentFontFamily.bind(this),
+        on_selectionchange_handlers: withSequence(READ, this.updateCurrentFontFamily.bind(this)),
+        on_undone_handlers: this.updateCurrentFontFamily.bind(this),
+        on_redone_handlers: this.updateCurrentFontFamily.bind(this),
     };
 
     updateCurrentFontFamily(ev) {

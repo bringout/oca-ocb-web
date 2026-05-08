@@ -1,13 +1,16 @@
-import { BaseOptionComponent, useDomState } from "@html_builder/core/utils";
+import { BaseOptionComponent } from "@html_builder/core/base_option_component";
+import { useDomState } from "@html_builder/core/utils";
 
 export class BorderConfigurator extends BaseOptionComponent {
     static template = "html_builder.BorderConfiguratorOption";
+    static dependencies = ["builderActions"];
     static props = {
         label: { type: String },
         direction: { type: String, optional: true },
         withRoundCorner: { type: Boolean, optional: true },
         withBSClass: { type: Boolean, optional: true },
         action: { type: String, optional: true },
+        level: { type: Number, optional: true },
     };
     static defaultProps = {
         withRoundCorner: true,
@@ -22,7 +25,7 @@ export class BorderConfigurator extends BaseOptionComponent {
         }));
     }
     getStyleActionParam(param) {
-        const property = `border-${this.props.direction ? (this.props.direction + "-") : ""}${param}`;
+        const property = `border-${this.props.direction ? this.props.direction + "-" : ""}${param}`;
         if (this.props.withBSClass && (param === "width" || param === "radius")) {
             // grep: --box-border-width, --box-border-radius
             return `--box-${property}`;
@@ -30,7 +33,7 @@ export class BorderConfigurator extends BaseOptionComponent {
         return property;
     }
     hasBorder(editingElement) {
-        const getAction = this.env.editor.shared.builderActions.getAction;
+        const { getAction } = this.dependencies.builderActions;
         const styleActionValue = getAction("styleAction").getValue({
             editingElement,
             params: {

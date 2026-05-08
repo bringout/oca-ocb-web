@@ -120,7 +120,7 @@ export function areCssValuesEqual(value1, value2, cssProp, htmlStyle) {
     // to do this: should not we just list the right CSS property explicitly
     // if we want to do this? That would have avoided the CSS variable fix that
     // had to be made here (the '--' part).
-    if (cssProp && cssProp.endsWith('-size') && !cssProp.startsWith('--')) {
+    if (cssProp && cssProp.endsWith("-size") && !cssProp.startsWith("--")) {
         // Avoid re-splitting each part during their individual comparison.
         const pseudoPartProp = cssProp + "-part";
         const re = /-?[0-9.]+(?:e[+|-]?[0-9]+)?\s*[A-Za-z%-]+|auto/g;
@@ -207,7 +207,10 @@ export function areCssValuesEqual(value1, value2, cssProp, htmlStyle) {
         return false;
     }
     const numValue1 = data[0];
-    const numValue2 = convertValueToUnit(value2, data[1], htmlStyle);
+    // Zero values don't need unit conversion (0px === 0rem === 0em === 0)
+    const numValue2 = parseFloat(numValue1) === 0
+        ? getNumericAndUnit(value2)[0]
+        : convertValueToUnit(value2, data[1], htmlStyle);
     return Math.abs(numValue1 - numValue2) < Number.EPSILON;
 }
 /**
@@ -264,15 +267,6 @@ export function getBgImageURLFromEl(el) {
     return getBgImageURLFromURL(string);
 }
 /**
- * Generates a string ID.
- *
- * @private
- * @returns {string}
- */
-export function generateHTMLId() {
-    return `o${Math.random().toString(36).substring(2, 15)}`;
-}
-/**
  * Returns the class of the element that matches the specified prefix.
  *
  * @private
@@ -313,7 +307,7 @@ export function isBackgroundImageAttribute(attribute) {
  *
  * TODO: the name of this function is voluntarily bad to reflect the fact that
  * this system should be improved. The combination of o_not_editable,
- * o_editable, getContentEditableAreas, getReadOnlyAreas and other concepts
+ * o_savable, getContentEditableAreas, getReadOnlyAreas and other concepts
  * related to what should be editable or not should be reviewed.
  *
  * @returns {boolean}
@@ -326,7 +320,7 @@ export function shouldEditableMediaBeEditable(mediaEl) {
     // This case is complex and the solution to support it is not
     // perfect: we mark those media with a class and check that they
     // are descendant of a savable.
-    return mediaEl.parentElement && mediaEl.parentElement.closest(".o_editable");
+    return mediaEl.parentElement && mediaEl.parentElement.closest(".o_savable");
 }
 /**
  * Returns the label of a link element.
@@ -349,39 +343,13 @@ export function forwardToThumbnail(imgEl) {
         if (carouselInnerEl && carouselItemEl) {
             const imageIndex = [...carouselInnerEl.children].indexOf(carouselItemEl);
             const miniatureEl = carouselEl.querySelector(
-                `.carousel-indicators [data-bs-slide-to="${imageIndex}"]`
+                `.carousel-indicators [data-bs-slide-to="${imageIndex}"] img`
             );
-            if (miniatureEl && miniatureEl.style.backgroundImage) {
-                miniatureEl.style.backgroundImage = `url(${imgEl.getAttribute("src")})`;
+            if (miniatureEl) {
+                miniatureEl.setAttribute("src", imgEl.getAttribute("src"));
             }
         }
     }
-}
-
-/**
- * @param {HTMLImageElement} img
- * @returns {Promise<Boolean>}
- */
-export async function isImageCorsProtected(img) {
-    const src = img.getAttribute("src");
-    if (!src) {
-        return false;
-    }
-    let isCorsProtected = false;
-    if (!src.startsWith("/") || /\/web\/image\/\d+-redirect\//.test(src)) {
-        // The `fetch()` used later in the code might fail if the image is
-        // CORS protected. We check upfront if it's the case.
-        // Two possible cases:
-        // 1. the `src` is an absolute URL from another domain.
-        //    For instance, abc.odoo.com vs abc.com which are actually the
-        //    same database behind.
-        // 2. A "attachment-url" which is just a redirect to the real image
-        //    which could be hosted on another website.
-        isCorsProtected = await fetch(src, { method: "HEAD" })
-            .then(() => false)
-            .catch(() => true);
-    }
-    return isCorsProtected;
 }
 
 /**
@@ -409,31 +377,25 @@ export function applyNeededCss(
         el.style.setProperty(cssProp, cssValue, allowImportant ? "important" : "");
         return true;
     }
-    el.style.removeProperty(cssProp);
-    if (
+
+    const isChangeNeeded = () =>
         !areCssValuesEqual(
             computedStyle.getPropertyValue(cssProp),
             cssValue,
             cssProp,
             computedStyle
-        )
-    ) {
-        el.style.setProperty(cssProp, cssValue);
-        // If change had no effect then make it important.
-        if (
-            allowImportant &&
-            !areCssValuesEqual(
-                computedStyle.getPropertyValue(cssProp),
-                cssValue,
-                cssProp,
-                computedStyle
-            )
-        ) {
-            el.style.setProperty(cssProp, cssValue, "important");
-        }
-        return true;
+        );
+    el.style.removeProperty(cssProp);
+    if (!isChangeNeeded()) {
+        return false;
     }
-    return false;
+
+    el.style.setProperty(cssProp, cssValue);
+    // If change had no effect then make it important.
+    if (allowImportant && isChangeNeeded()) {
+        el.style.setProperty(cssProp, cssValue, "important");
+    }
+    return true;
 }
 
 const builderStylesheet = new CSSStyleSheet();
@@ -456,7 +418,7 @@ export function setBuilderCSSVariables(htmlStyle) {
 export function parseBoxShadow(value) {
     const regex =
         /(?<color>(rgb(a)?\([^)]*\))|(var\([^)]+\)))\s+(?<offsetX>-?\d+\.?\d*px)\s+(?<offsetY>-?\d+\.?\d*px)\s+(?<blur>-?\d+\.?\d*px)\s+(?<spread>-?\d+\.?\d*px)(?:\s+(?<mode>\w+))?/;
-    return value.match(regex).groups;
+    return value.match(regex)?.groups ?? {};
 }
 
 export function getAllUsedColors(el) {

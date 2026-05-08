@@ -1,8 +1,9 @@
-import { useRef, useState } from "@odoo/owl";
+import { useRef, useState } from "@web/owl2/utils";
 import { ImgGroup } from "@html_builder/core/img_group";
-import { BaseOptionComponent } from "@html_builder/core/utils";
+import { BaseOptionComponent } from "@html_builder/core/base_option_component";
 import { useThrottleForAnimation } from "@web/core/utils/timing";
 import { getShapeURL } from "../image/image_helpers";
+import { useAutofocus } from "@web/core/utils/hooks";
 
 export class ShapeSelector extends BaseOptionComponent {
     static template = "html_builder.shapeSelector";
@@ -14,6 +15,7 @@ export class ShapeSelector extends BaseOptionComponent {
         buttonWrapperClassName: { type: String, optional: true },
         imgThroughDiv: { type: Boolean, optional: true },
         getShapeUrl: { type: Function, optional: true },
+        getShapeStyle: { type: Function, optional: true },
     };
     static components = { ImgGroup };
 
@@ -23,6 +25,7 @@ export class ShapeSelector extends BaseOptionComponent {
         this.tabsRef = useRef("tabs");
         this.state = useState({ activeGroup: "basic" });
         this.onScroll = useThrottleForAnimation(this._onScroll);
+        useAutofocus({ refName: "backButton" });
     }
     getShapeUrl(shapePath) {
         return this.props.getShapeUrl ? this.props.getShapeUrl(shapePath) : getShapeURL(shapePath);
@@ -31,9 +34,11 @@ export class ShapeSelector extends BaseOptionComponent {
         return `o_${shapePath.replaceAll("/", "_")}`;
     }
     scrollToShapes(id) {
-        this.rootRef.el
-            ?.querySelector(`[data-shape-group-id="${id}"]`)
-            ?.scrollIntoView({ behavior: "smooth" });
+        const container = this.rootRef.el;
+        const selectedElement = container?.querySelector(`[data-shape-group-id="${id}"]`);
+        if (container && selectedElement) {
+            container.scrollTop = selectedElement.offsetTop - container.offsetTop;
+        }
     }
 
     _onScroll() {

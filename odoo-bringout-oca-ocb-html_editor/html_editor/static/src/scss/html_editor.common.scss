@@ -124,7 +124,7 @@ pre {
 
 /* ----- GENERIC LAYOUTING HELPERS ---- */
 /* table */
-#wrapwrap, .o_editable {
+#wrapwrap {
     // Only style editor-made tables (shop/portal/... tables are not supposed to
     // use table-bordered...)
     table.table.table-bordered {
@@ -148,8 +148,6 @@ ul.o_checklist {
     >li {
         list-style: none;
         position: relative;
-        margin-left: $o-checklist-margin-left;
-        margin-right: $o-checklist-margin-left;
 
         &:not(.oe-nested)::before {
             content: '';
@@ -190,15 +188,27 @@ ul.o_checklist {
     }
 }
 /*rtl:begin:ignore*/
-ul.o_checklist[dir="rtl"] li:not(.oe-nested)::before {
-    left: auto;
-    right: - $o-checklist-margin-left;
-    text-align: right;
+/* Actual RTL, through user language or switch command */
+.o_rtl ul.o_checklist, ul.o_checklist[dir="rtl"] {
+    li {
+        margin-right: unset;
+        &:not(.oe-nested)::before {
+            left: auto;
+            right: - $o-checklist-margin-left;
+            text-align: right;
+        }
+    }
 }
-ul.o_checklist[dir="ltr"] li:not(.oe-nested)::before {
-    right: auto;
-    left: - $o-checklist-margin-left;
-    text-align: left;
+/* Actual LTR, from RTL language, using switch command */
+ul.o_checklist[dir="ltr"] {
+    li {
+        margin-left: unset;
+        &:not(.oe-nested)::before {
+            right: auto;
+            left: - $o-checklist-margin-left;
+            text-align: left;
+        }
+    }
 }
 /*rtl:end:ignore*/
 ol > li.o_indent, ul > li.o_indent {
@@ -342,12 +352,23 @@ div.media_iframe_video {
         height: 0;
     }
 
+    .media_iframe_video_size_for_vertical {
+        padding-bottom: 177.78%; /* 9:16 aspect ratio */
+        position: relative;
+        width: 100%;
+        height: 0;
+    }
+
     .css_editable_mode_display {
         @include o-position-absolute(0,0,0,0);
         width: 100%;
         height: 100%;
         display: none;
         z-index: 2;
+    }
+
+    &:has(.media_iframe_video_size_for_vertical) {
+        max-width: 315px;
     }
 }
 
@@ -375,7 +396,7 @@ ul.oe_menu_editor {
         list-style: none;
     }
     li div {
-        @include o-grab-cursor;
+        cursor: grab;
 
         :active {
             cursor: grabbing;
@@ -569,6 +590,10 @@ pre {
                 }
             }
         }
+
+        .btn-close {
+            filter: unset;
+        }
     }
 }
 @for $index from 1 through length($o-color-combinations) {
@@ -638,7 +663,7 @@ pre {
             // Primary
             $-btn-primary-color: if($-btn-primary, o-color($-btn-primary), map-get($theme-colors, 'primary'));
             $-btn-primary-border-color: if($-btn-primary-border, o-color($-btn-primary-border), $-btn-primary-color);
-            $-btn-primary-outline-color: increase-contrast($-btn-primary-border-color, $-bg-color);
+            $-btn-primary-outline-color: if($-btn-primary, $-btn-primary-color, increase-contrast($-btn-primary-border-color, $-bg-color));
             .btn-fill-primary {
                 @include button-variant($-btn-primary-color, $-btn-primary-border-color);
             }
@@ -649,7 +674,7 @@ pre {
             // Secondary
             $-btn-secondary-color: if($-btn-secondary, o-color($-btn-secondary), map-get($theme-colors, 'secondary'));
             $-btn-secondary-border-color: if($-btn-secondary-border, o-color($-btn-secondary-border), $-btn-secondary-color);
-            $-btn-secondary-outline-color: increase-contrast($-btn-secondary-border-color, $-bg-color);
+            $-btn-secondary-outline-color: if($-btn-secondary, $-btn-secondary-color, increase-contrast($-btn-secondary-border-color, $-bg-color));
             .btn-fill-secondary {
                 @include button-variant($-btn-secondary-color, $-btn-secondary-border-color);
             }
@@ -676,6 +701,12 @@ pre {
                     border-color: $-btn-primary-color;
                 }
             }
+
+            .btn-close {
+                @if lightness($-bg-color) < 50 {
+                    @include btn-close-white();
+                }
+            }
         }
     }
 }
@@ -691,14 +722,17 @@ pre {
     background-image: none !important;
 }
 
-.o_full_screen_height {
+@mixin o_full_screen_height {
     display: flex;
     flex-direction: column;
     justify-content: space-around;
     min-height: 100vh !important;
 }
+.o_full_screen_height {
+    @include o_full_screen_height;
+}
 .o_half_screen_height {
-    @extend .o_full_screen_height;
+    @include o_full_screen_height;
     min-height: 55vh !important;
 }
 
@@ -724,7 +758,7 @@ pre {
 
     &.o_bg_img_opt_repeat {
         background-size: auto;
-        background-repeat: repeat;
+        background-repeat: repeat !important;
     }
     &.o_bg_img_center {
         background-position: center;
@@ -767,7 +801,7 @@ pre {
         color: transparent;
         caret-color: black;
     }
-    * {
+    *:not([style*="background-image"]) {
         background-size: 0px;
         background-image: inherit !important;
     }
@@ -822,4 +856,10 @@ code.o_inline_code {
     background-color: var(--WebEditor__inlineCode-bg, #{$gray-200});
     font-size: 85%;
     color: $gray-900;
+}
+
+// Ensure colored font wrapper is inherited by child links
+font[class^="text-o-"] a,
+font[style*="color"] a {
+    color: inherit !important;
 }

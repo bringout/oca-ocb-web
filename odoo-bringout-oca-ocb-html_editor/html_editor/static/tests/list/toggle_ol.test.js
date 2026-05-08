@@ -32,7 +32,31 @@ describe("Range collapsed", () => {
             });
         });
 
-        test("should turn a unordered list into a ordered list", async () => {
+        test("should turn a first line into a list", async () => {
+            await testEditor({
+                contentBefore: "<p>a[]<br>b<br>c<br>d<br>e</p>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<ol><li>a[]</li></ol><p>b<br>c<br>d<br>e</p>",
+            });
+        });
+
+        test("should turn a middle line into a list", async () => {
+            await testEditor({
+                contentBefore: "<p>a<br>b<br>AB[]cDE<br>d<br>e</p>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<p>a<br>b</p><ol><li>AB[]cDE</li></ol><p>d<br>e</p>",
+            });
+        });
+
+        test("should turn a last line into a list", async () => {
+            await testEditor({
+                contentBefore: "<p>a<br>b<br>c<br>d<br>AB[]e</p>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<p>a<br>b<br>c<br>d</p><ol><li>AB[]e</li></ol>",
+            });
+        });
+
+        test("should turn an unordered list into an ordered list", async () => {
             await testEditor({
                 contentBefore: "<ul><li>ab[]cd</li></ul>",
                 stepFunction: toggleOrderedList,
@@ -40,9 +64,41 @@ describe("Range collapsed", () => {
             });
         });
 
-        test("should turn a checked list into a ordered list", async () => {
+        test("should turn an unordered list into an ordered list, with line breaks", async () => {
+            await testEditor({
+                contentBefore: "<ul><li>a<br>b<br>ABc[]DE<br>d<br>e</li></ul>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<ol><li>a<br>b<br>ABc[]DE<br>d<br>e</li></ol>",
+            });
+        });
+
+        test("should turn a checked list into an ordered list", async () => {
             await testEditor({
                 contentBefore: '<ul class="o_checklist"><li>ab[]cd</li></ul>',
+                stepFunction: toggleOrderedList,
+                contentAfter: "<ol><li>ab[]cd</li></ol>",
+            });
+        });
+
+        test("should turn a checked list into an ordered list, with line breaks", async () => {
+            await testEditor({
+                contentBefore: '<ul class="o_checklist"><li>a<br>b<br>ABc[]DE<br>d<br>e</li></ul>',
+                stepFunction: toggleOrderedList,
+                contentAfter: "<ol><li>a<br>b<br>ABc[]DE<br>d<br>e</li></ol>",
+            });
+        });
+
+        test("should turn a unordered list without marker into a ordered list", async () => {
+            await testEditor({
+                contentBefore: '<ul><li class="oe-nested">ab[]cd</li></ul>',
+                stepFunction: toggleOrderedList,
+                contentAfter: "<ol><li>ab[]cd</li></ol>",
+            });
+        });
+
+        test("should turn a checklist without marker into a ordered list", async () => {
+            await testEditor({
+                contentBefore: '<ul class="o_checklist"><li class="oe-nested">ab[]cd</li></ul>',
                 stepFunction: toggleOrderedList,
                 contentAfter: "<ol><li>ab[]cd</li></ol>",
             });
@@ -56,11 +112,27 @@ describe("Range collapsed", () => {
             });
         });
 
+        test("should create a list inside a blockquote", async () => {
+            await testEditor({
+                contentBefore: "<blockquote>ab[]cd</blockquote>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<blockquote><ol><li>ab[]cd</li></ol></blockquote>",
+            });
+        });
+
         test("should turn a paragraph in a div into a list", async () => {
             await testEditor({
                 contentBefore: "<div><p>ab[]cd</p></div>",
                 stepFunction: toggleOrderedList,
                 contentAfter: "<div><ol><li>ab[]cd</li></ol></div>",
+            });
+        });
+
+        test("should turn a line in a paragraph in a div into a list", async () => {
+            await testEditor({
+                contentBefore: "<div><p>a<br>b<br>ABc[]<br>d<br>e</p></div>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<div><p>a<br>b</p><ol><li>ABc[]</li></ol><p>d<br>e</p></div>",
             });
         });
 
@@ -70,6 +142,16 @@ describe("Range collapsed", () => {
                 stepFunction: toggleOrderedList,
                 contentAfter:
                     "<ol><li><span><b>ab</b></span> <span><i>cd</i></span> ef[]gh</li></ol>",
+            });
+        });
+
+        test("should turn a line in a paragraph with formats into a list", async () => {
+            await testEditor({
+                contentBefore:
+                    "<p><span><b>a<br>b<br>c</b></span> <span><i>d[]<br>e</i></span> f<br>g</p>",
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    "<p><span><b>a<br>b</b></span></p><ol><li><span><b>c</b></span> <span><i>d[]</i></span></li></ol><p><span><i>e</i></span> f<br>g</p>",
             });
         });
 
@@ -93,6 +175,7 @@ describe("Range collapsed", () => {
                 `),
                 stepFunction: toggleOrderedList,
                 contentAfterEdit: unformat(`
+                    <p data-selection-placeholder=""><br></p>
                     <table class="table table-bordered o_selected_table">
                         <tbody>
                             <tr>
@@ -107,6 +190,7 @@ describe("Range collapsed", () => {
                             </tr>
                         </tbody>
                     </table>
+                    <p data-selection-placeholder="" style="margin: -9px 0px 8px;"><br></p>
                 `),
                 contentAfter: unformat(`
                     <table class="table table-bordered">
@@ -159,6 +243,56 @@ describe("Range collapsed", () => {
                 contentAfter: '<ol dir="rtl" class="text-uppercase"><li>a[]b</li></ol>',
             });
         });
+
+        test("should apply both color and size styles on list item (1)", async () => {
+            await testEditor({
+                contentBefore:
+                    '<p><span style="font-size: 18px;"><font style="color: rgb(255, 0, 0);">[abc]</font></span></p>',
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    '<ol><li style="color: rgb(255, 0, 0); font-size: 18px;">[abc]</li></ol>',
+            });
+        });
+
+        test("should apply both color and size styles on list item (2)", async () => {
+            await testEditor({
+                contentBefore:
+                    '<p><b><i><span style="font-size: 18px;"><font style="color: rgb(255, 0, 0);">[abc]</font></span></i></b></p>',
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    '<ol><li style="color: rgb(255, 0, 0); font-size: 18px;"><b><i>[abc]</i></b></li></ol>',
+            });
+        });
+
+        test("should not apply color and size styles on list item", async () => {
+            await testEditor({
+                contentBefore:
+                    '<p><span style="font-size: 18px;"><font style="color: rgb(0, 128, 0);">a</font></span>b</p>',
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    '<ol><li><span style="font-size: 18px;"><font style="color: rgb(0, 128, 0);">a</font></span>b</li></ol>',
+            });
+        });
+
+        test("should only apply color style on list item", async () => {
+            await testEditor({
+                contentBefore:
+                    '<p><font style="color: rgb(0, 128, 0);"><b><span style="font-size: 18px;">a</span></b><i><span style="font-size: 18px;">a</span></i></font></p>',
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    '<ol><li style="color: rgb(0, 128, 0);"><b><span style="font-size: 18px;">a</span></b><i><span style="font-size: 18px;">a</span></i></li></ol>',
+            });
+        });
+
+        test("should only apply size style on list item", async () => {
+            await testEditor({
+                contentBefore:
+                    '<p><span style="font-size: 18px;"><b><font style="color: rgb(0, 128, 0);">a</font></b><i><font style="color: rgb(0, 128, 0);">a</font></i></span></p>',
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    '<ol><li style="font-size: 18px;"><b><font style="color: rgb(0, 128, 0);">a</font></b><i><font style="color: rgb(0, 128, 0);">a</font></i></li></ol>',
+            });
+        });
     });
     describe("Remove", () => {
         test("should turn an empty list into a paragraph", async () => {
@@ -179,11 +313,27 @@ describe("Range collapsed", () => {
             });
         });
 
+        test("should turn a list into a paragraph, with line breaks", async () => {
+            await testEditor({
+                contentBefore: "<ol><li>a<br>b<br>[]c<br>d<br>e</li></ol>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<p>a<br>b<br>[]c<br>d<br>e</p>",
+            });
+        });
+
         test("should turn a list into a heading", async () => {
             await testEditor({
                 contentBefore: "<ol><li><h1>ab[]cd</h1></li></ol>",
                 stepFunction: toggleOrderedList,
                 contentAfter: "<h1>ab[]cd</h1>",
+            });
+        });
+
+        test("should turn a list into a heading, with line breaks", async () => {
+            await testEditor({
+                contentBefore: "<ol><li><h1>a<br>b<br>[]c<br>d<br>e</h1></li></ol>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<h1>a<br>b<br>[]c<br>d<br>e</h1>",
             });
         });
 
@@ -195,12 +345,30 @@ describe("Range collapsed", () => {
             });
         });
 
+        test("should turn a list item into a paragraph, with line breaks", async () => {
+            await testEditor({
+                contentBefore: "<p>ab</p><ol><li>cd</li><li>e<br>f<br>[]g<br>h<br>i</li></ol>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<p>ab</p><ol><li>cd</li></ol><p>e<br>f<br>[]g<br>h<br>i</p>",
+            });
+        });
+
         test("should turn a list with formats into a paragraph", async () => {
             await testEditor({
                 contentBefore:
                     "<ol><li><span><b>ab</b></span> <span><i>cd</i></span> ef[]gh</li></ol>",
                 stepFunction: toggleOrderedList,
                 contentAfter: "<p><span><b>ab</b></span> <span><i>cd</i></span> ef[]gh</p>",
+            });
+        });
+
+        test("should turn a list with formats into a paragraph, with line breaks", async () => {
+            await testEditor({
+                contentBefore:
+                    "<ol><li><span><b>ab</b></span> <span><i>cd</i></span> e<br>f<br>[]g<br>h<br>i</li></ol>",
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    "<p><span><b>ab</b></span> <span><i>cd</i></span> e<br>f<br>[]g<br>h<br>i</p>",
             });
         });
 
@@ -224,6 +392,7 @@ describe("Range collapsed", () => {
                 `),
                 stepFunction: toggleOrderedList,
                 contentAfterEdit: unformat(`
+                    <p data-selection-placeholder=""><br></p>
                     <table class="table table-bordered o_selected_table">
                         <tbody>
                             <tr>
@@ -238,6 +407,7 @@ describe("Range collapsed", () => {
                             </tr>
                         </tbody>
                     </table>
+                    <p data-selection-placeholder="" style="margin: -9px 0px 8px;"><br></p>
                 `),
                 contentAfter: unformat(`
                     <table class="table table-bordered">
@@ -258,16 +428,46 @@ describe("Range collapsed", () => {
             });
         });
 
-        test("should convert list item with line breaks into a single paragraph", async () => {
+        test("should convert list item with line breaks into a single paragraph (1)", async () => {
             await testEditor({
                 contentBefore: "<ol><li>ab<br>cd<br>ef[]</li></ol>",
                 stepFunction: toggleOrderedList,
                 contentAfter: "<p>ab<br>cd<br>ef[]</p>",
             });
+        });
+
+        test("should convert list item with line breaks into a single paragraph (2)", async () => {
             await testEditor({
                 contentBefore: "<ol><li>ab<br><b>cd</b><br><i>ef[]</i></li></ol>",
                 stepFunction: toggleOrderedList,
                 contentAfter: "<p>ab<br><b>cd</b><br><i>ef[]</i></p>",
+            });
+        });
+
+        test("Toggling a list item off should preserve the parent list's classes on the remaining list", async () => {
+            await testEditor({
+                contentBefore: unformat(`
+                    <ol class="outerClass">
+                        <li><p>Test1[]</p>
+                            <ol class="innerClass">
+                                <li>Test2</li>
+                            </ol>
+                        </li>
+                        <li>Test3</li>
+                    </ol>
+                `),
+                stepFunction: toggleOrderedList,
+                contentAfter: unformat(`
+                    <p>Test1[]</p>
+                    <ol class="outerClass">
+                        <li class="oe-nested">
+                            <ol class="innerClass">
+                                <li>Test2</li>
+                            </ol>
+                        </li>
+                        <li>Test3</li>
+                    </ol>
+                `),
             });
         });
     });
@@ -291,11 +491,79 @@ describe("Range not collapsed", () => {
             });
         });
 
+        test("should turn a multi-line paragraph into a list with multiple items", async () => {
+            await testEditor({
+                contentBefore: "<p>[a<br>b<br>c<br>d<br>e]</p>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<ol><li>[a</li><li>b</li><li>c</li><li>d</li><li>e]</li></ol>",
+            });
+        });
+
+        test("should turn the first few lines of a paragraph into a list with multiple items", async () => {
+            await testEditor({
+                contentBefore: "<p>[a<br>b<br>c]<br>d<br>e</p>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<ol><li>[a</li><li>b</li><li>c]</li></ol><p>d<br>e</p>",
+            });
+        });
+
+        test("should turn the middle few lines of a paragraph into a list with multiple items", async () => {
+            await testEditor({
+                contentBefore: "<p>a<br>[b<br>c<br>d]<br>e</p>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<p>a</p><ol><li>[b</li><li>c</li><li>d]</li></ol><p>e</p>",
+            });
+        });
+
+        test("should turn a last few lines of a paragraph into a list with multiple items", async () => {
+            await testEditor({
+                contentBefore: "<p>a<br>b<br>[c<br>d<br>e]</p>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<p>a<br>b</p><ol><li>[c</li><li>d</li><li>e]</li></ol>",
+            });
+        });
+
         test("should turn a heading into a list", async () => {
             await testEditor({
                 contentBefore: "<p>ab</p><h1>cd[ef]gh</h1>",
                 stepFunction: toggleOrderedList,
                 contentAfter: "<p>ab</p><ol><li><h1>cd[ef]gh</h1></li></ol>",
+            });
+        });
+
+        test("should turn a multi-line heading into a list with multiple items", async () => {
+            await testEditor({
+                contentBefore: "<p>xy</p><h1>AB[a<br>b<br>c<br>d<br>e]FG</h1>",
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    "<p>xy</p><ol><li><h1>AB[a</h1></li><li><h1>b</h1></li><li><h1>c</h1></li><li><h1>d</h1></li><li><h1>e]FG</h1></li></ol>",
+            });
+        });
+
+        test("should turn the first few lines of a heading into a list with multiple items", async () => {
+            await testEditor({
+                contentBefore: "<p>xy</p><h1>AB[a<br>b<br>c]<br>d<br>e</h1>",
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    "<p>xy</p><ol><li><h1>AB[a</h1></li><li><h1>b</h1></li><li><h1>c]</h1></li></ol><h1>d<br>e</h1>",
+            });
+        });
+
+        test("should turn the middle few lines of a heading into a list with multiple items", async () => {
+            await testEditor({
+                contentBefore: "<p>xy</p><h1>a<br>AB[b<br>c<br>d]EF<br>e</h1>",
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    "<p>xy</p><h1>a</h1><ol><li><h1>AB[b</h1></li><li><h1>c</h1></li><li><h1>d]EF</h1></li></ol><h1>e</h1>",
+            });
+        });
+
+        test("should turn a last few lines of a heading into a list with multiple items", async () => {
+            await testEditor({
+                contentBefore: "<p>xy</p><h1>a<br>b<br>AB[c<br>d<br>e]EF</h1>",
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    "<p>xy</p><h1>a<br>b</h1><ol><li><h1>AB[c</h1></li><li><h1>d</h1></li><li><h1>e]EF</h1></li></ol>",
             });
         });
 
@@ -307,11 +575,29 @@ describe("Range not collapsed", () => {
             });
         });
 
+        test("should turn four lines over two paragraphs into a list with four items", async () => {
+            await testEditor({
+                contentBefore: "<p>ab</p><p>c<br>d[e<br>f</p><p>g<br>h]i<br>j</p>",
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    "<p>ab</p><p>c</p><ol><li>d[e</li><li>f</li><li>g</li><li>h]i</li></ol><p>j</p>",
+            });
+        });
+
         test("should turn two paragraphs in a div into a list with two items", async () => {
             await testEditor({
                 contentBefore: "<div><p>ab[cd</p><p>ef]gh</p></div>",
                 stepFunction: toggleOrderedList,
                 contentAfter: "<div><ol><li>ab[cd</li><li>ef]gh</li></ol></div>",
+            });
+        });
+
+        test("should turn four lines over two paragraphs in a div into a list with four items", async () => {
+            await testEditor({
+                contentBefore: "<div><p>a<br>b[c<br>d</p><p>e<br>f]g<br>h</p></div>",
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    "<div><p>a</p><ol><li>b[c</li><li>d</li><li>e</li><li>f]g</li></ol><p>h</p></div>",
             });
         });
 
@@ -323,11 +609,45 @@ describe("Range not collapsed", () => {
             });
         });
 
+        test("should turn two lines of a paragraph and a list item into three list items", async () => {
+            await testEditor({
+                contentBefore: "<p>a<br>x[b<br>y</p><ol><li>c]d</li><li>ef</li></ol>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<p>a</p><ol><li>x[b</li><li>y</li><li>c]d</li><li>ef</li></ol>",
+            });
+        });
+
+        test("should turn two lines of a paragraph and two lines of a list item into four list items", async () => {
+            // TODO: is this what we want?
+            await testEditor({
+                contentBefore: "<p>a<br>x[b<br>y</p><ol><li>c<br>z]d<br>A</li><li>ef</li></ol>",
+                stepFunction: toggleOrderedList,
+                contentAfter:
+                    "<p>a</p><ol><li>x[b</li><li>y</li><li>c<br>z]d<br>A</li><li>ef</li></ol>",
+            });
+        });
+
         test("should turn a list item and a paragraph into two list items", async () => {
             await testEditor({
                 contentBefore: "<ol><li>ab</li><li>c[d</li></ol><p>e]f</p>",
                 stepFunction: toggleOrderedList,
                 contentAfter: "<ol><li>ab</li><li>c[d</li><li>e]f</li></ol>",
+            });
+        });
+
+        test("should turn a list item and two lines of a paragraph into three list items", async () => {
+            await testEditor({
+                contentBefore: "<ol><li>ab</li><li>c[d</li></ol><p>e<br>x]f<br>g</p>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<ol><li>ab</li><li>c[d</li><li>e</li><li>x]f</li></ol><p>g</p>",
+            });
+        });
+
+        test("should turn two lines of a list item and two lines of a paragraph into three list items", async () => {
+            await testEditor({
+                contentBefore: "<ol><li>ab</li><li>c[d<br>A</li></ol><p>e<br>x]f<br>g</p>",
+                stepFunction: toggleOrderedList,
+                contentAfter: "<ol><li>ab</li><li>c[d<br>A</li><li>e</li><li>x]f</li></ol><p>g</p>",
             });
         });
 

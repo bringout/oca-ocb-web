@@ -4,12 +4,13 @@ import {
     setupHTMLBuilder,
 } from "@html_builder/../tests/helpers";
 import { BuilderAction } from "@html_builder/core/builder_action";
-import { BaseOptionComponent, useDomState } from "@html_builder/core/utils";
+import { BaseOptionComponent } from "@html_builder/core/base_option_component";
+import { useDomState } from "@html_builder/core/utils";
 import { undo } from "@html_editor/../tests/_helpers/user_actions";
-import { describe, expect, test } from "@odoo/hoot";
-import { animationFrame, click, Deferred, hover, runAllTimers } from "@odoo/hoot-dom";
+import { before, describe, expect, getFixture, test } from "@odoo/hoot";
+import { animationFrame, click, hover, runAllTimers } from "@odoo/hoot-dom";
 import { xml } from "@odoo/owl";
-import { contains } from "@web/../tests/web_test_helpers";
+import { contains, onRpc } from "@web/../tests/web_test_helpers";
 
 describe.current.tags("desktop");
 
@@ -182,9 +183,10 @@ test("should not toggle when in a BuilderButtonGroup", async () => {
     addBuilderOption({
         selector: ".test-options-target",
         template: xml`
-        <BuilderButtonGroup>
-            <BuilderButton classAction="'c1'" preview="false"/>
-        </BuilderButtonGroup>`,
+            <BuilderButtonGroup>
+                <BuilderButton classAction="'c1'" preview="false"/>
+            </BuilderButtonGroup>
+        `,
     });
     await setupHTMLBuilder(`<div class="test-options-target">b</div>`);
     await contains(":iframe .test-options-target").click();
@@ -197,10 +199,11 @@ test("clean another action", async () => {
     addBuilderOption({
         selector: ".test-options-target",
         template: xml`
-                    <BuilderButtonGroup>
-                        <BuilderButton classAction="'my-custom-class1'"/>
-                        <BuilderButton classAction="'my-custom-class2'"/>
-                    </BuilderButtonGroup>`,
+            <BuilderButtonGroup>
+                <BuilderButton classAction="'my-custom-class1'"/>
+                <BuilderButton classAction="'my-custom-class2'"/>
+            </BuilderButtonGroup>
+        `,
     });
     await setupHTMLBuilder(`<div class="test-options-target">b</div>`);
     await contains(":iframe .test-options-target").click();
@@ -209,13 +212,13 @@ test("clean another action", async () => {
     await animationFrame();
     expect(":iframe .test-options-target").toHaveAttribute(
         "class",
-        "test-options-target o-paragraph my-custom-class1"
+        "test-options-target my-custom-class1"
     );
     await click("[data-class-action='my-custom-class2']");
     await animationFrame();
     expect(":iframe .test-options-target").toHaveAttribute(
         "class",
-        "test-options-target o-paragraph my-custom-class2"
+        "test-options-target my-custom-class2"
     );
 });
 test("clean should provide the next action value", async () => {
@@ -235,10 +238,11 @@ test("clean should provide the next action value", async () => {
     addBuilderOption({
         selector: ".test-options-target",
         template: xml`
-                    <BuilderButtonGroup>
-                        <BuilderButton classAction="'c1'" action="'customAction'"/>
-                        <BuilderButton classAction="'c2'" action="'customAction'" actionParam="'param2'" actionValue="'value2'"/>
-                    </BuilderButtonGroup>`,
+            <BuilderButtonGroup>
+                <BuilderButton classAction="'c1'" action="'customAction'"/>
+                <BuilderButton classAction="'c2'" action="'customAction'" actionParam="'param2'" actionValue="'value2'"/>
+            </BuilderButtonGroup>
+        `,
     });
     await setupHTMLBuilder(`<div class="test-options-target">b</div>`);
     await contains(":iframe .test-options-target").click();
@@ -281,7 +285,8 @@ test("clean should only be called on the currently selected item", async () => {
                 <BuilderButton action="'customAction1'" classAction="'c1'" />
                 <BuilderButton action="'customAction2'" classAction="'c2'" />
                 <BuilderButton action="'customAction3'" classAction="'c3'" />
-            </BuilderButtonGroup>`,
+            </BuilderButtonGroup>
+        `,
     });
     await setupHTMLBuilder(`<div class="test-options-target">b</div>`);
     await contains(":iframe .test-options-target").click();
@@ -327,7 +332,8 @@ test("clean should be async", async () => {
             <BuilderButtonGroup preview="false">
                 <BuilderButton action="'customAction1'" classAction="'c1'"/>
                 <BuilderButton action="'customAction2'" />
-            </BuilderButtonGroup>`,
+            </BuilderButtonGroup>
+        `,
     });
     await setupHTMLBuilder(`<div class="test-options-target">b</div>`);
     await contains(":iframe .test-options-target").click();
@@ -348,8 +354,9 @@ test("add the active class if the condition is met", async () => {
     addBuilderOption({
         selector: ".test-options-target",
         template: xml`
-                        <BuilderButton classAction="'my-custom-class1'"/>
-                        <BuilderButton classAction="'my-custom-class2'"/>`,
+            <BuilderButton classAction="'my-custom-class1'"/>
+            <BuilderButton classAction="'my-custom-class2'"/>
+        `,
     });
     await setupHTMLBuilder(`<div class="test-options-target my-custom-class1">b</div>`);
     await contains(":iframe .test-options-target").click();
@@ -360,12 +367,13 @@ test("add classActive to class when active", async () => {
     addBuilderOption({
         selector: ".test-options-target",
         template: xml`
-                        <BuilderButton classAction="'my-custom-class1'"
-                                       className="'base-class btn1'"
-                                       classActive="'active-class'"/>
-                        <BuilderButton classAction="'my-custom-class2'"
-                                       className="'base-class btn2'"
-                                       classActive="'active-class'"/>`,
+            <BuilderButton classAction="'my-custom-class1'"
+                className="'base-class btn1'"
+                classActive="'active-class'"/>
+            <BuilderButton classAction="'my-custom-class2'"
+                className="'base-class btn2'"
+                classActive="'active-class'"/>
+        `,
     });
     await setupHTMLBuilder(`<div class="test-options-target my-custom-class1">b</div>`);
     await contains(":iframe .test-options-target").click();
@@ -389,52 +397,56 @@ test("apply classAction on multi elements", async () => {
     });
     const { getEditableContent } = await setupHTMLBuilder(`
             <div class="test-options-target">
-                <div class="target-apply">a</div>
-                <div class="target-apply">b</div>
+                <p class="target-apply">a</p>
+                <p class="target-apply">b</p>
             </div>`);
     const editableContent = getEditableContent();
     await contains(":iframe .test-options-target").click();
     expect(editableContent).toHaveInnerHTML(`
             <div class="test-options-target">
-                <div class="target-apply o-paragraph">a</div>
-                <div class="target-apply o-paragraph">b</div>
+                <p class="target-apply">a</p>
+                <p class="target-apply">b</p>
             </div>`);
 
     await contains("[data-class-action='my-custom-class']").click();
     expect(editableContent).toHaveInnerHTML(`
             <div class="test-options-target">
-                <div class="target-apply o-paragraph my-custom-class">a</div>
-                <div class="target-apply o-paragraph my-custom-class">b</div>
+                <p class="target-apply my-custom-class">a</p>
+                <p class="target-apply my-custom-class">b</p>
             </div>`);
 });
 test("hide/display base on applyTo", async () => {
     addBuilderOption({
         selector: ".parent-target",
-        template: xml`<BuilderRow label="'my label'">
+        template: xml`
+            <BuilderRow label="'my label'">
                 <BuilderButton applyTo="'.child-target'" classAction="'my-custom-class'"/>
-            </BuilderRow>`,
+            </BuilderRow>
+        `,
     });
     addBuilderOption({
         selector: ".parent-target",
-        template: xml`<BuilderRow label="'my label'">
+        template: xml`
+            <BuilderRow label="'my label'">
                 <BuilderButton applyTo="'.my-custom-class'" classAction="'test'"/>
-            </BuilderRow>`,
+            </BuilderRow>
+        `,
     });
 
     const { getEditableContent } = await setupHTMLBuilder(
-        `<div class="parent-target o-paragraph"><div class="child-target">b</div></div>`
+        `<div class="parent-target"><div class="child-target">b</div></div>`
     );
     const editableContent = getEditableContent();
     await contains(":iframe .parent-target").click();
     expect(editableContent).toHaveInnerHTML(
-        `<div class="parent-target o-paragraph"><div class="child-target">b</div></div>`
+        `<div class="parent-target"><div class="child-target">b</div></div>`
     );
     expect("[data-class-action='my-custom-class']").not.toHaveClass("active");
     expect("[data-class-action='test']").toHaveCount(0);
 
     await contains("[data-class-action='my-custom-class']").click();
     expect(editableContent).toHaveInnerHTML(
-        `<div class="parent-target o-paragraph"><div class="child-target my-custom-class">b</div></div>`
+        `<div class="parent-target"><div class="child-target my-custom-class">b</div></div>`
     );
     expect("[data-class-action='my-custom-class']").toHaveClass("active");
     expect("[data-class-action='test']").toHaveCount(1);
@@ -606,13 +618,15 @@ describe("Operation", () => {
 
         addBuilderOption({
             selector: ".test-options-target",
-            template: xml`<BuilderRow label="'my label'">
-                <BuilderButton action="'asyncAction1'"/>
-                <BuilderButton action="'asyncAction2'"/>
-                <BuilderButton action="'asyncAction3'"/>
-                <BuilderButton action="'action1'"/>
-                <BuilderButton action="'action2'"/>
-            </BuilderRow>`,
+            template: xml`
+                <BuilderRow label="'my label'">
+                    <BuilderButton action="'asyncAction1'"/>
+                    <BuilderButton action="'asyncAction2'"/>
+                    <BuilderButton action="'asyncAction3'"/>
+                    <BuilderButton action="'action1'"/>
+                    <BuilderButton action="'action2'"/>
+                </BuilderRow>
+            `,
         });
 
         await setupHTMLBuilder(`<div class="test-options-target">a</div>`);
@@ -656,13 +670,15 @@ describe("Operation", () => {
 
         addBuilderOption({
             selector: ".test-options-target",
-            template: xml`<BuilderRow label="'my label'">
-                <BuilderButton action="'asyncAction1'"/>
-                <BuilderButton action="'asyncAction2'"/>
-                <BuilderButton action="'asyncAction3'"/>
-                <BuilderButton action="'action1'"/>
-                <BuilderButton action="'action2'"/>
-            </BuilderRow>`,
+            template: xml`
+                <BuilderRow label="'my label'">
+                    <BuilderButton action="'asyncAction1'"/>
+                    <BuilderButton action="'asyncAction2'"/>
+                    <BuilderButton action="'asyncAction3'"/>
+                    <BuilderButton action="'action1'"/>
+                    <BuilderButton action="'action2'"/>
+                </BuilderRow>
+            `,
         });
 
         await setupHTMLBuilder(`<div class="test-options-target">a</div>`);
@@ -749,7 +765,7 @@ test("do not load when an operation is cleaned", async () => {
 });
 
 test("click on BuilderButton with async action", async () => {
-    const def = new Deferred();
+    const def = Promise.withResolvers();
     addBuilderAction({
         customAction: class extends BuilderAction {
             static id = "customAction";
@@ -757,7 +773,7 @@ test("click on BuilderButton with async action", async () => {
                 return editingElement.classList.contains("applied");
             }
             async apply({ editingElement }) {
-                await def;
+                await def.promise;
                 editingElement.classList.add("applied");
             }
         },
@@ -765,9 +781,9 @@ test("click on BuilderButton with async action", async () => {
     addBuilderOption({
         selector: ".test-options-target",
         template: xml`
-                <BuilderButton action="'customAction'" preview="false"/>
-                <BuilderButton classAction="'test'" preview="false"/>
-            `,
+            <BuilderButton action="'customAction'" preview="false"/>
+            <BuilderButton classAction="'test'" preview="false"/>
+        `,
     });
     const { getEditor } = await setupHTMLBuilder(`<div class="test-options-target">b</div>`);
     const editor = getEditor();
@@ -797,7 +813,6 @@ class SubTestOption extends BaseOptionComponent {
             <BuilderButton classAction="'actionClass'">actionClass</BuilderButton>
         </BuilderContext>
     `;
-    static props = {};
     setup() {
         super.setup();
         this.domState = useDomState((el) => ({
@@ -813,7 +828,6 @@ class TestOption extends BaseOptionComponent {
             <SubTestOption/>
         </BuilderContext>
     `;
-    static props = {};
     static components = {
         SubTestOption,
     };
@@ -850,4 +864,98 @@ test("consecutive dynamic applyTo", async () => {
     await contains("[data-class-action='actionClass']").click();
     expect(":iframe .second .a").not.toHaveClass("actionClass");
     expect(":iframe .second .b").toHaveClass("actionClass");
+});
+
+describe("LTR - RTL compatibility", () => {
+    before(() => {
+        addBuilderOption({
+            selector: ".selector",
+            template: xml`
+                <BuilderButtonGroup>
+                    <BuilderButton ltrRtlMapping="'left-right'" title="'Left'" icon="'fa-arrow-left'" classAction="'class-a'"/>
+                    <BuilderButton ltrRtlMapping="'left-right'" title="'Right'" icon="'fa-arrow-right'" classAction="'class-b'"/>
+                </BuilderButtonGroup>
+            `,
+        });
+    });
+
+    test("Iframe and Builder LTR", async () => {
+        await setupHTMLBuilder(`<div class="selector">Hello</div>`);
+        await contains(":iframe .selector").click();
+        expect(".o-hb-button-group .o-hb-btn:eq(0)").toHaveAttribute("title", "Left");
+        expect(".o-hb-button-group .o-hb-btn:eq(1)").toHaveAttribute("title", "Right");
+        await contains(".o-hb-button-group .o-hb-btn:eq(0)").click();
+        expect(":iframe .selector").toHaveClass("class-a");
+        expect(":iframe .selector").not.toHaveClass("class-b");
+        await contains(".o-hb-button-group .o-hb-btn:eq(1)").click();
+        expect(":iframe .selector").toHaveClass("class-b");
+        expect(":iframe .selector").not.toHaveClass("class-a");
+    });
+
+    test("Iframe and Builder RTL", async () => {
+        onRpc("/web/webclient/translations", () => ({
+            hash: "aaa",
+            lang: "ar-001",
+            lang_parameters: {
+                direction: "rtl",
+                grouping: "[3,0]",
+                date_format: "%m/%d/%Y",
+                time_format: "%H:%M:%S",
+            },
+            modules: {},
+        }));
+        // Visual styling to run the test in debug.
+        getFixture().style.setProperty("direction", "rtl");
+
+        await setupHTMLBuilder(`<div class="selector">Hello</div>`, { iframeLangDir: "rtl" });
+        await contains(":iframe .selector").click();
+        expect(".o-hb-button-group .o-hb-btn:eq(0)").toHaveAttribute("title", "Right");
+        expect(".o-hb-button-group .o-hb-btn:eq(1)").toHaveAttribute("title", "Left");
+        await contains(".o-hb-button-group .o-hb-btn:eq(0)").click();
+        expect(":iframe .selector").toHaveClass("class-a");
+        expect(":iframe .selector").not.toHaveClass("class-b");
+        await contains(".o-hb-button-group .o-hb-btn:eq(1)").click();
+        expect(":iframe .selector").toHaveClass("class-b");
+        expect(":iframe .selector").not.toHaveClass("class-a");
+    });
+
+    test("Iframe LTR and Builder RTL", async () => {
+        onRpc("/web/webclient/translations", () => ({
+            hash: "aaa",
+            lang: "ar-001",
+            lang_parameters: {
+                direction: "rtl",
+                grouping: "[3,0]",
+                date_format: "%m/%d/%Y",
+                time_format: "%H:%M:%S",
+            },
+            modules: {},
+        }));
+        // Visual styling to run the test in debug.
+        getFixture().style.setProperty("direction", "rtl");
+
+        await setupHTMLBuilder(`<div class="selector">Hello</div>`);
+        await contains(":iframe .selector").click();
+        expect(".o-hb-button-group .o-hb-btn:eq(0)").toHaveAttribute("title", "Right");
+        expect(".o-hb-button-group .o-hb-btn:eq(1)").toHaveAttribute("title", "Left");
+        await contains(".o-hb-button-group .o-hb-btn:eq(0)").click();
+        expect(":iframe .selector").toHaveClass("class-b");
+        expect(":iframe .selector").not.toHaveClass("class-a");
+        await contains(".o-hb-button-group .o-hb-btn:eq(1)").click();
+        expect(":iframe .selector").toHaveClass("class-a");
+        expect(":iframe .selector").not.toHaveClass("class-b");
+    });
+
+    test("Iframe RTL and Builder LTR", async () => {
+        await setupHTMLBuilder(`<div class="selector">Hello</div>`, { iframeLangDir: "rtl" });
+        await contains(":iframe .selector").click();
+        expect(".o-hb-button-group .o-hb-btn:eq(0)").toHaveAttribute("title", "Left");
+        expect(".o-hb-button-group .o-hb-btn:eq(1)").toHaveAttribute("title", "Right");
+        await contains(".o-hb-button-group .o-hb-btn:eq(0)").click();
+        expect(":iframe .selector").toHaveClass("class-b");
+        expect(":iframe .selector").not.toHaveClass("class-a");
+        await contains(".o-hb-button-group .o-hb-btn:eq(1)").click();
+        expect(":iframe .selector").toHaveClass("class-a");
+        expect(":iframe .selector").not.toHaveClass("class-b");
+    });
 });

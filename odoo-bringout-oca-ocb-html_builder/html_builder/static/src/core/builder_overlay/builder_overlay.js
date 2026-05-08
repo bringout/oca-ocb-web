@@ -34,6 +34,7 @@ export class BuilderOverlay {
             isMobileView,
             mobileBreakpoint,
             isRtl,
+            isHoverOverlay = false,
         }
     ) {
         this.history = history;
@@ -58,6 +59,7 @@ export class BuilderOverlay {
         this.mobileBreakpoint = mobileBreakpoint;
         this.isRtl = isRtl;
 
+        this.overlayElement.classList.toggle("o_hover_overlay", isHoverOverlay);
         this.initHandles();
         this.initSizing();
         this.refreshHandles();
@@ -79,7 +81,7 @@ export class BuilderOverlay {
 
     isActive() {
         // TODO active still necessary ? (check when we have preview mode)
-        return this.overlayElement.matches(".oe_active, .o_we_overlay_preview");
+        return this.overlayElement.matches(".oe_active, .o_we_overlay_preview, .o_hover_overlay");
     }
 
     refreshPosition() {
@@ -93,13 +95,21 @@ export class BuilderOverlay {
         const iframeRect = this.iframe.getBoundingClientRect();
         const overlayContainerRect = this.overlayContainer.getBoundingClientRect();
         const targetRect = overlayTarget.getBoundingClientRect();
+        const isMobile = this.isMobileView(overlayTarget);
+        const iframeScaleX = isMobile ? iframeRect.width / this.iframe.offsetWidth : 1;
+        const iframeScaleY = isMobile ? iframeRect.height / this.iframe.offsetHeight : 1;
+
         Object.assign(this.overlayElement.style, {
-            width: `${targetRect.width}px`,
-            height: `${targetRect.height}px`,
-            top: `${iframeRect.y + targetRect.y - overlayContainerRect.y + window.scrollY}px`,
-            left: `${iframeRect.x + targetRect.x - overlayContainerRect.x + window.scrollX}px`,
+            width: `${targetRect.width * iframeScaleX}px`,
+            height: `${targetRect.height * iframeScaleY}px`,
+            top: `${
+                iframeRect.y - overlayContainerRect.y + window.scrollY + targetRect.y * iframeScaleY
+            }px`,
+            left: `${
+                iframeRect.x - overlayContainerRect.x + window.scrollX + targetRect.x * iframeScaleX
+            }px`,
         });
-        this.handlesWrapperEl.style.height = `${targetRect.height}px`;
+        this.handlesWrapperEl.style.height = `${targetRect.height * iframeScaleY}px`;
     }
 
     refreshHandles() {
@@ -501,7 +511,7 @@ export class BuilderOverlay {
         // Lock the mutex.
         let sizingResolve;
         const sizingProm = new Promise((resolve) => (sizingResolve = () => resolve()));
-        this.next(async () => await sizingProm, { withLoadingEffect: false });
+        this.next(async () => await sizingProm, { withLoadingEffect: false, canTimeout: false });
         const cancelSizing = this.history.makeSavePoint();
 
         const handleEl = ev.currentTarget;

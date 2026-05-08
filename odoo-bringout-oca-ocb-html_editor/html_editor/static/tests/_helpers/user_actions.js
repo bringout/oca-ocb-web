@@ -1,13 +1,30 @@
 import { closestBlock, isBlock } from "@html_editor/utils/blocks";
 import { findInSelection } from "@html_editor/utils/selection";
-import { click, manuallyDispatchProgrammaticEvent, press, tick, waitFor } from "@odoo/hoot-dom";
+import {
+    animationFrame,
+    advanceTime,
+    click,
+    manuallyDispatchProgrammaticEvent,
+    press,
+    tick,
+    waitFor,
+} from "@odoo/hoot-dom";
 import { setSelection } from "./selection";
 import { execCommand } from "./userCommands";
 import { isMobileOS } from "@web/core/browser/feature_detection";
 import { isTextNode } from "@html_editor/utils/dom_info";
 import { closestElement } from "@html_editor/utils/dom_traversal";
+import { STEP_DEBOUNCE_DELAY } from "@html_editor/core/history_plugin";
 
 /** @typedef {import("@html_editor/plugin").Editor} Editor */
+
+/**
+ * Makes enough time pass to ensure that undo/redo will not collapse
+ * steps before and after this call.
+ */
+export async function ensureDistinctHistoryStep() {
+    await advanceTime(STEP_DEBOUNCE_DELAY + 1);
+}
 
 /**
  * Simulates text insertion in the editor by dispatching keyboard/input events
@@ -78,6 +95,50 @@ export async function insertText(editor, text) {
             key: char,
         });
     }
+}
+
+/**
+ * Inserts space in the editor by dispatching keyboard/input events
+ * for space character and inserting it into the current selection's position.
+ *
+ * @param {Editor} editor
+ */
+export async function insertSpace(editor) {
+    const keydownEvent = await manuallyDispatchProgrammaticEvent(editor.editable, "keydown", {
+        key: " ",
+    });
+    if (keydownEvent.defaultPrevented) {
+        return;
+    }
+    // InputEvent is required to simulate the insert text.
+    const [beforeinputEvent] = await manuallyDispatchProgrammaticEvent(
+        editor.editable,
+        "beforeinput",
+        {
+            inputType: "insertText",
+            data: " ",
+        }
+    );
+    if (beforeinputEvent.defaultPrevented) {
+        return;
+    }
+    const range = editor.document.getSelection().getRangeAt(0);
+    if (!range.collapsed) {
+        throw new Error("need to implement something... maybe");
+    }
+
+    // mimic the behavior of the browser when inserting a &nbsp
+    document.execCommand("insertText", false, " ");
+
+    const [inputEvent] = await manuallyDispatchProgrammaticEvent(editor.editable, "input", {
+        inputType: "insertText",
+        data: " ",
+    });
+    if (inputEvent.defaultPrevented) {
+        return;
+    }
+    // KeyUpEvent is not required but is triggered like the browser would.
+    await manuallyDispatchProgrammaticEvent(editor.editable, "keyup", { key: " " });
 }
 
 /**
@@ -223,8 +284,12 @@ export function splitBlock(editor) {
 }
 
 export async function simulateArrowKeyPress(editor, keys) {
-    await press(keys);
+    const events = await press(keys);
     const keysArray = Array.isArray(keys) ? keys : [keys];
+    if (events.some((event) => event.defaultPrevented)) {
+        // Selection change was already handled.
+        return;
+    }
     const alter = keysArray.includes("Shift") ? "extend" : "move";
     const direction =
         keysArray.includes("ArrowLeft") || keysArray.includes("ArrowUp") ? "left" : "right";
@@ -245,6 +310,8 @@ export async function unlinkFromToolbar() {
 
 export async function unlinkFromPopover() {
     await waitFor(".o-we-linkpopover");
+    await click(".o_we_edit_link");
+    await animationFrame();
     await click(".o_we_remove_link");
 }
 
@@ -271,16 +338,16 @@ export function resetSize(editor) {
     editor.shared.table.resetTableSize(findInSelection(selection, "table"));
 }
 /** @param {Editor} editor */
-export function alignLeft(editor) {
-    execCommand(editor, "alignLeft");
+export function alignStart(editor) {
+    execCommand(editor, "alignStart");
 }
 /** @param {Editor} editor */
 export function alignCenter(editor) {
     execCommand(editor, "alignCenter");
 }
 /** @param {Editor} editor */
-export function alignRight(editor) {
-    execCommand(editor, "alignRight");
+export function alignEnd(editor) {
+    execCommand(editor, "alignEnd");
 }
 /** @param {Editor} editor */
 export function justify(editor) {

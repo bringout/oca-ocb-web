@@ -1,27 +1,30 @@
+import { reactive } from "@web/owl2/utils";
 import { Plugin } from "@html_editor/plugin";
 import { closestBlock } from "@html_editor/utils/blocks";
 import { isVisibleTextNode } from "@html_editor/utils/dom_info";
 import { _t } from "@web/core/l10n/translation";
 import { AlignSelector } from "./align_selector";
-import { reactive } from "@odoo/owl";
 import { isHtmlContentSupported } from "@html_editor/core/selection_plugin";
 import { weakMemoize } from "@html_editor/utils/functions";
+import { READ, withSequence } from "@html_editor/utils/resource";
 
 const alignmentItems = [
-    { mode: "left" },
-    { mode: "center" },
-    { mode: "right" },
-    { mode: "justify" },
+    // In RTL, left and right icons are reverted to represent start and end.
+    { icon: "left", mode: "start", description: _t("Left align") },
+    { icon: "center", mode: "center", description: _t("Center align") },
+    { icon: "right", mode: "end", description: _t("Right align") },
+    { icon: "justify", mode: "justify", description: _t("Justify") },
 ];
 
 export class AlignPlugin extends Plugin {
     static id = "align";
     static dependencies = ["history", "selection"];
+    /** @type {import("plugins").EditorResources} */
     resources = {
         user_commands: [
             {
-                id: "alignLeft",
-                run: () => this.setAlignment("left"),
+                id: "alignStart",
+                run: () => this.setAlignment("start"),
                 isAvailable: this.canSetAlignment.bind(this),
             },
             {
@@ -30,8 +33,8 @@ export class AlignPlugin extends Plugin {
                 isAvailable: this.canSetAlignment.bind(this),
             },
             {
-                id: "alignRight",
-                run: () => this.setAlignment("right"),
+                id: "alignEnd",
+                run: () => this.setAlignment("end"),
                 isAvailable: this.canSetAlignment.bind(this),
             },
             {
@@ -58,13 +61,17 @@ export class AlignPlugin extends Plugin {
         ],
 
         /** Handlers */
-        selectionchange_handlers: this.updateAlignmentParams.bind(this),
-        post_undo_handlers: this.updateAlignmentParams.bind(this),
-        post_redo_handlers: this.updateAlignmentParams.bind(this),
-        remove_all_formats_handlers: this.setAlignment.bind(this),
+        on_selectionchange_handlers: withSequence(READ, this.updateAlignmentParams.bind(this)),
+        on_undone_handlers: this.updateAlignmentParams.bind(this),
+        on_redone_handlers: this.updateAlignmentParams.bind(this),
+        on_all_formats_removed_handlers: this.setAlignment.bind(this),
 
         /** Predicates */
-        has_format_predicates: (node) => closestBlock(node)?.style.textAlign,
+        has_format_predicates: (node) => {
+            if (closestBlock(node)?.style.textAlign) {
+                return true;
+            }
+        },
     };
 
     setup() {
@@ -74,21 +81,40 @@ export class AlignPlugin extends Plugin {
         );
     }
 
-    get alignmentMode() {
+    get alignmentIconMode() {
+        const userDirection = getComputedStyle(document.body).direction;
         const sel = this.dependencies.selection.getSelectionData().deepEditableSelection;
         const block = closestBlock(sel?.anchorNode);
-        const textAlign = this.getTextAlignment(block);
-        return ["center", "right", "justify"].includes(textAlign) ? textAlign : "left";
-    }
-
-    getTextAlignment(block) {
-        const { direction, textAlign } = getComputedStyle(block);
-        if (textAlign === "start") {
-            return direction === "rtl" ? "right" : "left";
-        } else if (textAlign === "end") {
-            return direction === "rtl" ? "left" : "right";
+        let { direction, textAlign } = getComputedStyle(block);
+        if (direction === "rtl") {
+            // Handle compatibility:
+            // in RTL "left" is equivalent to "end"
+            // and "right" is equivalent to "start"
+            if (textAlign === "left") {
+                textAlign = "end";
+            } else if (textAlign === "right") {
+                textAlign = "start";
+            }
         }
-        return textAlign;
+        if (textAlign === "end") {
+            // The icon name suffix for "end" is "right", both in LTR and RTL
+            // but when having the other user language, it is "left"
+            if (userDirection !== direction) {
+                return "left";
+            }
+            return "right";
+        }
+        // Return only one of the four supported icon name suffixes, defaulting
+        // to "left" which is also used for "start" in both LTR and RTL
+        let result = ["center", "right", "justify"].includes(textAlign) ? textAlign : "left";
+        if (userDirection !== direction) {
+            if (result === "right") {
+                result = "left";
+            } else if (result === "left") {
+                result = "right";
+            }
+        }
+        return result;
     }
 
     getBlocksToAlign() {
@@ -100,14 +126,23 @@ export class AlignPlugin extends Plugin {
     }
 
     setAlignment(mode = "") {
+        const userDirection = getComputedStyle(document.body).direction;
         const visitedBlocks = new Set();
         let isAlignmentUpdated = false;
 
         for (const block of this.getBlocksToAlign()) {
             if (!visitedBlocks.has(block)) {
-                const currentTextAlign = this.getTextAlignment(block);
-                if (currentTextAlign !== mode) {
-                    block.style.textAlign = mode;
+                const { textAlign, direction } = getComputedStyle(block);
+                let modeForBlock = mode;
+                if (direction !== userDirection) {
+                    if (mode === "start") {
+                        modeForBlock = "end";
+                    } else if (mode === "end") {
+                        modeForBlock = "start";
+                    }
+                }
+                if (textAlign !== modeForBlock) {
+                    block.style.textAlign = modeForBlock;
                     isAlignmentUpdated = true;
                 }
                 visitedBlocks.add(block);
@@ -124,6 +159,6 @@ export class AlignPlugin extends Plugin {
     }
 
     updateAlignmentParams() {
-        this.alignment.displayName = this.alignmentMode;
+        this.alignment.displayName = this.alignmentIconMode;
     }
 }

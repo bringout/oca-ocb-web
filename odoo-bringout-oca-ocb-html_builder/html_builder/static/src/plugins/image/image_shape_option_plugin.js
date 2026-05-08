@@ -5,9 +5,10 @@ import { getShapeURL } from "@html_builder/plugins/image/image_helpers";
 import {
     activateCropper,
     createDataURL,
+    cropperDataFields,
     loadImage,
-    loadImageInfo,
     isGif,
+    loadImageInfo,
 } from "@html_editor/utils/image_processing";
 import { getValueFromVar } from "@html_builder/utils/utils";
 import { imageShapeDefinitions } from "@html_builder/plugins/image/image_shapes_definition";
@@ -18,6 +19,37 @@ import {
 import { _t } from "@web/core/l10n/translation";
 import { BuilderAction } from "@html_builder/core/builder_action";
 import { getMimetype } from "@html_editor/utils/image";
+import { withSequence } from "@html_editor/utils/resource";
+import { deepCopy, deepMerge } from "@web/core/utils/objects";
+import { handleImagesIfDataset } from "@html_builder/utils/image";
+
+/**
+ * @typedef {Object.<string, {
+ *   label?: string,
+ *   subgroups: Object.<string, {
+ *     label?: string,
+ *     shapes: Object.<string, {
+ *       selectLabel?: string,
+ *       animated?: boolean,
+ *       transform?: boolean,
+ *       isTechnical?: boolean,
+ *       togglableRatio?: boolean,
+ *     }>,
+ *   }>,
+ * }>} ImageShapeGroups
+ * @typedef {((shapeGroups: ImageShapeGroups) => ImageShapeGroups | void)[]} image_shape_groups_providers
+ * @typedef {((dataset: DOMStringMap) => string)[]} default_shape_providers
+ * @typedef {((
+ *     svg: SVGElement,
+ *     params: {
+ *         shapeId: string,
+ *         shapeFlip: "x" | "y",
+ *         shapeRotate: 0 | "90" | "180" | "270",
+ *         shapeAnimationSpeed: number,
+ *         shapeColors: string,
+ *     }
+ * ) => Promise<void>)[]} on_shape_computed_handlers
+ */
 
 // Regex definitions to apply speed modification in SVG files
 // Note : These regex patterns are duplicated on the server side for
@@ -28,7 +60,7 @@ import { getMimetype } from "@html_editor/utils/image";
 // regex patterns in Python are slightly different from those in JavaScript.
 // See : controllers/main.py
 const CSS_ANIMATION_RULE_REGEX =
-    /(?<declaration>animation(?:-duration)?: .*?)(?<value>(?:\d+(?:\.\d+)?)|(?:\.\d+))(?<unit>ms|s)(?<separator>\s|;|"|$)/gm;
+    /(?<declaration>animation(?:-duration)?:\s*.*?)(?<value>(?:\d+(?:\.\d+)?)|(?:\.\d+))(?<unit>ms|s)(?<separator>\s|;|"|$)/gm;
 const SVG_DUR_TIMECOUNT_VAL_REGEX =
     /(?<attribute_name>\sdur="\s*)(?<value>(?:\d+(?:\.\d+)?)|(?:\.\d+))(?<unit>h|min|ms|s)?\s*"/gm;
 const CSS_ANIMATION_RATIO_REGEX = /(--animation_ratio: (?<ratio>\d*(\.\d+)?));/m;
@@ -42,9 +74,12 @@ export class ImageShapeOptionPlugin extends Plugin {
         "isTechnicalShape",
         "isAnimableShape",
         "isTogglableRatioShape",
+        "aspectRatioShape",
         "getShapeLabel",
         "loadShape",
+        "getShapeCategory",
     ];
+    /** @type {import("plugins").BuilderResources} */
     resources = {
         builder_actions: {
             SetImageShapeAction,
@@ -52,34 +87,47 @@ export class ImageShapeOptionPlugin extends Plugin {
             FlipImageShapeAction,
             RotateImageShapeAction,
             SetImageShapeSpeedAction,
+            ResetImageShapeTransformationAction,
             ToggleImageShapeRatioAction,
         },
-        process_image_warmup_handlers: this.processImageWarmup.bind(this),
-        process_image_post_handlers: this.processImagePost.bind(this),
-        hover_effect_allowed_predicates: (el) => this.canHaveHoverEffect(el),
+        on_will_process_image_handlers: this.processImageWarmup.bind(this),
+        on_image_processed_handlers: this.processImagePost.bind(this),
+        on_will_save_media_dialog_handlers: withSequence(
+            5,
+            this.onWillSaveMediaDialogHandlers.bind(this)
+        ),
+        image_shape_groups_providers: withSequence(0, () => deepCopy(imageShapeDefinitions)),
+        hover_effect_image_dataset_providers: this.hoverEffectImageDatasetProviders.bind(this),
     };
     setup() {
         this.shapeSvgTextCache = {};
         this.imageShapes = this.makeImageShapes();
-    }
-    async canHaveHoverEffect(imgEl) {
-        const dataset = Object.assign({}, imgEl.dataset, await loadImageInfo(imgEl));
-        return (
-            imgEl.tagName === "IMG" &&
-            !this.isDeviceShape(imgEl) &&
-            !this.isAnimableShape(dataset.shape) &&
-            this.isImageSupportedForShapes(imgEl, dataset)
-        );
-    }
-    isDeviceShape(img) {
-        const shapeName = img.dataset.shape;
-        if (!shapeName) {
-            return false;
+        // Compatibility with old shapes.
+        for (const shapeId of Object.keys(this.imageShapes)) {
+            const oldShapeId = shapeId.replace("html_builder", "web_editor");
+            this.imageShapes[oldShapeId] = this.imageShapes[shapeId];
         }
-        const shapeCategory = shapeName.split("/")[1];
-        return shapeCategory === "devices";
     }
-    isImageSupportedForShapes(img, dataset = img.dataset) {
+    async onWillSaveMediaDialogHandlers(elements, { node }) {
+        const callback = async function (toProcessEl, nodeEl) {
+            const data = await loadImageInfo(toProcessEl);
+            if (!data.originalSrc) {
+                return;
+            }
+            toProcessEl.dataset.shape = nodeEl.dataset.shape;
+            for (const shapeInfo of ["shapeColors", "shapeFlip", "shapeRotate"]) {
+                if (nodeEl.dataset[shapeInfo]) {
+                    toProcessEl.dataset[shapeInfo] = nodeEl.dataset[shapeInfo];
+                }
+            }
+        };
+        await handleImagesIfDataset(elements, node, "shape", callback);
+    }
+    getShapeCategory(img) {
+        const shapeName = img.dataset.shape;
+        return shapeName?.split("/")[1];
+    }
+    async isImageSupportedForShapes(img, dataset = img.dataset) {
         // todo: The hover effect and shape code should probably be define somewhere else.
         if (!!dataset.hoverEffect || !!dataset.shape) {
             return true;
@@ -87,16 +135,18 @@ export class ImageShapeOptionPlugin extends Plugin {
         if (!dataset.originalId) {
             return false;
         }
-        return isImageSupportedForProcessing(getMimetype(img, dataset));
+        return isImageSupportedForProcessing(await getMimetype(img, dataset));
     }
     async getShapeSvgText(shapeName) {
-        let shapeSvgText = this.shapeSvgTextCache[shapeName];
+        // Compatibility with old shapes.
+        const shape = shapeName.replace("web_editor", "html_builder");
+        let shapeSvgText = this.shapeSvgTextCache[shape];
         if (shapeSvgText) {
             return shapeSvgText;
         }
-        const shapeURL = getShapeURL(shapeName);
+        const shapeURL = getShapeURL(shape);
         shapeSvgText = await (await fetch(shapeURL)).text();
-        this.shapeSvgTextCache[shapeName] = shapeSvgText;
+        this.shapeSvgTextCache[shape] = shapeSvgText;
         return shapeSvgText;
     }
     async loadShape(img, newData = {}) {
@@ -107,7 +157,7 @@ export class ImageShapeOptionPlugin extends Plugin {
         const getData = (propName) =>
             propName in newDataset ? newDataset[propName] : img.dataset[propName];
         const combinedDataset = { ...img.dataset, ...newDataset };
-        const previousShapeId = this.getDefaultShapeId(img.dataset);
+        const previousShapeId = img.dataset.shape || this.getDefaultShapeId(img.dataset);
         const shapeId = combinedDataset.shape || this.getDefaultShapeId(combinedDataset);
         // todo: should we reset some data if shapeName is not defined?
         if (!shapeId) {
@@ -121,6 +171,15 @@ export class ImageShapeOptionPlugin extends Plugin {
         newDataset.shapeColors =
             newDataset.shapeColors ??
             (isNewShape ? defaultShapeColors : img.dataset.shapeColors ?? defaultShapeColors);
+
+        // Get animation speed - only for animable shapes.
+        if (this.isAnimableShape(shapeId)) {
+            newDataset.shapeAnimationSpeed =
+                newDataset.shapeAnimationSpeed ??
+                (isNewShape ? "0" : img.dataset.shapeAnimationSpeed ?? "0");
+        } else {
+            newDataset.shapeAnimationSpeed = "";
+        }
 
         const getNaturalWidth = async () => {
             if (img.naturalWidth) {
@@ -146,14 +205,19 @@ export class ImageShapeOptionPlugin extends Plugin {
             parseInt(svg.getAttribute("width")) / parseInt(svg.getAttribute("height"));
         const imgAspectRatio = svg.dataset.imgAspectRatio;
 
-        if (isNewShape && !("aspectRatio" in newDataset)) {
+        const isNewImage = "originalSrc" in newDataset;
+        if ((isNewImage || isNewShape) && !("aspectRatio" in newDataset)) {
             const data = getImageTransformationData({ ...img.dataset, ...newDataset });
 
-            // The togglable ratio is squared by default.
-            const shouldBeSquared =
-                this.imageShapes[shapeId].togglableRatio && !img.dataset.aspectRatio;
-            if (shouldBeSquared && !shouldPreventGifTransformation(data)) {
-                newDataset.aspectRatio = "1/1";
+            // We consider the aspect ratio as default if it has not been set or
+            // if it has the aspect ratio of the current shape set on the image.
+            const isDefaultAspectRatio =
+                !img.dataset.aspectRatio ||
+                img.dataset.aspectRatio === this.aspectRatioShape(img.dataset.shape);
+            if (isDefaultAspectRatio && !shouldPreventGifTransformation(data)) {
+                newDataset.aspectRatio = this.isTogglableRatioShape(shapeId)
+                    ? this.aspectRatioShape(shapeId)
+                    : undefined;
             }
         }
 
@@ -215,6 +279,13 @@ export class ImageShapeOptionPlugin extends Plugin {
         const dataURL = await createDataURL(blob);
         return [dataURL, { ...handlerDataset, mimetype: "image/svg+xml" }];
     }
+    async hoverEffectImageDatasetProviders(imgEl) {
+        const dataset = Object.assign({}, imgEl.dataset, await loadImageInfo(imgEl));
+        const isImageSupportedForShapes = await this.isImageSupportedForShapes(imgEl, dataset);
+        return {
+            isImageSupportedForShapes,
+        };
+    }
 
     /**
      * Sets the image in the supplied SVG and replace the src with a dataURL
@@ -258,9 +329,7 @@ export class ImageShapeOptionPlugin extends Plugin {
             );
         }
 
-        for (const cb of this.getResource("post_compute_shape_listeners")) {
-            await cb(svg, params);
-        }
+        await this.triggerAsync("on_shape_computed_handlers", svg, params);
 
         svg.removeChild(svg.querySelector("#preview"));
         return svg;
@@ -369,10 +438,26 @@ export class ImageShapeOptionPlugin extends Plugin {
         if (!shape) {
             return false;
         }
-        return this.imageShapes[shape].togglableRatio;
+        return this.imageShapes[shape].togglableRatio ?? false;
+    }
+    aspectRatioShape(shape) {
+        if (!shape || !this.isTogglableRatioShape(shape)) {
+            return undefined;
+        }
+        return this.imageShapes[shape].aspectRatio || "1/1";
     }
     getImageShapeGroups() {
-        return imageShapeDefinitions;
+        if (!this.imageShapeGroups) {
+            const shapeGroups = {};
+            for (const provider of this.getResource("image_shape_groups_providers")) {
+                const providedGroups = provider(shapeGroups);
+                if (providedGroups) {
+                    Object.assign(shapeGroups, deepMerge(shapeGroups, providedGroups));
+                }
+            }
+            this.imageShapeGroups = shapeGroups;
+        }
+        return this.imageShapeGroups;
     }
     makeImageShapes() {
         const entries = Object.values(this.getImageShapeGroups())
@@ -385,7 +470,7 @@ export class ImageShapeOptionPlugin extends Plugin {
         return Object.fromEntries(entries);
     }
     getDefaultShapeId(dataset) {
-        for (const fn of this.getResource("default_shape_handlers")) {
+        for (const fn of this.getResource("default_shape_providers")) {
             const shapeId = fn(dataset);
             if (shapeId) {
                 return shapeId;
@@ -398,7 +483,23 @@ export class SetImageShapeAction extends BuilderAction {
     static id = "setImageShape";
     static dependencies = ["imageShapeOption"];
     async load({ editingElement: img, value: shapeId }) {
-        const params = { shape: shapeId };
+        const params = {
+            shape: shapeId,
+            shapeFlip: undefined,
+            shapeRotate: undefined,
+        };
+        // A crop is applied to the image at the same time as certain shapes,
+        // which is why we reset the crop here or when the shape is removed.
+        // However, we don’t reset it when the crop was applied intentionally.
+        // In that case, there are crop values; otherwise, there are none,
+        // only a 'data-aspect-ratio'.
+        if (
+            !shapeId &&
+            img.dataset.aspectRatio &&
+            !cropperDataFields.some((field) => field in img.dataset)
+        ) {
+            params["aspectRatio"] = undefined;
+        }
         // todo nby: re-read the old option method `setImgShape` and be sure all the logic is in there
         return this.dependencies.imageShapeOption.loadShape(img, params);
     }
@@ -406,6 +507,15 @@ export class SetImageShapeAction extends BuilderAction {
         updateImageAttributes();
         const imgFilename = img.dataset.originalSrc.split("/").pop().split(".")[0];
         img.dataset.fileName = `${imgFilename}.svg`;
+    }
+    isApplied({ editingElement: img, value }) {
+        const datasetShape = img.dataset.shape;
+        if (!datasetShape) {
+            return false;
+        }
+        // Compatibility with old shapes.
+        const currentShape = datasetShape.replace("web_editor", "html_builder");
+        return currentShape === value;
     }
 }
 export class SetImgShapeColorAction extends BuilderAction {
@@ -475,17 +585,35 @@ export class SetImageShapeSpeedAction extends BuilderAction {
         updateImageAttributes();
     }
 }
+export class ResetImageShapeTransformationAction extends BuilderAction {
+    static id = "resetImageShapeTransformation";
+    static dependencies = ["imageShapeOption"];
+    async load({ editingElement: img }) {
+        return this.dependencies.imageShapeOption.loadShape(img, {
+            shapeFlip: undefined,
+            shapeRotate: undefined,
+        });
+    }
+    apply({ loadResult: updateImageAttributes }) {
+        updateImageAttributes();
+    }
+}
 export class ToggleImageShapeRatioAction extends BuilderAction {
     static id = "toggleImageShapeRatio";
     static dependencies = ["imageShapeOption"];
 
     isApplied({ editingElement: img }) {
-        return img.dataset.aspectRatio !== "1/1";
+        return (
+            img.dataset.aspectRatio !==
+            this.dependencies.imageShapeOption.aspectRatioShape(img.dataset.shape)
+        );
     }
     async load({ editingElement: img }) {
-        const isStretched = img.dataset.aspectRatio !== "1/1";
+        const unstretchedAspectRatio = this.dependencies.imageShapeOption.aspectRatioShape(
+            img.dataset.shape
+        );
         return this.dependencies.imageShapeOption.loadShape(img, {
-            aspectRatio: isStretched ? "1/1" : "0/0",
+            aspectRatio: this.isApplied({ editingElement: img }) ? unstretchedAspectRatio : "0/0",
             x: undefined,
             y: undefined,
             width: undefined,

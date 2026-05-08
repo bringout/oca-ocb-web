@@ -2,13 +2,18 @@ import { Plugin } from "@html_editor/plugin";
 import { closestElement } from "@html_editor/utils/dom_traversal";
 import { withSequence } from "@html_editor/utils/resource";
 
+/**
+ * @typedef {((arg: { sourceEl: HTMLElement, targetEl: HTMLElement }) => void)[]} on_replicated_handlers
+ */
+
 export class FieldChangeReplicationPlugin extends Plugin {
     static id = "fieldChangeReplication";
     static dependencies = ["dom"];
 
+    /** @type {import("plugins").BuilderResources} */
     resources = {
-        handleNewRecords: this.handleMutations.bind(this),
-        normalize_handlers: withSequence(9000, this.normalizeHandler.bind(this)),
+        on_new_records_handled_handlers: this.handleMutations.bind(this),
+        normalize_processors: withSequence(9000, this.normalizeProcessor.bind(this)),
     };
 
     setup() {
@@ -16,9 +21,7 @@ export class FieldChangeReplicationPlugin extends Plugin {
     }
 
     /**
-     * @typedef { import("./history_plugin").HistoryMutationRecord } HistoryMutationRecord
-     *
-     * @param { HistoryMutationRecord[] } records
+     * @param { import("@html_editor/core/history_plugin").HistoryMutationRecord[] } records
      */
     handleMutations(records) {
         records
@@ -36,7 +39,7 @@ export class FieldChangeReplicationPlugin extends Plugin {
      * @param { Node } commonAncestor
      * @param { "original"|"undo"|"redo"|"restore" } stepState
      */
-    normalizeHandler(commonAncestor, stepState) {
+    normalizeProcessor(commonAncestor, stepState) {
         const fields = this.fieldsToReplicate;
         this.fieldsToReplicate = new Set();
         if (stepState !== "original") {
@@ -89,8 +92,9 @@ export class FieldChangeReplicationPlugin extends Plugin {
             );
             if (targetEls.length) {
                 const cloneEl = sourceEl.cloneNode(true);
+                cloneEl.toggleAttribute("contenteditable", sourceEl.isContentEditable);
                 this.dependencies.dom.removeSystemProperties(cloneEl);
-                this.dispatchTo("clean_for_save_handlers", { root: cloneEl });
+                this.processThrough("clean_for_save_processors", cloneEl);
                 for (const targetEl of targetEls) {
                     if (targetEl.classList.contains("o_translation_without_style")) {
                         // For generated elements such as the navigation
@@ -106,11 +110,12 @@ export class FieldChangeReplicationPlugin extends Plugin {
                             touchedEls.add(targetEl);
                         }
                     }
+                    this.trigger("on_replicated_handlers", { sourceEl, targetEl });
                 }
             }
         }
         for (const touchedEl of touchedEls) {
-            this.dispatchTo("normalize_handlers", touchedEl);
+            this.processThrough("normalize_processors", touchedEl);
         }
     }
 }

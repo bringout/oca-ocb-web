@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 {
@@ -9,7 +8,6 @@ Odoo Web tours.
 ========================
 
 """,
-    'version': '1.0',
     'depends': ['web'],
     'data': [
         'security/ir.model.access.csv',
@@ -42,6 +40,7 @@ Odoo Web tours.
             ('include', 'web_tour.recorder'),
             ('include', 'web_tour.automatic'),
             ('include', 'web_tour.interactive'),
+            'web_tour/static/tests/tour_models.js',
             'web_tour/static/tests/*.test.js',
         ],
         "web.assets_tests": [

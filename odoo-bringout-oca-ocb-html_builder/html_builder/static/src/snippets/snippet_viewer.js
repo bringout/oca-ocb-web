@@ -1,9 +1,14 @@
-import { Component, markup, useRef } from "@odoo/owl";
+import { useRef } from "@web/owl2/utils";
+import { Component, markup } from "@odoo/owl";
+import { useMatrixKeyNavigation } from "@html_builder/utils/keyboard_navigation";
 import { getActiveHotkey } from "@web/core/hotkeys/hotkey_service";
+import { localization } from "@web/core/l10n/localization";
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
 import { InputConfirmationDialog } from "./input_confirmation_dialog";
 import { fuzzyLookup } from "@web/core/utils/search";
+import { selectElements } from "@html_editor/utils/dom_traversal";
+import { Image } from "@html_builder/core/img";
 
 export class SnippetViewer extends Component {
     static template = "html_builder.SnippetViewer";
@@ -19,6 +24,64 @@ export class SnippetViewer extends Component {
     setup() {
         this.dialog = useService("dialog");
         this.content = useRef("content");
+        this.backendDirection = localization.direction;
+
+        this.handleMatrixKeyNavigation = useMatrixKeyNavigation(
+            () => [this.content.el],
+            ".o_snippet_preview_wrap"
+        );
+    }
+
+    /**
+     * @typedef {Object} PrefixIconInfo
+     * @property {string} keyClass class to add on the span containing the icon
+     * @property {string} title the tooltip content
+     * @property {Component?} Component the component to show the icon
+     * @property {Object?} props props for the component
+     * @property {import("@web/core/utils/html").Markup?} content the markup to
+     * show the icon, if no `Component`
+     */
+    /**
+     * Gets the info for icons that are shown before the name of the given
+     * custom snippet
+     *
+     * @param {HTMLElement} snippetContentEl
+     * @returns {PrefixIconInfo[]}
+     */
+    getPrefixIcons(snippetContentEl) {
+        /** @type {PrefixIconInfo[]} */
+        const icons = [];
+        const styleProps = { style: "height: 1em", attrs: { fill: "var(--body-color)" } };
+        if (snippetContentEl.matches(".o_snippet_desktop_invisible")) {
+            icons.push({
+                keyClass: "o_prefix_desktop_invisible",
+                title: "Invisible on desktop",
+                Component: Image,
+                props: {
+                    src: "/html_builder/static/img/options/desktop_invisible.svg",
+                    ...styleProps,
+                },
+            });
+        }
+        if (snippetContentEl.matches(".o_snippet_mobile_invisible")) {
+            icons.push({
+                keyClass: "o_prefix_mobile_invisible",
+                title: "Invisible on mobile",
+                Component: Image,
+                props: {
+                    src: "/html_builder/static/img/options/mobile_invisible.svg",
+                    ...styleProps,
+                },
+            });
+        }
+        if (snippetContentEl.matches(".o_conditional_hidden")) {
+            icons.push({
+                keyClass: "o_prefix_conditional",
+                title: "Conditionally visible",
+                content: markup`<span class="fa fa-eye-slash"/>`,
+            });
+        }
+        return icons;
     }
 
     getRenameBtnLabel(snippetName) {
@@ -37,7 +100,6 @@ export class SnippetViewer extends Component {
             confirm: (inputValue) => {
                 this.props.snippetModel.renameCustomSnippet(snippet, inputValue);
             },
-            cancelLabel: _t("Discard"),
             cancel: () => {},
         });
     }
@@ -48,20 +110,13 @@ export class SnippetViewer extends Component {
 
     getSnippetColumns() {
         const snippets = this.getSelectedSnippets();
+        const nbColumns = this.props.state.isMobilePreviewMode ? 3 : 2;
+        const columns = new Array(nbColumns).fill().map(() => []);
 
-        const columns = [[], []];
-        for (const index in snippets) {
-            if (index % 2 === 0) {
-                columns[0].push(snippets[index]);
-            } else {
-                columns[1].push(snippets[index]);
-            }
+        for (const [index, snippet] of snippets.entries()) {
+            columns[index % nbColumns].push(snippet);
         }
-        let numResults = 0;
-        for (const column of columns) {
-            numResults += column.length;
-        }
-        this.props.hasSearchResults(numResults > 0);
+        this.props.hasSearchResults(snippets.length > 0);
         return columns;
     }
 
@@ -78,6 +133,7 @@ export class SnippetViewer extends Component {
         if (hotkey === "enter" || hotkey === "space") {
             this.onClick(snippet);
         }
+        this.handleMatrixKeyNavigation(ev);
     }
 
     getContent(elem) {
@@ -100,8 +156,7 @@ export class SnippetViewer extends Component {
         }
         const getClasses = (snippet) => {
             const classes = new Set();
-            const elements = [snippet.content, ...snippet.content.querySelectorAll("*")];
-            for (const el of elements) {
+            for (const el of selectElements(snippet.content, "*")) {
                 for (const className of el.classList) {
                     if (className.startsWith("s_")) {
                         classes.add(className);
@@ -114,6 +169,7 @@ export class SnippetViewer extends Component {
             return fuzzyLookup(this.props.state.search, snippetStructures, (snippet) => [
                 snippet.title || "",
                 snippet.name || "",
+                snippet.label || "",
                 ...(snippet.keyWords?.split(",") || ""),
                 ...getClasses(snippet),
             ]);

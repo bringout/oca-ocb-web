@@ -1,4 +1,5 @@
-import { Component, onMounted, useEffect, useRef, useState } from "@odoo/owl";
+import { useLayoutEffect, useRef, useState } from "@web/owl2/utils";
+import { Component, onMounted } from "@odoo/owl";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { toolbarButtonProps } from "@html_editor/main/toolbar/toolbar";
@@ -9,7 +10,7 @@ import { getCSSVariableValue, getHtmlStyle } from "@html_editor/utils/formatting
 import { useDropdownAutoVisibility } from "@html_editor/dropdown_autovisibility_hook";
 import { useChildRef } from "@web/core/utils/hooks";
 
-const MAX_FONT_SIZE = 144;
+export const MAX_FONT_SIZE = 400;
 
 export class FontSizeSelector extends Component {
     static template = "html_editor.FontSizeSelector";
@@ -39,12 +40,15 @@ export class FontSizeSelector extends Component {
             const initFontSizeInput = () => {
                 const iframeDoc = iframeEl.contentWindow.document;
 
-                // Skip if already initialized.
-                if (this.fontSizeInput || !iframeDoc.body) {
+                // Skip if already/still initialized.
+                if (this.fontSizeInput?.closest("body") === iframeDoc.body || !iframeDoc.body) {
                     return;
                 }
 
                 this.fontSizeInput = iframeDoc.createElement("input");
+                this.fontSizeInput.addEventListener("blur", () => {
+                    this.props.onBlur?.();
+                });
                 const isDarkMode = cookie.get("color_scheme") === "dark";
                 const htmlStyle = getHtmlStyle(document);
                 const backgroundColor = getCSSVariableValue(
@@ -52,6 +56,7 @@ export class FontSizeSelector extends Component {
                     htmlStyle
                 );
                 const color = getCSSVariableValue("black", htmlStyle);
+                const fontFamily = getCSSVariableValue("o-system-fonts", htmlStyle);
                 Object.assign(iframeDoc.body.style, {
                     padding: "0",
                     margin: "0",
@@ -64,6 +69,7 @@ export class FontSizeSelector extends Component {
                     textAlign: "center",
                     backgroundColor: backgroundColor,
                     color: color,
+                    fontFamily: fontFamily,
                 });
                 this.fontSizeInput.type = "text";
                 this.fontSizeInput.name = "font-size-input";
@@ -83,19 +89,11 @@ export class FontSizeSelector extends Component {
             };
             if (iframeEl.contentDocument.readyState === "complete") {
                 initFontSizeInput();
-            } else {
-                // in firefox, iframe is not immediately available. we need to wait
-                // for it to be ready before mounting.
-                iframeEl.addEventListener(
-                    "load",
-                    () => {
-                        initFontSizeInput();
-                    },
-                    { once: true }
-                );
             }
+            // If iframe is moved around in DOM, it restarts from scratch and needs to be repopulated.
+            iframeEl.addEventListener("load", initFontSizeInput);
         });
-        useEffect(
+        useLayoutEffect(
             () => {
                 if (this.fontSizeInput) {
                     // Update `fontSizeInputValue` whenever the font size changes.
@@ -104,7 +102,7 @@ export class FontSizeSelector extends Component {
             },
             () => [this.state.displayName]
         );
-        useEffect(
+        useLayoutEffect(
             () => {
                 if (this.fontSizeInput) {
                     // Focus input on dropdown open, blur on close.

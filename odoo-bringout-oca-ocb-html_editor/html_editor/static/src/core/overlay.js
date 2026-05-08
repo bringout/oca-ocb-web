@@ -1,22 +1,14 @@
-import {
-    Component,
-    onWillDestroy,
-    useEffect,
-    useExternalListener,
-    useRef,
-    useState,
-    useSubEnv,
-    xml,
-} from "@odoo/owl";
+import { useExternalListener, useLayoutEffect, useRef, useState, useSubEnv } from "@web/owl2/utils";
+import { Component, onWillDestroy, xml } from "@odoo/owl";
 import { OVERLAY_SYMBOL } from "@web/core/overlay/overlay_container";
 import { usePosition } from "@web/core/position/position_hook";
+import { getIFrame } from "@web/core/position/utils";
 import { useActiveElement } from "@web/core/ui/ui_service";
-import { closestScrollableY } from "@web/core/utils/scrolling";
 
 export class EditorOverlay extends Component {
     static template = xml`
-        <div t-ref="root" class="overlay" t-att-class="props.className" t-on-pointerdown.stop="() => {}">
-            <t t-component="props.Component" t-props="props.props"/>
+        <div t-custom-ref="root" class="overlay" t-att-class="this.props.className" t-on-pointerdown.stop="() => {}">
+            <t t-component="this.props.Component" t-props="this.props.props"/>
         </div>`;
 
     static props = {
@@ -26,9 +18,10 @@ export class EditorOverlay extends Component {
         props: { type: Object, optional: true },
         editable: { validate: (el) => el.nodeType === Node.ELEMENT_NODE },
         bus: Object,
-        history: Object,
+        shared: Object,
         close: Function,
         isOverlayOpen: Function,
+        getCustomRect: { type: Function, optional: true },
 
         // Props from createOverlay
         positionOptions: { type: Object, optional: true },
@@ -69,7 +62,7 @@ export class EditorOverlay extends Component {
             const resizeObserver = new ResizeObserver(() => {
                 position.unlock();
             });
-            useEffect(
+            useLayoutEffect(
                 (root) => {
                     resizeObserver.observe(root);
                     return () => {
@@ -98,7 +91,8 @@ export class EditorOverlay extends Component {
             useActiveElement("root");
         }
         const topDocument = editable.ownerDocument.defaultView.top.document;
-        const container = closestScrollable(editable) || topDocument.documentElement;
+        const scrollContainer = getScrollContainer(editable);
+        const container = scrollContainer || topDocument.documentElement;
         const resizeObserver = new ResizeObserver(() => position.unlock());
         resizeObserver.observe(container);
         onWillDestroy(() => resizeObserver.disconnect());
@@ -108,7 +102,7 @@ export class EditorOverlay extends Component {
             ...this.props.positionOptions,
             onPositioned: (el, solution) => {
                 this.props.positionOptions?.onPositioned?.(el, solution);
-                this.updateVisibility(el, solution, container);
+                this.updateVisibility(el, solution, scrollContainer);
             },
         };
         position = usePosition("root", getTarget, positionOptions);
@@ -120,10 +114,13 @@ export class EditorOverlay extends Component {
     getSelectionTarget() {
         const doc = this.props.editable.ownerDocument;
         const selection = doc.getSelection();
+        const selectionData = this.props.shared.getSelectionData();
         if (!selection || !selection.rangeCount || !this.props.isOverlayOpen()) {
             return null;
         }
-        const inEditable = this.props.editable.contains(selection.anchorNode);
+        const inEditable =
+            selectionData.documentSelectionIsInEditable &&
+            this.props.shared.editableDocumentHasFocus();
         let range;
         if (inEditable) {
             range = selection.getRangeAt(0);
@@ -134,12 +131,15 @@ export class EditorOverlay extends Component {
             }
             range = this.lastSelection.range;
         }
-        let rect = range.getBoundingClientRect();
+        let rect =
+            this.props.getCustomRect?.() ||
+            this.lastSelection.rect ||
+            range.getBoundingClientRect();
         if (rect.x === 0 && rect.width === 0 && rect.height === 0) {
             // Attention, ignoring DOM mutations is always dangerous (when we add or remove nodes)
             // because if another mutation uses the target that is not observed, that mutation can never be applied
             // again (when undo/redo and in collaboration).
-            this.props.history.ignoreDOMMutations(() => {
+            this.props.shared.ignoreDOMMutations(() => {
                 const clonedRange = range.cloneRange();
                 const shadowCaret = doc.createTextNode("|");
                 clonedRange.insertNode(shadowCaret);
@@ -156,13 +156,17 @@ export class EditorOverlay extends Component {
         return this.rangeElement;
     }
 
-    updateVisibility(overlayElement, solution, container) {
+    updateVisibility(overlayElement, solution, scrollContainer) {
         // @todo: mobile tests rely on a visible (yet overflowing) toolbar
         // Remove this once the mobile toolbar is fixed?
         if (this.env.isSmall) {
             return;
         }
-        const shouldBeVisible = this.shouldOverlayBeVisible(overlayElement, solution, container);
+        const shouldBeVisible = this.shouldOverlayBeVisible(
+            overlayElement,
+            solution,
+            scrollContainer
+        );
         overlayElement.style.visibility = shouldBeVisible ? "visible" : "hidden";
         this.overlayState.isOverlayVisible = shouldBeVisible;
     }
@@ -170,28 +174,34 @@ export class EditorOverlay extends Component {
     /**
      * @param {HTMLElement} overlayElement
      * @param {Object} solution
-     * @param {HTMLElement} container
+     * @param {HTMLElement} scrollContainer
      */
-    shouldOverlayBeVisible(overlayElement, solution, container) {
-        const containerRect = container.getBoundingClientRect();
-        const overflowsTop = solution.top < containerRect.top;
-        const overflowsBottom = solution.top + overlayElement.offsetHeight > containerRect.bottom;
-        const canFlip = this.props.positionOptions?.flip ?? true;
-        if (overflowsTop) {
-            if (overflowsBottom) {
-                // Overlay is bigger than the cointainer. Hiding it would it
-                // make always invisible.
-                return true;
-            }
-            if (solution.direction === "top" && canFlip) {
-                // Scrolling down will make overlay eventually flip and no longer overflow
-                return true;
-            }
-            return false;
+    shouldOverlayBeVisible(overlayElement, solution, scrollContainer) {
+        if (!scrollContainer) {
+            return true;
         }
-        if (overflowsBottom) {
-            if (solution.direction === "bottom" && canFlip) {
-                // Scrolling up will make overlay eventually flip and no longer overflow
+        const canFlip = this.props.positionOptions?.flip ?? true;
+        const scrollContainerRect = scrollContainer.getBoundingClientRect();
+        let top = Math.max(scrollContainerRect.top, 0);
+        let bottom = top + Math.min(scrollContainerRect.height, window.innerHeight);
+        if (canFlip) {
+            // Don't show the overlay when the selection is out of the screen
+            const target = this.props.target || this.getSelectionTarget();
+            if (target.ownerDocument !== window.top.document) {
+                const iframe = getIFrame(overlayElement, target);
+                const iframeRect = iframe.getBoundingClientRect();
+                top -= iframeRect.top;
+                bottom -= iframeRect.top;
+            }
+            const targetRect = target.getBoundingClientRect();
+            return targetRect.bottom >= top && targetRect.top < bottom;
+        }
+        const overflowsTop = solution.top < top;
+        const overflowsBottom = solution.top + overlayElement.offsetHeight > bottom;
+        if (overflowsTop || overflowsBottom) {
+            if (overflowsTop && overflowsBottom) {
+                // Overlay is bigger than the container. Hiding it would make
+                // it always invisible.
                 return true;
             }
             return false;
@@ -201,13 +211,37 @@ export class EditorOverlay extends Component {
 }
 
 /**
- * Wrapper around closestScrollableY that keeps searching outside of iframes.
+ * The scroll container is an ancestor of {@link el} that is:
+ * - scrollable and
+ * - not also ancestor of a fixed element encosing `el` in the same
+ * document (as this makes `el` fixed and not affected by scrolls of
+ * that ancestor)
  *
  * @param {HTMLElement} el
+ * @returns {HTMLElement|null}
  */
-function closestScrollable(el) {
-    if (!el) {
-        return null;
+export function getScrollContainer(el) {
+    const isScrollable = (/** @type {HTMLElement} */ el) => {
+        if (el.tagName === "HTML") {
+            return el.scrollHeight > el.ownerDocument.defaultView.visualViewport.height;
+        }
+        return (
+            el.scrollHeight > el.clientHeight &&
+            /\bauto\b|\bscroll\b/.test(getComputedStyle(el)["overflow-y"])
+        );
+    };
+    const isFixed = (el) => getComputedStyle(el).position === "fixed";
+    while (el) {
+        if (isScrollable(el)) {
+            return el;
+        }
+        if (isFixed(el)) {
+            // Any scrollable ancestor in the same document does not affect it.
+            // Search in the enclosing document, if any.
+            el = el.ownerDocument.defaultView.frameElement;
+            continue;
+        }
+        el = el.parentElement || el.ownerDocument.defaultView.frameElement;
     }
-    return closestScrollableY(el) || closestScrollable(el.ownerDocument.defaultView.frameElement);
+    return null;
 }

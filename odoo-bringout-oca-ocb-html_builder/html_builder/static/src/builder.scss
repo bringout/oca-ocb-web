@@ -145,6 +145,7 @@
 }
 
 .o_we_lower_panel {
+    z-index: 11;
     max-height: 220px;
     overflow-y: auto;
     background-color: $o-we-sidebar-blocks-content-bg;
@@ -205,15 +206,4 @@
 .o_pager_container {
     overflow-y: scroll;
     scroll-behavior: smooth;
-}
-
-// TODO Gray scale HUE slider
-.o_we_slider_tint input[type="range"] {
-    appearance: none;
-    &::-webkit-slider-thumb {
-        appearance: auto !important;
-    }
-    &::-moz-range-thumb {
-        appearance: auto !important;
-    }
 }

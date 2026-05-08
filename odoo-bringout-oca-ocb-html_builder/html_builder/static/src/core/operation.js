@@ -18,11 +18,38 @@ import { Mutex } from "@web/core/utils/concurrency";
  * @property {Boolean} [shouldInterceptClick=false] whether clicking while the
  *   loading screen is present should retarget the click at the end of the
  *   loading time.
+ * @property {Boolean} [canTimeout=true]
+ * @property {Number} [timeout=10000]
  */
+
+export class OperationMutex extends Mutex {
+    constructor() {
+        super();
+        this._skipUntilEmpty = false;
+    }
+
+    clearQueue() {
+        this._skipUntilEmpty = this._queueSize > 0;
+        if (this._skipUntilEmpty) {
+            this.getUnlockedDef().then(() => {
+                this._skipUntilEmpty = false;
+            });
+        }
+    }
+
+    async exec(action) {
+        return super.exec(() => {
+            if (this._skipUntilEmpty) {
+                return;
+            }
+            return action();
+        });
+    }
+}
 
 export class Operation {
     constructor(editableDocument = document) {
-        this.mutex = new Mutex();
+        this.mutex = new OperationMutex();
         this.editableDocument = editableDocument;
     }
 
@@ -44,6 +71,8 @@ export class Operation {
             withLoadingEffect = true,
             loadingEffectDelay = 500,
             shouldInterceptClick = false,
+            canTimeout = true,
+            timeout = 10000,
         } = {}
     ) {
         this.cancelPrevious?.();
@@ -67,9 +96,19 @@ export class Operation {
             cancelResolve = resolve;
         });
 
+        let hasTimedOut = false;
         return this.mutex.exec(async () => {
             if (isCancel) {
                 return;
+            }
+            let cancelTimeoutPromise;
+            if (canTimeout) {
+                cancelTimeoutPromise = new Promise((resolve) => {
+                    setTimeout(() => {
+                        hasTimedOut = true;
+                        resolve();
+                    }, timeout);
+                });
             }
 
             const removeLoadingElement = this.addLoadingElement(
@@ -95,13 +134,21 @@ export class Operation {
             };
 
             try {
-                await Promise.race([
+                const promises = [
                     Promise.all([cancelLoadPromise, cancelTimePromise]),
                     applyOperation(),
-                ]);
+                ];
+                if (cancelTimeoutPromise) {
+                    promises.push(cancelTimeoutPromise);
+                }
+                await Promise.race(promises);
             } finally {
+                if (hasTimedOut) {
+                    this.mutex.clearQueue();
+                }
                 removeLoadingElement();
             }
+            return { hasFailed: hasTimedOut };
         });
     }
 
@@ -118,13 +165,13 @@ export class Operation {
      * @returns {Function}
      */
     addLoadingElement(withLoadingEffect, loadingEffectDelay, shouldInterceptClick) {
-        const loadingScreenEl = document.createElement("div");
-        loadingScreenEl.classList.add(
+        this.loadingScreenEl = document.createElement("div");
+        this.loadingScreenEl.classList.add(
             ...["o_loading_screen", "d-flex", "justify-content-center", "align-items-center"]
         );
         const spinnerEl = document.createElement("img");
         spinnerEl.setAttribute("src", "/web/static/img/spin.svg");
-        loadingScreenEl.appendChild(spinnerEl);
+        this.loadingScreenEl.appendChild(spinnerEl);
 
         let removeClickListener = () => {};
         if (shouldInterceptClick) {
@@ -145,24 +192,56 @@ export class Operation {
             this.editableDocument.addEventListener("click", onClick);
             removeClickListener = () => this.editableDocument.removeEventListener("click", onClick);
         }
+        if (this.isUIBlocked) {
+            this.loadingScreenEl.classList.add("d-none");
+        }
 
-        this.editableDocument.body.appendChild(loadingScreenEl);
+        this.editableDocument.body.appendChild(this.loadingScreenEl);
 
         // If specified, add a loading effect on that element after a delay.
         let loadingTimeout;
         if (withLoadingEffect) {
             loadingTimeout = setTimeout(
-                () => loadingScreenEl.classList.add("o_we_ui_loading"),
+                () => this.loadingScreenEl?.classList.add("o_we_ui_loading"),
                 loadingEffectDelay
             );
         }
-
         return () => {
             if (loadingTimeout) {
                 clearTimeout(loadingTimeout);
             }
             removeClickListener();
-            loadingScreenEl.remove();
+            this.loadingScreenEl.remove();
+            this.loadingScreenEl = null;
         };
+    }
+
+    /**
+     * Handles the "BLOCK" UI event dispatched by the ui service.
+     *
+     * @param {CustomEvent} ev
+     * @param {Object} ev.detail
+     * @param {Number} [ev.detail.delay] delay in ms before the UI is considered
+     *   blocked
+     */
+    onBlockUI(ev) {
+        this.blockUITimeout = setTimeout(() => {
+            this.isUIBlocked = true;
+            if (this.loadingScreenEl) {
+                this.loadingScreenEl.classList.add("d-none");
+            }
+        }, ev.detail?.delay);
+    }
+
+    /**
+     * Handles the "UNBLOCK" UI event dispatched by the ui service. Cancels any
+     * pending block timeout and marks the UI as no longer blocked
+     */
+    onUnblockUI() {
+        clearTimeout(this.blockUITimeout);
+        this.isUIBlocked = false;
+        if (this.loadingScreenEl) {
+            this.loadingScreenEl.classList.remove("d-none");
+        }
     }
 }

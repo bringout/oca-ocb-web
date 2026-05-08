@@ -1,7 +1,6 @@
 import { test, expect } from "@odoo/hoot";
 import { setupEditor, testEditor } from "../_helpers/editor";
 import { unformat } from "../_helpers/format";
-import { strong } from "../_helpers/tags";
 import { setFontSize, setFontSizeClassName, tripleClick } from "../_helpers/user_actions";
 import { Plugin } from "@html_editor/plugin";
 import { MAIN_PLUGINS } from "@html_editor/plugin_sets";
@@ -9,6 +8,7 @@ import { animationFrame } from "@odoo/hoot-mock";
 import { execCommand } from "../_helpers/userCommands";
 import { press } from "@odoo/hoot-dom";
 import { getContent } from "../_helpers/selection";
+import { QWebPlugin } from "@html_editor/others/qweb_plugin";
 
 test("should change the font size of a few characters", async () => {
     await testEditor({
@@ -20,9 +20,10 @@ test("should change the font size of a few characters", async () => {
 
 test("should change the font size the qweb tag", async () => {
     await testEditor({
-        contentBefore: `<div><p t-esc="'Test'" contenteditable="false">[Test]</p></div>`,
+        contentBefore: `<div><p t-out="'Test'" contenteditable="false">[Test]</p></div>`,
         stepFunction: setFontSize("36px"),
-        contentAfter: `<div>[<p t-esc="'Test'" contenteditable="false" style="font-size: 36px;">Test</p>]</div>`,
+        contentAfter: `<div>[<p t-out="'Test'" style="font-size: 36px;">Test</p>]</div>`,
+        config: { Plugins: [...MAIN_PLUGINS, QWebPlugin] },
     });
 });
 
@@ -153,7 +154,7 @@ test("should add font size in selected table cells with h1 as first child", asyn
     });
 });
 
-test("should apply font size in unbreakable span with class", async () => {
+test("should apply font size in unsplittable span with class", async () => {
     await testEditor({
         contentBefore: `<h1><span class="oe_unbreakable">some [text]</span></h1>`,
         stepFunction: setFontSize("18px"),
@@ -161,28 +162,30 @@ test("should apply font size in unbreakable span with class", async () => {
     });
 });
 
-test("should apply font size in unbreakable span without class", async () => {
+test("should apply font size in unsplittable span without class", async () => {
     class AddUnsplittableRulePlugin extends Plugin {
         static id = "addUnsplittableRule";
         resources = {
-            unsplittable_node_predicates: (node) => node.getAttribute?.("t") === "unbreakable",
+            is_node_splittable_predicates: (node) => {
+                if (node.getAttribute?.("t") === "unsplittable") {
+                    return false;
+                }
+            },
         };
     }
     await testEditor({
-        contentBefore: `<h1><span t="unbreakable">some [text]</span></h1>`,
+        contentBefore: `<h1><span t="unsplittable">some [text]</span></h1>`,
         stepFunction: setFontSize("18px"),
-        contentAfter: `<h1><span t="unbreakable">some <span style="font-size: 18px;">[text]</span></span></h1>`,
+        contentAfter: `<h1><span t="unsplittable">some <span style="font-size: 18px;">[text]</span></span></h1>`,
         config: { Plugins: [...MAIN_PLUGINS, AddUnsplittableRulePlugin] },
     });
 });
 
 test("should add style to a span parent of an inline", async () => {
     await testEditor({
-        contentBefore: `<p>a<span style="background-color: black;">${strong(`[bc]`)}</span>d</p>`,
+        contentBefore: `<p>a<span style="background-color: black;"><strong>[bc]</strong></span>d</p>`,
         stepFunction: setFontSize("10px"),
-        contentAfter: `<p>a<span style="background-color: black; font-size: 10px;">${strong(
-            `[bc]`
-        )}</span>d</p>`,
+        contentAfter: `<p>a<span style="background-color: black; font-size: 10px;"><strong>[bc]</strong></span>d</p>`,
     });
 });
 

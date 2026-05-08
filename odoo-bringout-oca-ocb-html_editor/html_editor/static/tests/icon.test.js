@@ -1,12 +1,14 @@
 import { describe, expect, test } from "@odoo/hoot";
 import { click, tick, waitFor, waitForNone } from "@odoo/hoot-dom";
-import { setupEditor } from "./_helpers/editor";
+import { setupEditor, testEditor } from "./_helpers/editor";
 import { animationFrame } from "@odoo/hoot-mock";
 import { getContent, setContent, setSelection } from "./_helpers/selection";
-import { undo } from "./_helpers/user_actions";
-import { contains } from "@web/../tests/web_test_helpers";
+import { splitBlock, undo } from "./_helpers/user_actions";
+import { contains, onRpc } from "@web/../tests/web_test_helpers";
 import { expectElementCount } from "./_helpers/ui_expectations";
 import { execCommand } from "./_helpers/userCommands";
+import { unformat } from "./_helpers/format";
+import { expandToolbar } from "./_helpers/toolbar";
 
 test("icon toolbar is displayed", async () => {
     const { el } = await setupEditor(`<p><span class="fa fa-glass"></span></p>`);
@@ -168,16 +170,25 @@ test("Can spin an icon", async () => {
 });
 
 test("Can set icon color", async () => {
-    const { el } = await setupEditor(`<p><span class="fa fa-glass">[]</span></p>`);
+    const { el } = await setupEditor('<p><span class="fa fa-glass"></span></p>');
+    expect(getContent(el)).toBe(
+        `<p>\ufeff<span class="fa fa-glass" contenteditable="false">\u200b</span>\ufeff</p>`
+    );
+    // A selection inside the font awesome is automatically converted to a
+    // selection around the font awesome, triggering the opening of the toolbar.
+    const fa = el.querySelector(".fa");
+    setSelection({ anchorNode: fa, anchorOffset: 0, focusNode: fa, focusOffset: 0 });
     await waitFor(".o-we-toolbar");
+    expect(getContent(el)).toBe(
+        `<p>\ufeff[<span class="fa fa-glass" contenteditable="false">\u200b</span>]\ufeff</p>`
+    );
     expect(".o_font_color_selector").toHaveCount(0);
     await click(".o-select-color-foreground");
     await animationFrame();
-    expect(".o_font_color_selector").toHaveCount(1);
+    await waitFor(".o_color_button[data-color='#6BADDE']");
     await click(".o_color_button[data-color='#6BADDE']");
-    await animationFrame();
-    await expectElementCount(".o-we-toolbar", 1);
-    expect(".o_font_color_selector").toHaveCount(0); // selector closed
+    await expectElementCount(".o_font_color_selector", 0); // selector closed
+    await waitFor(".o-we-toolbar .o-select-color-foreground [style*='#6badde']");
     expect(getContent(el)).toBe(
         `<p>[<font style="color: rgb(107, 173, 222);">\ufeff<span class="fa fa-glass" contenteditable="false">\u200b</span>\ufeff</font>]</p>`
     );
@@ -230,7 +241,7 @@ test("Can replace icon using toolbar", async () => {
     await contains("button[name='icon_replace']").click();
     await animationFrame();
     expect("main.modal-body").toHaveCount(1);
-    expect("main.modal-body a.nav-link.active").toHaveText("Icons");
+    expect("main.modal-body button.nav-link.active").toHaveText("Icons");
     // Corresponding icon should be highlighted in dialog
     expect("main.modal-body span.fa-heart.o_we_attachment_selected").toHaveCount(1);
 
@@ -422,7 +433,64 @@ describe("selection", () => {
         setSelection({ anchorNode: icon, anchorOffset: 0 });
         await tick();
         expect(getContent(el)).toBe(
-            `<p contenteditable="false">abc[<span class="fa fa-glass" contenteditable="false">\u200b</span>]def</p>`
+            '<p data-selection-placeholder=""><br></p>' +
+                '<p contenteditable="false">abc[<span class="fa fa-glass" contenteditable="false">\u200b</span>]def</p>' +
+                '<p data-selection-placeholder="" style="margin: -9px 0px 8px;"><br></p>'
         );
     });
+});
+
+test("should insert two empty paragraphs when Enter is pressed twice before the icon element", async () => {
+    const { el, editor } = await setupEditor(
+        `<p>[]<span class="fa fa-glass" contenteditable="false"></span></p>`
+    );
+    splitBlock(editor);
+    expect(getContent(el)).toBe(
+        `<p><br></p><p>\ufeff[]<span class="fa fa-glass" contenteditable="false">\u200B</span>\ufeff</p>`
+    );
+    splitBlock(editor);
+    expect(getContent(el)).toBe(
+        `<p><br></p><p><br></p><p>\ufeff[]<span class="fa fa-glass" contenteditable="false">\u200B</span>\ufeff</p>`
+    );
+});
+
+test("should wrap icons in feff when under list item", async () => {
+    await testEditor({
+        contentBefore: unformat(`
+                <ul>
+                    <li><span class="fa fa-glass" contenteditable="false"></span></li>
+                </ul>
+            `),
+        contentBeforeEdit: unformat(`
+            <ul>
+                <li>\ufeff<span class="fa fa-glass" contenteditable="false">\u200B</span>\ufeff</li>
+            </ul>
+        `),
+    });
+});
+
+test("should not allow to edit label if selection contain icon", async () => {
+    await setupEditor(`<p>[ab<span class="fa fa-glass" contenteditable="false"></span>]</p>`);
+    await waitFor(".o-we-toolbar");
+    await expandToolbar();
+    await click('.o-we-toolbar button[name="link"]');
+    await waitFor('[name="o_linkpopover_url_img"]');
+    expect('[name="o_linkpopover_url_img"]').toHaveCount(1);
+});
+
+test("should be able to unlink an icon", async () => {
+    onRpc(`${location.origin}/test`, () => ({
+        title: "title",
+        description: "description",
+    }));
+    onRpc(`/html_editor/link_preview_internal`, () => ({
+        title: "title",
+        description: "description",
+    }));
+    await setupEditor(
+        `<p><a href="/test" class="my_link o_link_in_selection">[<span class="fa fa-glass" contenteditable="false"></span>]</a></p>`
+    );
+    await waitFor(".o-we-toolbar");
+    await click('[name="unlink"]');
+    expect(".my_link").toHaveCount(0);
 });

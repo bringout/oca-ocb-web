@@ -1,26 +1,23 @@
-import { cropperDataFieldsWithAspectRatio, loadImage } from "@html_editor/utils/image_processing";
+import {
+    cropperDataFieldsWithAspectRatio,
+    loadImage,
+    loadImageInfo,
+} from "@html_editor/utils/image_processing";
 import { registry } from "@web/core/registry";
 import { Plugin } from "@html_editor/plugin";
-import { ImageToolOption } from "./image_tool_option";
-import { isImageCorsProtected } from "@html_editor/utils/image";
-import { withSequence } from "@html_editor/utils/resource";
-import {
-    REPLACE_MEDIA,
-    IMAGE_TOOL,
-    ALIGNMENT_STYLE_PADDING,
-} from "@html_builder/utils/option_sequence";
-import { ReplaceMediaOption, searchSupportedParentLinkEl } from "./replace_media_option";
+import { searchSupportedParentLinkEl } from "./replace_media_option";
+import { getMimetype } from "@html_editor/utils/image";
 import { computeMaxDisplayWidth } from "@html_builder/plugins/image/image_format_option";
 import { BuilderAction } from "@html_builder/core/builder_action";
+import { ClassAction } from "@html_builder/core/core_builder_action_plugin";
 import { selectElements } from "@html_editor/utils/dom_traversal";
 import { isCSSColor } from "@web/core/utils/colors";
 import { getCSSVariableValue, getHtmlStyle } from "@html_editor/utils/formatting";
+import { isImageSupportedForProcessing } from "@html_editor/main/media/image_post_process_plugin";
 
-export const REPLACE_MEDIA_SELECTOR = "img, .media_iframe_video, span.fa, i.fa";
-export const REPLACE_MEDIA_EXCLUDE =
-    "[data-oe-xpath], a[href^='/website/social/'] > i.fa, a[class*='s_share_'] > i.fa";
+const IMAGE_LINK_ALIGN_CLASSES = ["mx-auto", "ms-auto", "me-auto"];
 
-class ImageToolOptionPlugin extends Plugin {
+export class ImageToolOptionPlugin extends Plugin {
     static id = "imageToolOption";
     static dependencies = [
         "history",
@@ -31,28 +28,10 @@ class ImageToolOptionPlugin extends Plugin {
         "builderOptions",
     ];
     static shared = ["getCSSColorValue"];
+    /** @type {import("plugins").BuilderResources} */
     resources = {
-        builder_options: [
-            withSequence(REPLACE_MEDIA, {
-                OptionComponent: ReplaceMediaOption,
-                selector: REPLACE_MEDIA_SELECTOR,
-                exclude: REPLACE_MEDIA_EXCLUDE,
-                name: "replaceMediaOption",
-            }),
-            withSequence(IMAGE_TOOL, {
-                OptionComponent: ImageToolOption,
-                selector: "img",
-                exclude: "[data-oe-type='image'] > img",
-                name: "imageToolOption",
-            }),
-            withSequence(ALIGNMENT_STYLE_PADDING, {
-                template: "html_builder.ImageAndFaOption",
-                selector: "span.fa, i.fa, img",
-                exclude: "[data-oe-type='image'] > img, [data-oe-xpath]",
-                name: "imageAndFaOption",
-            }),
-        ],
         builder_actions: {
+            ImageAlignClassAction,
             CropImageAction,
             ResetCropAction,
             ReplaceMediaAction,
@@ -61,60 +40,11 @@ class ImageToolOptionPlugin extends Plugin {
             SetNewWindowAction,
             AltAction,
         },
-        on_media_dialog_saved_handlers: async (elements, { node }) => {
-            for (const image of elements) {
-                if (image && image.tagName === "IMG") {
-                    const updateImageAttributes =
-                        await this.dependencies.imagePostProcess.processImage({
-                            img: image,
-                            newDataset: {
-                                formatMimetype: this.config.defaultImageMimetype ?? "image/webp",
-                            },
-                            // TODO Using a callback is currently needed to avoid
-                            // the extra RPC that would occur if loadImageInfo was
-                            // called before processImage as well. This flow can be
-                            // simplified if image infos are somehow cached.
-                            onImageInfoLoaded: async (dataset) => {
-                                if (!dataset.originalSrc || !dataset.originalId) {
-                                    return true;
-                                }
-                                const original = await loadImage(dataset.originalSrc);
-                                const maxWidth = dataset.width
-                                    ? image.naturalWidth
-                                    : original.naturalWidth;
-                                const optimizedWidth = Math.min(
-                                    maxWidth,
-                                    computeMaxDisplayWidth(node || this.editable)
-                                );
-                                if (
-                                    !["image/gif", "image/svg+xml"].includes(
-                                        dataset.mimetypeBeforeConversion
-                                    )
-                                ) {
-                                    // Convert to recommended format and width.
-                                    dataset.resizeWidth = optimizedWidth;
-                                } else if (
-                                    dataset.shape &&
-                                    dataset.mimetypeBeforeConversion !== "image/gif"
-                                ) {
-                                    dataset.resizeWidth = optimizedWidth;
-                                } else {
-                                    return true;
-                                }
-                            },
-                        });
-                    updateImageAttributes();
-                }
-            }
-        },
-        hover_effect_allowed_predicates: (el) => this.canHaveHoverEffect(el),
-        normalize_handlers: this.migrateImages.bind(this),
+        on_will_save_media_dialog_handlers: this.onWillSaveMediaDialogHandlers.bind(this),
+        normalize_processors: this.migrateImages.bind(this),
     };
     setup() {
         this.htmlStyle = getHtmlStyle(this.document);
-    }
-    async canHaveHoverEffect(imgEl) {
-        return imgEl.tagName === "IMG" && !(await isImageCorsProtected(imgEl));
     }
     migrateImages(rootEl) {
         for (const el of selectElements(
@@ -142,6 +72,40 @@ class ImageToolOptionPlugin extends Plugin {
             return color;
         }
         return getCSSVariableValue(color, this.htmlStyle);
+    }
+    async onWillSaveMediaDialogHandlers(elements, { node }) {
+        for (const image of elements) {
+            if (image && image.tagName === "IMG") {
+                const imgInfo = await loadImageInfo(image);
+                if (!imgInfo.originalSrc || !imgInfo.originalId) {
+                    continue;
+                }
+                const isImgSupportedForProcessing = await isImageSupportedForProcessing(
+                    image,
+                    await getMimetype(image, imgInfo)
+                );
+                const newDataset = {};
+                if (isImgSupportedForProcessing) {
+                    newDataset.formatMimetype = this.config.defaultImageMimetype ?? "image/webp";
+                    const original = await loadImage(imgInfo.originalSrc);
+                    const maxWidth = image.dataset.width
+                        ? image.naturalWidth
+                        : original.naturalWidth;
+                    const optimizedWidth = Math.min(
+                        maxWidth,
+                        computeMaxDisplayWidth(node || this.editable)
+                    );
+                    newDataset.resizeWidth = optimizedWidth;
+                }
+                const updateImageAttributes = await this.dependencies.imagePostProcess.processImage(
+                    {
+                        img: image,
+                        newDataset,
+                    }
+                );
+                updateImageAttributes();
+            }
+        }
     }
 }
 
@@ -183,8 +147,13 @@ export class ResetCropAction extends BuilderAction {
 export class ReplaceMediaAction extends BuilderAction {
     static id = "replaceMedia";
     static dependencies = ["media_website"];
+
+    setup() {
+        this.canTimeout = false;
+    }
+
     async apply({ editingElement: mediaEl }) {
-        await this.dependencies["media_website"].replaceMedia(mediaEl);
+        await this.dependencies.media_website.replaceMedia(mediaEl);
     }
 }
 export class SetLinkAction extends BuilderAction {
@@ -198,6 +167,14 @@ export class SetLinkAction extends BuilderAction {
             const wrapperEl = document.createElement("a");
             editingElement.after(wrapperEl);
             wrapperEl.appendChild(editingElement);
+            // Copy alignment classes so the new link behaves like the image in
+            // flex layouts.
+            const alignClasses = IMAGE_LINK_ALIGN_CLASSES.filter((cls) =>
+                editingElement.classList.contains(cls)
+            );
+            for (const className of IMAGE_LINK_ALIGN_CLASSES) {
+                wrapperEl.classList.toggle(className, alignClasses.includes(className));
+            }
         } else {
             const fragment = document.createDocumentFragment();
             fragment.append(...parentEl.childNodes);
@@ -207,6 +184,34 @@ export class SetLinkAction extends BuilderAction {
     isApplied({ editingElement }) {
         const parentEl = searchSupportedParentLinkEl(editingElement);
         return parentEl.tagName === "A";
+    }
+}
+
+export class ImageAlignClassAction extends ClassAction {
+    static id = "imageAlignClassAction";
+    apply(context) {
+        super.apply(context);
+        this.syncLinkAlignment(context.editingElement);
+    }
+    syncLinkAlignment(editingElement) {
+        const linkEl = editingElement.parentElement;
+        if (
+            !linkEl ||
+            linkEl.tagName !== "A" ||
+            linkEl.firstElementChild !== editingElement ||
+            linkEl.childElementCount !== 1 ||
+            linkEl.textContent.replace(/\u200B/g, "").trim() // ignore ZWSP
+        ) {
+            return;
+        }
+        // Mirror image alignment classes on the wrapping <a> (only when it
+        // wraps just this image) so flex layouts stay consistent.
+        const alignClasses = IMAGE_LINK_ALIGN_CLASSES.filter((cls) =>
+            editingElement.classList.contains(cls)
+        );
+        for (const className of IMAGE_LINK_ALIGN_CLASSES) {
+            linkEl.classList.toggle(className, alignClasses.includes(className));
+        }
     }
 }
 
