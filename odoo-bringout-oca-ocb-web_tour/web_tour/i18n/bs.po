@@ -74,7 +74,7 @@ msgstr "Kliknite gornji lijevi ugao za navigaciju između aplikacija."
 # model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml
 #, []
 msgid "Close"
-msgstr "Amortizovano"
+msgstr "Zatvori"
 
 # model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js
 #, []

@@ -396,7 +396,7 @@ msgstr ""
 # code:addons/html_editor/static/src/backend/dynamic_field/field_selector_popover.xml
 #, []
 msgid "Close"
-msgstr "Amortizovano"
+msgstr "Zatvori"
 
 # model: code:addons/html_editor/static/src/main/code_block_plugin.js
 #, []
