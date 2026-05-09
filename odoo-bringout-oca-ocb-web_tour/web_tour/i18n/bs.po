@@ -1,383 +1,339 @@
-# Translation of Odoo Server.
-# This file contains the translation of the following modules:
-# * web_tour
 #
-# Translators:
-# Martin Trigaux, 2018
-# Boško Stojaković <bluesoft83@gmail.com>, 2018
-# Bole <bole@dajmi5.com>, 2018
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server saas~11.5\n"
+"Project-Id-Version: Odoo Server master (web_tour)\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-16 18:37+0000\n"
-"PO-Revision-Date: 2018-09-21 13:18+0000\n"
-"Last-Translator: Bole <bole@dajmi5.com>, 2018\n"
-"Language-Team: Bosnian (https://www.transifex.com/odoo/teams/41243/bs/)\n"
+"Language-Team: Bosnian\n"
 "Language: bs\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: \n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js
+#, []
 msgid "'%s' created"
 msgstr ""
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml
+#, []
 msgid "(recording keyboard)"
-msgstr ""
+msgstr "(snimanje tastature)"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml
+#, []
 msgid "(run:"
-msgstr ""
+msgstr "(pokreni:"
 
-#. module: web_tour
-#: model:ir.model.constraint,message:web_tour.constraint_web_tour_tour_uniq_name
+# model:
+# model:ir.model.constraint,message:web_tour.constraint_web_tour_tour_uniq_name
+#, []
 msgid "A tour already exists with this name . Tour's name must be unique!"
-msgstr ""
+msgstr "Tura sa ovim nazivom već postoji. Naziv ture mora biti jedinstven!"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js
+#, []
 msgid ""
 "Are you sure you want to clear all steps?\n"
 "All steps will be lost."
 msgstr ""
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js
+#, []
 msgid ""
 "Are you sure you want to close the tour recorder?\n"
 "All changes will be lost."
 msgstr ""
 
-#. module: web_tour
-#: model:ir.model.fields.selection,name:web_tour.selection__web_tour_tour_step__tooltip_position__bottom
+# model:
+# model:ir.model.fields.selection,name:web_tour.selection__web_tour_tour_step__tooltip_position__bottom
+#, []
 msgid "Bottom"
-msgstr ""
+msgstr "Dno"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js
+#, []
 msgid "Cancel"
 msgstr ""
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js
+#, []
 msgid "Clear"
 msgstr ""
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js
+#, []
 msgid "Clear all steps?"
 msgstr ""
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/tour_utils.js:0
+# model: code:addons/web_tour/static/src/tour_utils.js
+#, []
 msgid "Click the top left corner to navigate across apps."
-msgstr ""
+msgstr "Kliknite gornji lijevi ugao za navigaciju između aplikacija."
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml
+#, []
 msgid "Close"
-msgstr ""
+msgstr "Amortizovano"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js
+#, []
 msgid "Close recorder"
 msgstr ""
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js
+#, []
 msgid "Close tour recorder?"
 msgstr ""
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__content
+# model:
+# model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__content
+#, []
 msgid "Content"
-msgstr ""
+msgstr "Sadržaj"
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__create_uid
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__create_uid
+# model:
+# model:ir.model.fields,field_description:web_tour.field_web_tour_tour__create_uid
+#, []
 msgid "Created by"
-msgstr ""
+msgstr "Kreirao"
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__create_date
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__create_date
+# model:
+# model:ir.model.fields,field_description:web_tour.field_web_tour_tour__create_date
+#, []
 msgid "Created on"
-msgstr ""
+msgstr "Kreirano"
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__custom
+# model:
+# model:ir.model.fields,field_description:web_tour.field_web_tour_tour__custom
+#, []
 msgid "Custom"
-msgstr ""
+msgstr "Prilagođeno"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js
+#, []
 msgid "Custom tour '%s' couldn't be saved!"
-msgstr ""
+msgstr "Prilagođena tura '%s' nije mogla biti sačuvana!"
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_ir_http__display_name
-#: model:ir.model.fields,field_description:web_tour.field_res_users__display_name
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__display_name
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__display_name
+# model:
+# model:ir.model.fields,field_description:web_tour.field_ir_http__display_name
+#, []
 msgid "Display Name"
-msgstr "Prikazani naziv"
+msgstr "Naziv za prikaz"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_service.js:0
+# model: code:addons/web_tour/static/src/js/tour_service.js
+#, []
 msgid "Enable the tour recorder"
 msgstr ""
 
-#. module: web_tour
-#: model:ir.actions.server,name:web_tour.tour_export_js_action
+# model: model:ir.actions.server,name:web_tour.tour_export_js_action
+#, []
 msgid "Export JS"
-msgstr ""
+msgstr "Izvezi JS"
 
-#. module: web_tour
-#: model:ir.model,name:web_tour.model_ir_http
+# model: model:ir.model,name:web_tour.model_ir_http
+#, []
 msgid "HTTP Routing"
-msgstr ""
+msgstr "HTTP usmjeravanje"
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_ir_http__id
-#: model:ir.model.fields,field_description:web_tour.field_res_users__id
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__id
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__id
+# model: model:ir.model.fields,field_description:web_tour.field_ir_http__id
+#, []
 msgid "ID"
 msgstr "ID"
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__write_uid
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__write_uid
+# model:
+# model:ir.model.fields,field_description:web_tour.field_web_tour_tour__write_uid
+#, []
 msgid "Last Updated by"
-msgstr ""
+msgstr "Posljednji put ažurirao"
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__write_date
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__write_date
+# model:
+# model:ir.model.fields,field_description:web_tour.field_web_tour_tour__write_date
+#, []
 msgid "Last Updated on"
-msgstr ""
+msgstr "Posljednji put ažurirano"
 
-#. module: web_tour
-#: model_terms:ir.ui.view,arch_db:web_tour.tour_list
+# model: model_terms:ir.ui.view,arch_db:web_tour.tour_list
+#, []
 msgid "Menu"
 msgstr "Meni"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml:0
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__name
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml
+#, []
 msgid "Name"
-msgstr "Naziv:"
+msgstr "Naziv"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/onboarding_item.xml:0
-#: code:addons/web_tour/static/src/widgets/tour_start.xml:0
-#: model:ir.model.fields,field_description:web_tour.field_res_users__tour_enabled
+# model: code:addons/web_tour/static/src/js/onboarding_item.xml
+#, []
 msgid "Onboarding"
-msgstr ""
+msgstr "Uvođenje"
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__rainbow_man_message
+# model:
+# model:ir.model.fields,field_description:web_tour.field_web_tour_tour__rainbow_man_message
+#, []
 msgid "Rainbow Man Message"
-msgstr ""
+msgstr "Poruka Rainbow Mana"
 
-#. module: web_tour
-#: model_terms:ir.ui.view,arch_db:web_tour.tour_form
+# model: model_terms:ir.ui.view,arch_db:web_tour.tour_form
+#, []
 msgid "Rainbow Man Message..."
-msgstr ""
+msgstr "Poruka Rainbow Mana..."
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml:0
-#: code:addons/web_tour/static/src/views/tour_controller.xml:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml
+#, []
 msgid "Record"
-msgstr ""
+msgstr "Snimi"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/views/tour_controller.xml:0
+# model: code:addons/web_tour/static/src/views/tour_controller.xml
+#, []
 msgid "Record Tour"
-msgstr ""
+msgstr "Snimi turu"
 
-#. module: web_tour
-#: model:ir.model.fields.selection,name:web_tour.selection__web_tour_tour_step__tooltip_position__right
+# model:
+# model:ir.model.fields.selection,name:web_tour.selection__web_tour_tour_step__tooltip_position__right
+#, []
 msgid "Right"
-msgstr ""
+msgstr "Desno"
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__run
+# model:
+# model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__run
+#, []
 msgid "Run"
-msgstr ""
+msgstr "Pokreni"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml
+#, []
 msgid "Save"
-msgstr ""
+msgstr "Sačuvaj"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_pointer/tour_pointer.js:0
+# model: code:addons/web_tour/static/src/js/tour_pointer/tour_pointer.js
+#, []
 msgid "Scroll down to reach the next step."
-msgstr ""
+msgstr "Pomjerite se prema dolje da dođete do sljedećeg koraka."
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_pointer/tour_pointer.js:0
+# model: code:addons/web_tour/static/src/js/tour_pointer/tour_pointer.js
+#, []
 msgid "Scroll left to reach the next step."
-msgstr ""
+msgstr "Pomjerite se ulijevo da dođete do sljedećeg koraka."
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_pointer/tour_pointer.js:0
+# model: code:addons/web_tour/static/src/js/tour_pointer/tour_pointer.js
+#, []
 msgid "Scroll right to reach the next step."
-msgstr ""
+msgstr "Pomjerite se udesno da dođete do sljedećeg koraka."
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_pointer/tour_pointer.js:0
+# model: code:addons/web_tour/static/src/js/tour_pointer/tour_pointer.js
+#, []
 msgid "Scroll up to reach the next step."
-msgstr ""
+msgstr "Pomjerite se prema gore da dođete do sljedećeg koraka."
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__sequence
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__sequence
+# model:
+# model:ir.model.fields,field_description:web_tour.field_web_tour_tour__sequence
+#, []
 msgid "Sequence"
-msgstr ""
+msgstr "Redoslijed"
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__sharing_url
+# model:
+# model:ir.model.fields,field_description:web_tour.field_web_tour_tour__sharing_url
+#, []
 msgid "Sharing URL"
-msgstr ""
+msgstr "URL za dijeljenje"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/widgets/tour_start.xml:0
+# model: code:addons/web_tour/static/src/widgets/tour_start.xml
+#, []
 msgid "Start Tour"
-msgstr ""
+msgstr "Započni turu"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml:0
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__url
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml
+#, []
 msgid "Starting URL"
-msgstr ""
+msgstr "Početni URL"
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__step_ids
+# model:
+# model:ir.model.fields,field_description:web_tour.field_web_tour_tour__step_ids
+#, []
 msgid "Step"
-msgstr ""
+msgstr "Korak"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml:0
-#: model_terms:ir.ui.view,arch_db:web_tour.tour_form
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml
+#, []
 msgid "Steps"
-msgstr ""
+msgstr "Koraci"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_pointer/tour_pointer.xml:0
+# model: code:addons/web_tour/static/src/js/tour_pointer/tour_pointer.xml
+#, []
 msgid "Stop Tour"
-msgstr ""
+msgstr "Zaustavi turu"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/widgets/tour_start.xml:0
+# model: code:addons/web_tour/static/src/widgets/tour_start.xml
+#, []
 msgid "Test Tour"
-msgstr ""
+msgstr "Testiraj turu"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/widgets/tour_start.xml:0
+# model: code:addons/web_tour/static/src/widgets/tour_start.xml
+#, []
 msgid "Testing"
-msgstr ""
+msgstr "Testiranje"
 
-#. module: web_tour
-#: model_terms:ir.ui.view,arch_db:web_tour.tour_search
+# model: model_terms:ir.ui.view,arch_db:web_tour.tour_search
+#, []
 msgid "Tip"
 msgstr "Bakšiš"
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__tooltip_position
+# model:
+# model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__tooltip_position
+#, []
 msgid "Tooltip Position"
-msgstr ""
+msgstr "Pozicija opisa"
 
-#. module: web_tour
-#: model:ir.model.fields.selection,name:web_tour.selection__web_tour_tour_step__tooltip_position__top
+# model:
+# model:ir.model.fields.selection,name:web_tour.selection__web_tour_tour_step__tooltip_position__top
+#, []
 msgid "Top"
-msgstr ""
+msgstr "Vrh"
 
-#. module: web_tour
-#: model:ir.model,name:web_tour.model_web_tour_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__tour_id
+# model: model:ir.model,name:web_tour.model_web_tour_tour
+#, []
 msgid "Tour"
-msgstr ""
+msgstr "Tura"
 
-#. module: web_tour
-#: model:ir.model,name:web_tour.model_web_tour_tour_step
+# model: model:ir.model,name:web_tour.model_web_tour_tour_step
+#, []
 msgid "Tour's step"
-msgstr ""
+msgstr "Korak ture"
 
-#. module: web_tour
-#: model:ir.actions.act_window,name:web_tour.tour_action
-#: model:ir.ui.menu,name:web_tour.menu_tour_action
+# model: model:ir.actions.act_window,name:web_tour.tour_action
+#, []
 msgid "Tours"
 msgstr "Vodiči"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml:0
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour_step__trigger
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml
+#, []
 msgid "Trigger"
-msgstr ""
+msgstr "Okidač"
 
-#. module: web_tour
-#: model:ir.model,name:web_tour.model_res_users
+# model: model:ir.model,name:web_tour.model_res_users
+#, []
 msgid "User"
-msgstr ""
+msgstr "Korisnik"
 
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__user_consumed_ids
+# model:
+# model:ir.model.fields,field_description:web_tour.field_web_tour_tour__user_consumed_ids
+#, []
 msgid "User Consumed"
-msgstr ""
+msgstr "Korisnik završio"
 
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+# model: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js
+#, []
 msgid "View tour"
 msgstr ""
 
-#. module: web_tour
-#: model_terms:ir.ui.view,arch_db:web_tour.tour_form
+# model: model_terms:ir.ui.view,arch_db:web_tour.tour_form
+#, []
 msgid "e.g. My_Tour"
-msgstr ""
+msgstr "npr. My_Tour"
 
-#. module: web_tour
-#: model:ir.model.fields.selection,name:web_tour.selection__web_tour_tour_step__tooltip_position__left
+# model:
+# model:ir.model.fields.selection,name:web_tour.selection__web_tour_tour_step__tooltip_position__left
+#, []
 msgid "left"
-msgstr ""
+msgstr "lijevo"
