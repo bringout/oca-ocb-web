@@ -53,7 +53,7 @@ msgstr "Prilog"
 #. module: web_unsplash
 #: model:ir.model,name:web_unsplash.model_res_config_settings
 msgid "Config Settings"
-msgstr "Postavke"
+msgstr "Postavke konfiguracije"
 
 #. module: web_unsplash
 #. odoo-python
@@ -225,3 +225,8 @@ msgstr "ID"
 #: code:addons/web_unsplash/static/src/unsplash_service.js:0
 msgid "Uploading %(count)s '%(query)s' images."
 msgstr "Otpremanje %(count)s '%(query)s' slika."
+
+#. module: web_unsplash
+#: code:addons/web_unsplash/models/ir_attachment.py:0
+msgid "Unsplash attachments must be images."
+msgstr ""

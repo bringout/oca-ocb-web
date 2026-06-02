@@ -56,7 +56,7 @@ msgstr "Onemogući ture"
 #. module: web_tour
 #: model:ir.model.fields,field_description:web_tour.field_ir_http__display_name
 msgid "Display Name"
-msgstr "Naziv za prikaz"
+msgstr "Naziv prikaza"
 
 # taken from hr.po
 #. module: web_tour
@@ -73,7 +73,7 @@ msgstr "ID"
 #. module: web_tour
 #: model:ir.model.fields,field_description:web_tour.field_web_tour_tour____last_update
 msgid "Last Modified on"
-msgstr "Zadnja izmjena"
+msgstr "Zadnji put izmijenjeno"
 
 # taken from hr.po
 #. module: web_tour
@@ -425,3 +425,62 @@ msgstr "br."
 #: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml:0
 msgid "trigger"
 msgstr "okidač"
+
+#. module: web_tour
+#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+msgid "'%s' created"
+msgstr ""
+
+#. module: web_tour
+#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+msgid ""
+"Are you sure you want to clear all steps?\n"
+"All steps will be lost."
+msgstr ""
+
+#. module: web_tour
+#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+msgid ""
+"Are you sure you want to close the tour recorder?\n"
+"All changes will be lost."
+msgstr ""
+
+#. module: web_tour
+#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+msgid "Cancel"
+msgstr ""
+
+#. module: web_tour
+#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+msgid "Clear"
+msgstr ""
+
+#. module: web_tour
+#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+msgid "Clear all steps?"
+msgstr ""
+
+#. module: web_tour
+#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.xml:0
+msgid "Close"
+msgstr "Zatvori"
+
+#. module: web_tour
+#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+msgid "Close recorder"
+msgstr ""
+
+#. module: web_tour
+#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+msgid "Close tour recorder?"
+msgstr ""
+
+#. module: web_tour
+#: code:addons/web_tour/static/src/js/tour_service.js:0
+msgid "Enable the tour recorder"
+msgstr ""
+
+#. module: web_tour
+#: code:addons/web_tour/static/src/js/tour_recorder/tour_recorder.js:0
+msgid "View tour"
+msgstr ""

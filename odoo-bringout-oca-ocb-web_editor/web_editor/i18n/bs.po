@@ -622,7 +622,7 @@ msgstr "Gumb"
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
 msgid "Cancel"
-msgstr "Otkaži"
+msgstr "Odustani"
 
 #. module: web_editor
 #. odoo-javascript
@@ -947,7 +947,7 @@ msgstr "Definiraj da li/kako će se pozadinska slika ponavljati"
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub__display_name
 msgid "Display Name"
-msgstr "Naziv za prikaz"
+msgstr "Naziv prikaza"
 
 #. module: web_editor
 #. odoo-javascript
@@ -1724,19 +1724,19 @@ msgstr "Veliko"
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub____last_update
 msgid "Last Modified on"
-msgstr "Zadnja izmjena"
+msgstr "Zadnji put izmijenjeno"
 
 # taken from hr.po
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub__write_uid
 msgid "Last Updated by"
-msgstr "Zadnji ažurirao"
+msgstr "Zadnji put ažurirao"
 
 # taken from hr.po
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub__write_date
 msgid "Last Updated on"
-msgstr "Zadnje ažurirano"
+msgstr "Zadnji put ažurirano"
 
 # taken from hr.po
 #. module: web_editor
@@ -2462,7 +2462,7 @@ msgstr "Zasićenost"
 #: code:addons/web_editor/static/src/js/wysiwyg/dialog.js:0
 #, python-format
 msgid "Save"
-msgstr "Sačuvaj"
+msgstr "Snimi"
 
 #. module: web_editor
 #. odoo-javascript
@@ -3220,7 +3220,7 @@ msgstr "Videi su utišani kada je omogućeno automatsko pokretanje"
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_ui_view
 msgid "View"
-msgstr "Pregled"
+msgstr "Prikaz"
 
 #. module: web_editor
 #. odoo-javascript
