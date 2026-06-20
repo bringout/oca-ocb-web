@@ -2,19 +2,18 @@
 
 import { registry } from '@web/core/registry';
 import { UploadProgressToast } from './upload_progress_toast';
-import { getDataURLFromFile } from 'web.utils';
 import { _t } from "@web/core/l10n/translation";
 import { checkFileSize } from "@web/core/utils/files";
 import { humanNumber } from "@web/core/utils/numbers";
+import { getDataURLFromFile } from "@web/core/utils/urls";
 import { sprintf } from "@web/core/utils/strings";
-
 import { reactive } from "@odoo/owl";
 
 export const AUTOCLOSE_DELAY = 3000;
 
 export const uploadService = {
-    dependencies: ['rpc'],
-    start(env, { rpc }) {
+    dependencies: ['rpc', 'notification'],
+    start(env, { rpc, notification }) {
         let fileId = 0;
         const progressToast = reactive({
             files: {},
@@ -40,6 +39,37 @@ export const uploadService = {
                 progressToast.isVisible = false;
             }
         };
+
+        const convertWebpToJpeg = async (dataURL, name, attachmentId) => {
+            const image = document.createElement("img");
+            image.src = `data:image/webp;base64,${dataURL.split(",")[1]}`;
+            await new Promise((res, rej) => {
+                image.onload = res;
+                image.onerror = rej;
+            });
+
+            const canvas = document.createElement("canvas");
+            canvas.width = image.width;
+            canvas.height = image.height;
+
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(image, 0, 0);
+
+            const altDataURL = canvas.toDataURL("image/jpeg", 0.75);
+
+            await rpc("/web_editor/attachment/add_data", {
+                name: name.replace(/\.webp$/, ".jpg"),
+                data: altDataURL.split(",")[1],
+                res_id: attachmentId,
+                res_model: "ir.attachment",
+                is_image: true,
+                width: 0,
+                quality: 0,
+            });
+        };
+
         return {
             get progressToast() {
                 return progressToast;
@@ -67,24 +97,40 @@ export const uploadService = {
              * @param {Array<File>} files
              * @param {Object} options
              * @param {Function} onUploaded
+             * @param {Function} setAbortCallback // Optional - To abort uploads
              */
-            uploadFiles: async (files, {resModel, resId, isImage}, onUploaded) => {
+            uploadFiles: async (
+                files,
+                { resModel, resId, isImage },
+                onUploaded,
+                setAbortCallback
+            ) => {
                 // Upload the smallest file first to block the user the least possible.
                 const sortedFiles = Array.from(files).sort((a, b) => a.size - b.size);
+
+                const controller = new AbortController();
+                const { signal } = controller;
+
+                let currentXHR = null;
+                let addAttachmentRpc = null;
+
+                setAbortCallback?.(() => {
+                    controller.abort();
+                    addAttachmentRpc?.abort?.();
+                    currentXHR?.abort?.();
+                });
+
                 for (const file of sortedFiles) {
+                    if (signal.aborted) {
+                        return;
+                    }
+
                     let fileSize = file.size;
-                    if (!checkFileSize(fileSize, env.services.notification)) {
-                        // FIXME
-                        // Note that the notification service is not added as a
-                        // dependency of this service, in order to avoid introducing
-                        // a breaking change in a stable version.
-                        // If the notification service is not available, the
-                        // checkFileSize function will not display any notification
-                        // but will still return the correct value.
+                    if (!checkFileSize(fileSize, notification)) {
                         return null;
                     }
                     if (!fileSize) {
-                        fileSize = null;
+                        fileSize = "";
                     } else {
                         fileSize = humanNumber(fileSize) + "B";
                     }
@@ -97,20 +143,23 @@ export const uploadService = {
                         id,
                         name: file.name,
                         size: fileSize,
-                        progress: 0,
-                        hasError: false,
-                        uploaded: false,
-                        errorMessage: '',
                     });
                 }
 
                 // Upload one file at a time: no need to parallel as upload is
                 // limited by bandwidth.
                 for (const sortedFile of sortedFiles) {
+                    if (signal.aborted) {
+                        break;
+                    }
+
                     const file = progressToast.files[sortedFile.progressToastId];
                     let dataURL;
                     try {
                         dataURL = await getDataURLFromFile(sortedFile);
+                        if (signal.aborted) {
+                            break;
+                        }
                     } catch {
                         deleteFile(file.id);
                         env.services.notification.add(
@@ -120,42 +169,85 @@ export const uploadService = {
                             ),
                             { type: 'danger' }
                         );
-                        continue
+                        continue;
                     }
+
+                    currentXHR = new XMLHttpRequest();
+                    addAttachmentRpc = null;
+
+                    const onProgress = (ev) => {
+                        if (ev.lengthComputable) {
+                            file.progress = (ev.loaded / ev.total) * 100;
+                        }
+                    };
+                    const onLoad = () => (file.progress = 100);
+
+                    currentXHR.upload.addEventListener("progress", onProgress);
+                    currentXHR.upload.addEventListener("load", onLoad);
+
                     try {
-                        const xhr = new XMLHttpRequest();
-                        xhr.upload.addEventListener('progress', ev => {
-                            const rpcComplete = ev.loaded / ev.total * 100;
-                            file.progress = rpcComplete;
-                        });
-                        xhr.upload.addEventListener('load', function () {
-                            // Don't show yet success as backend code only starts now
-                            file.progress = 100;
-                        });
-                        const attachment = await rpc('/web_editor/attachment/add_data', {
-                            'name': file.name,
-                            'data': dataURL.split(',')[1],
-                            'res_id': resId,
-                            'res_model': resModel,
-                            'is_image': !!isImage,
-                            'width': 0,
-                            'quality': 0,
-                        }, {xhr});
+                        addAttachmentRpc = rpc(
+                            "/web_editor/attachment/add_data",
+                            {
+                                name: file.name,
+                                data: dataURL.split(",")[1],
+                                res_id: resId,
+                                res_model: resModel,
+                                is_image: !!isImage,
+                                width: 0,
+                                quality: 0,
+                            },
+                            { xhr: currentXHR }
+                        );
+
+                        const attachment = await addAttachmentRpc;
+                        if (signal.aborted) {
+                            break;
+                        }
+
                         if (attachment.error) {
                             file.hasError = true;
                             file.errorMessage = attachment.error;
                         } else {
+                            if (attachment.mimetype === "image/webp") {
+                                try {
+                                    // Generate alternate format for reports.
+                                    await convertWebpToJpeg(
+                                        dataURL,
+                                        file.name,
+                                        attachment.id
+                                    );
+                                } catch (convErr) {
+                                    console.warn(
+                                        "[uploadService] webp conversion failed:",
+                                        convErr
+                                    );
+                                }
+                            }
                             file.uploaded = true;
                             await onUploaded(attachment);
                         }
-                        setTimeout(() => deleteFile(file.id), AUTOCLOSE_DELAY);
-                    } catch (error) {
+                    } catch (err) {
+                        if (signal.aborted) {
+                            break;
+                        }
                         file.hasError = true;
+                        console.error("Upload error:", err);
+                        throw err;
+                    } finally {
+                        currentXHR.upload.removeEventListener(
+                            "progress",
+                            onProgress
+                        );
+                        currentXHR.upload.removeEventListener("load", onLoad);
                         setTimeout(() => deleteFile(file.id), AUTOCLOSE_DELAY);
-                        throw error;
+                        dataURL = null;
                     }
                 }
-            }
+
+                currentXHR = null;
+                addAttachmentRpc = null;
+            },
         };
     },
 };

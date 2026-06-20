@@ -1,28 +1,30 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
 # 	* web_tour
-# 
+#
 # Translators:
-# Martin Trigaux, 2022
-# Sergio Zanchetta <primes2h@gmail.com>, 2023
-# 
+# Wil Odoo, 2023
+# Marianna Ciofani, 2023
+# Sergio Zanchetta <primes2h@gmail.com>, 2025
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0\n"
+"Project-Id-Version: Odoo Server 17.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-06 13:32+0000\n"
-"PO-Revision-Date: 2022-09-22 05:56+0000\n"
-"Last-Translator: Sergio Zanchetta <primes2h@gmail.com>, 2023\n"
+"POT-Creation-Date: 2025-12-29 18:38+0000\n"
+"PO-Revision-Date: 2023-10-26 23:09+0000\n"
+"Last-Translator: Sergio Zanchetta <primes2h@gmail.com>, 2025\n"
 "Language-Team: Italian (https://app.transifex.com/odoo/teams/41243/it/)\n"
+"Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
-"Language: it\n"
-"Plural-Forms: nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;\n"
+"Plural-Forms: nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? "
+"1 : 2;\n"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_manager.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_service.js:0
 #, python-format
 msgid ""
 "<strong><b>Good job!</b> You went through all steps of this tour.</strong>"
@@ -31,18 +33,18 @@ msgstr ""
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tip.js:0
-#, python-format
-msgid "Click here to go to the next step."
-msgstr "Fai clic qui per passare alla prossima fase."
-
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_step_utils.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_utils.js:0
 #, python-format
 msgid "Click on the <i>Home icon</i> to navigate across apps."
 msgstr ""
 "Fai clic sull'<i>icona principale</i> per navigare tra le applicazioni."
+
+#. module: web_tour
+#. odoo-javascript
+#: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
+#, python-format
+msgid "Close"
+msgstr "Chiudi"
 
 #. module: web_tour
 #: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__user_id
@@ -72,11 +74,6 @@ msgid "ID"
 msgstr "ID"
 
 #. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour____last_update
-msgid "Last Modified on"
-msgstr "Ultima modifica il"
-
-#. module: web_tour
 #: model_terms:ir.ui.view,arch_db:web_tour.edit_tour_list
 msgid "Menu"
 msgstr "Menù"
@@ -97,7 +94,7 @@ msgstr "Tour di Onboarding"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_step_utils.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_utils.js:0
 #, python-format
 msgid "Open bugger menu."
 msgstr "Apri menù a tendina."
@@ -111,10 +108,17 @@ msgstr "Percorso"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tip.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_pointer_state.js:0
 #, python-format
-msgid "Scroll to reach the next step."
-msgstr "Scorri per raggiungere la fase successiva."
+msgid "Scroll down to reach the next step."
+msgstr "Scorri verso il basso per raggiungere la fase successiva."
+
+#. module: web_tour
+#. odoo-javascript
+#: code:addons/web_tour/static/src/tour_service/tour_pointer_state.js:0
+#, python-format
+msgid "Scroll up to reach the next step."
+msgstr "Scorri verso l'alto per raggiungere la fase successiva."
 
 #. module: web_tour
 #. odoo-javascript
@@ -140,7 +144,6 @@ msgstr "Inizia tour"
 #. module: web_tour
 #. odoo-javascript
 #: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
-#: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
 #, python-format
 msgid "Start tour"
 msgstr "Inizia tour"
@@ -154,7 +157,6 @@ msgstr "Prova"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
 #: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
 #, python-format
 msgid "Test tour"

@@ -1,122 +1,114 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
-# 	* web_unsplash
+# * web_unsplash
 #
+# Translators:
+# Martin Trigaux, 2018
+# Boško Stojaković <bluesoft83@gmail.com>, 2018
+# Weblate <noreply-mt-weblate@weblate.org>, 2025, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0\n"
+"Project-Id-Version: Odoo Server saas~11.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-08 20:35+0000\n"
-"PO-Revision-Date: 2025-05-08 20:35+0000\n"
-"Last-Translator: \n"
-"Language-Team: \n"
+"POT-Creation-Date: 2026-04-24 17:38+0000\n"
+"PO-Revision-Date: 2026-04-18 08:08+0000\n"
+"Last-Translator: Weblate <noreply-mt-weblate@weblate.org>\n"
+"Language-Team: Bosnian <https://translate.odoo.com/projects/odoo-17/"
+"web_unsplash/bs/>\n"
+"Language: bs\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
-"Plural-Forms: \n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 5.16.2\n"
 
-# taken from hr.po
 #. module: web_unsplash
 #: model_terms:ir.ui.view,arch_db:web_unsplash.res_config_settings_view_form
-msgid "<i class=\"fa fa-arrow-right\"/> Generate an Access Key"
-msgstr "<i class=\"fa fa-arrow-right\"/> Stvorite pristupni ključ"
+msgid "<i class=\"oi oi-arrow-right\"/> Generate an Access Key"
+msgstr ""
 
-# taken from hr.po
 #. module: web_unsplash
 #: model:ir.model.fields,field_description:web_unsplash.field_res_config_settings__unsplash_access_key
 msgid "Access Key"
-msgstr "Pristupni ključ"
+msgstr ""
 
-# taken from hr.po
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/unsplash_credentials/unsplash_credentials.xml:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.xml:0
+#: model:ir.model.fields,field_description:web_unsplash.field_res_config_settings__unsplash_app_id
 #, python-format
 msgid "Application ID"
-msgstr "ID aplikacije"
+msgstr ""
 
-# taken from hr.po
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/unsplash_credentials/unsplash_credentials.xml:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.xml:0
 #, python-format
 msgid "Apply"
 msgstr "Primjeni"
 
-# taken from hr.po
-#. module: web_unsplash
-#: model:ir.model,name:web_unsplash.model_ir_attachment
-msgid "Attachment"
-msgstr "Prilog"
-
-# taken from hr.po
 #. module: web_unsplash
 #: model:ir.model,name:web_unsplash.model_res_config_settings
 msgid "Config Settings"
-msgstr "Postavke konfiguracije"
+msgstr "Postavke"
 
 #. module: web_unsplash
 #. odoo-python
 #: code:addons/web_unsplash/controllers/main.py:0
 #, python-format
 msgid "ERROR: Unknown Unsplash URL!"
-msgstr "GREŠKA: Nepoznat Unsplash URL!"
+msgstr ""
 
 #. module: web_unsplash
 #. odoo-python
 #: code:addons/web_unsplash/controllers/main.py:0
 #, python-format
 msgid "ERROR: Unknown Unsplash notify URL!"
-msgstr "GREŠKA: Nepoznat Unsplash obavještenje URL!"
+msgstr ""
 
-# taken from hr.po
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/unsplash_credentials/unsplash_credentials.xml:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.xml:0
 #, python-format
 msgid "Get an Access key"
-msgstr "Nabavite pristupni ključ"
+msgstr ""
 
-# taken from hr.po
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/unsplash_credentials/unsplash_credentials.xml:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.xml:0
 #, python-format
 msgid "Paste your access key here"
-msgstr "Ovdje zalijepite pristupni ključ"
+msgstr ""
 
-# taken from hr.po
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/unsplash_credentials/unsplash_credentials.xml:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.xml:0
 #, python-format
 msgid "Paste your application ID here"
-msgstr "Ovdje zalijepite svoj ID aplikacije"
+msgstr ""
 
-# taken from hr.po
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/media_dialog/media_dialog.xml:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.xml:0
 #, python-format
 msgid "Photos (via Unsplash)"
-msgstr "Pristupni ključ nije postavljen"
+msgstr ""
 
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/media_dialog/image_selector_patch.js:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid "Please check your Unsplash access key and application ID."
-msgstr "Molimo provjerite vaš Unsplash pristupni ključ i ID aplikacije."
+msgstr ""
 
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/media_dialog/image_selector_patch.js:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid "Please check your internet connection or contact administrator."
 msgstr ""
-"Molimo provjerite vašu internet konekciju ili kontaktirajte administratora."
 
-# taken from hr.po
 #. module: web_unsplash
 #: model:ir.model,name:web_unsplash.model_ir_qweb_field_image
 msgid "Qweb Field Image"
@@ -124,43 +116,40 @@ msgstr "Qweb polje slika"
 
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/media_dialog/image_selector_patch.js:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid "Search is temporarily unavailable"
-msgstr "Pretraga je privremeno nedostupna"
+msgstr ""
 
-# taken from hr.po
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/media_dialog/image_selector_patch.js:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid "Setup Unsplash to access royalty free photos."
-msgstr "Postavi Unsplash za pristup fotografijama bez autorskih prava."
+msgstr ""
 
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/media_dialog/image_selector_patch.js:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid "Something went wrong"
-msgstr "Fotografije nisu pronađene"
+msgstr ""
 
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/media_dialog/image_selector_patch.js:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid ""
-"The max number of searches is exceeded. Please retry in an hour or extend to"
-" a better account."
+"The max number of searches is exceeded. Please retry in an hour or extend to "
+"a better account."
 msgstr ""
-"Maksimalan broj pretraga je premašen. Molimo pokušajte ponovo za sat vremena"
-" ili proširite na bolji nalog."
 
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/media_dialog/image_selector_patch.js:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid "Unauthorized Key"
-msgstr "Neautorizovan ključ"
+msgstr ""
 
 #. module: web_unsplash
 #. odoo-javascript
@@ -171,62 +160,36 @@ msgstr ""
 
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/unsplash_service.js:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid "Uploading '%s' image."
 msgstr ""
 
-# taken from hr.po
 #. module: web_unsplash
 #: model:ir.model,name:web_unsplash.model_res_users
 msgid "User"
 msgstr "Korisnik"
 
-# taken from hr.po
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/unsplash_credentials/unsplash_credentials.xml:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.xml:0
 #, python-format
 msgid "and paste"
-msgstr "i zalijepite"
+msgstr ""
 
-# taken from hr.po
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/unsplash_credentials/unsplash_credentials.xml:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.xml:0
 #, python-format
 msgid "and paste it here:"
-msgstr "Pretraživanje je privremeno nedostupno"
+msgstr ""
 
-# taken from hr.po
 #. module: web_unsplash
 #. odoo-javascript
-#: code:addons/web_unsplash/static/src/unsplash_credentials/unsplash_credentials.xml:0
+#: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.xml:0
 #, python-format
 msgid "here:"
-msgstr "ovdje:"
-
-#. module: web_unsplash
-#: model:ir.model.fields,field_description:web_unsplash.field_ir_attachment__display_name
-msgid "Display Name"
-msgstr "Naziv za prikaz"
-
-#. module: web_unsplash
-#: model_terms:ir.ui.view,arch_db:web_unsplash.res_config_settings_view_form
-msgid "Generate an Access Key"
-msgstr "Generiši pristupni ključ"
-
-#. module: web_unsplash
-#: model:ir.model.fields,field_description:web_unsplash.field_ir_attachment__id
-msgid "ID"
-msgstr "ID"
-
-#. module: web_unsplash
-#: code:addons/web_unsplash/static/src/unsplash_service.js:0
-msgid "Uploading %(count)s '%(query)s' images."
-msgstr "Otpremanje %(count)s '%(query)s' slika."
-
-#. module: web_unsplash
-#: code:addons/web_unsplash/models/ir_attachment.py:0
-msgid "Unsplash attachments must be images."
 msgstr ""
+
+#~ msgid "Attachment"
+#~ msgstr "Zakačka"

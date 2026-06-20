@@ -1,3 +1,5 @@
+/** @odoo-module */
+
 import { BasicEditor, testEditor, unformat } from '../utils.js';
 import { rgbToHex } from '../../src/utils/utils.js';
 
@@ -15,6 +17,19 @@ describe('applyColor', () => {
             contentAfter: '<p>a<font class="a">b<span class="b">c</span></font>' +
                 '<font class="a" style="color: rgb(255, 0, 0);"><span class="b">[def]</span></font>' +
                 '<font class="a"><span class="b">g</span>h</font>i</p>',
+        });
+    });
+    it('should apply a color to the qweb tag', async () => {
+        await testEditor(BasicEditor, {
+            contentBefore: `<div><p t-esc="'Test'" contenteditable="false">[Test]</p></div>`,
+            stepFunction: setColor('rgb(255, 0, 0)', 'color'),
+            contentAfter: `<div>[<p t-esc="'Test'" contenteditable="false" style="color: rgb(255, 0, 0);">Test</p>]</div>`,
+        });
+
+        await testEditor(BasicEditor, {
+            contentBefore: `<div><p t-field="record.display_name" contenteditable="false">[Test]</p></div>`,
+            stepFunction: setColor('rgb(255, 0, 0)', 'color'),
+            contentAfter: `<div>[<p t-field="record.display_name" contenteditable="false" style="color: rgb(255, 0, 0);">Test</p>]</div>`,
         });
     });
     it('should apply a background color to a slice of text in a span in a font', async () => {
@@ -133,14 +148,12 @@ describe('applyColor', () => {
     it('should remove font tag if font-color and background-color both are removed one by one', async () => {
         await testEditor(BasicEditor, {
             contentBefore: '<p><font style="color: rgb(255, 0, 0);" class="bg-200">[abcabc]</font></p>',
-            stepFunction: setColor('','backgroundColor'),
-            stepFunction: setColor('','color'),
+            stepFunction: setColor('','backgroundColor') && setColor('','color'),
             contentAfter: '<p>[abcabc]</p>',
         });
         await testEditor(BasicEditor, {
             contentBefore: '<p><font style="background-color: rgb(255, 0, 0);" class="text-900">[abcabc]</font></p>',
-            stepFunction: setColor('','color'),
-            stepFunction: setColor('','backgroundColor'),
+            stepFunction: setColor('','color') && setColor('','backgroundColor'),
             contentAfter: '<p>[abcabc]</p>',
         });
     });
@@ -164,7 +177,7 @@ describe('applyColor', () => {
                        <t t-out="object.partner_id.parent_id.name or ''">Azure Interior</t>
                     </t>
                     <t t-else="">
-                        <t t-out="object.partner_id.name or ''">Brandon Freeman</t>,
+                        <t t-out="object.partner_id.name or ''">Brandon Freeman</t>
                     </t>
                 </p>
             ]`),
@@ -172,15 +185,14 @@ describe('applyColor', () => {
             contentAfter: unformat(`
                 <p>
                     <t t-if="object.partner_id.parent_id">
-                        <t t-out="object.partner_id.parent_id.name or ''">
+                        <t t-out="object.partner_id.parent_id.name or ''" style="background-color: red;">
                             <font style="background-color: red;">[AzureInterior</font>
                         </t>
                     </t>
                     <t t-else="">
-                        <t t-out="object.partner_id.name or ''">
-                            <font style="background-color: red;">BrandonFreeman</font>
+                        <t t-out="object.partner_id.name or ''" style="background-color: red;">
+                            <font style="background-color: red;">BrandonFreeman]</font>
                         </t>
-                        <font style="background-color: red;">,]</font>
                     </t>
                 </p>
             `),
@@ -281,6 +293,20 @@ describe('applyColor', () => {
             contentAfter: '<div style="background-image:none"><p><font class="text-gradient" style="background-image: linear-gradient(135deg, rgb(255, 174, 127) 0%, rgb(109, 204, 0) 100%);">[ab<strong>cd</strong>ef]</font></p></div>'
         });
     });
+    it("should keep font element on top of underline/strike (1)", async () => {
+        await testEditor(BasicEditor, {
+            contentBefore: '<p><u>[abc]</u></p>',
+            stepFunction: setColor("linear-gradient(135deg, rgb(255, 174, 127) 0%, rgb(109, 204, 0) 100%)", "color"),
+            contentAfter: '<p><font class="text-gradient" style="background-image: linear-gradient(135deg, rgb(255, 174, 127) 0%, rgb(109, 204, 0) 100%);"><u>[abc]</u></font></p>'
+        });
+    });
+    it("should keep font element on top of underline/strike (2)", async () => {
+        await testEditor(BasicEditor, {
+            contentBefore: '<p><u><s>[abc]</s></u></p>',
+            stepFunction: setColor("linear-gradient(135deg, rgb(255, 174, 127) 0%, rgb(109, 204, 0) 100%)", "color"),
+            contentAfter: '<p><font class="text-gradient" style="background-image: linear-gradient(135deg, rgb(255, 174, 127) 0%, rgb(109, 204, 0) 100%);"><u><s>[abc]</s></u></font></p>'
+        });
+    });
 });
 describe('rgbToHex', () => {
     it('should convert an rgb color to hexadecimal', async () => {
@@ -330,5 +356,111 @@ describe('rgbToHex', () => {
         // white with 50% opacity over blue with 50% opacity over red = light purple
         window.chai.expect(rgbToHex('rgba(255, 255, 255, 0.5)', node)).to.be.equal('#bf7fbf');
         parent.remove();
+    });
+});
+
+describe("color normalization", () => {
+    it("should unwrap nested identical <font> tags with gradient (class and style same)", async () => {
+        await testEditor(BasicEditor, {
+            contentBefore: unformat(`
+                <p><font class="text-gradient" style="background-image: linear-gradient(135deg, rgb(214, 255, 127) 0%, rgb(0, 179, 204) 100%);">
+                    parent
+                    <font class="text-gradient" style="background-image: linear-gradient(135deg, rgb(214, 255, 127) 0%, rgb(0, 179, 204) 100%);">child</font>
+                </font></p>
+            `),
+            contentAfter: unformat(`
+                <p><font class="text-gradient" style="background-image: linear-gradient(135deg, rgb(214, 255, 127) 0%, rgb(0, 179, 204) 100%);">parentchild</font></p>
+            `),
+        });
+    });
+
+    it("should unwrap nested identical <font> tag when parent already has the same class", async () => {
+        await testEditor(BasicEditor, {
+            contentBefore: unformat(`
+                <p><font class="bg-color-1 text-gradient" style="background-image: linear-gradient(135deg, rgb(214, 255, 127) 0%, rgb(0, 179, 204) 100%);">
+                    parent
+                    <font class="bg-color-1">child</font>
+                </font></p>
+            `),
+            contentAfter: unformat(`
+                <p><font class="bg-color-1 text-gradient" style="background-image: linear-gradient(135deg, rgb(214, 255, 127) 0%, rgb(0, 179, 204) 100%);">parentchild</font></p>
+            `),
+        });
+    });
+
+    it("should unwrap nested identical <font> tags with color (class and style same)", async () => {
+        await testEditor(BasicEditor, {
+            contentBefore: unformat(`
+                <p><font class="bg-color-1" style="color:red">
+                    parent
+                    <font class="bg-color-1" style="color:red">child</font>
+                </font></p>
+            `),
+            contentAfter: unformat(`
+                <p><font class="bg-color-1" style="color:red">parentchild</font></p>
+            `),
+        });
+    });
+
+    it("should unwrap nested <font> with same style but no class", async () => {
+        await testEditor(BasicEditor, {
+            contentBefore: unformat(`
+                <p><font class="bg-color-1" style="color:red">
+                    parent
+                    <font style="color:red">child</font>
+                </font></p>
+            `),
+            contentAfter: unformat(`
+                <p><font class="bg-color-1" style="color:red">parentchild</font></p>
+            `),
+        });
+    });
+
+    it("should unwrap nested <font> with same class only", async () => {
+        await testEditor(BasicEditor, {
+            contentBefore: unformat(`
+                <p><font class="bg-color-1" style="color:red">
+                    parent
+                    <font class="bg-color-1">child</font>
+                </font></p>
+            `),
+            contentAfter: unformat(`
+                <p><font class="bg-color-1" style="color:red">parentchild</font></p>
+            `),
+        });
+    });
+
+    it("should unwrap nested <font> with no class or style", async () => {
+        await testEditor(BasicEditor, {
+            contentBefore: unformat(`
+                <p><font class="bg-color-1" style="color:red">
+                    parent
+                    <font>child</font>
+                </font></p>
+            `),
+            contentAfter: unformat(`
+                <p><font class="bg-color-1" style="color:red">parentchild</font></p>
+            `),
+        });
+    });
+
+    it("should unwrap nested <font> with same style and class as closest <font>", async () => {
+        await testEditor(BasicEditor, {
+            contentBefore: unformat(`
+                <p><font class="bg-color-1" style="color:red">
+                        parent
+                        <strong>
+                            text1
+                            <font class="bg-color-1" style="color:red">child</font>
+                            text2
+                        </strong>
+                </font></p>
+            `),
+            contentAfter: unformat(`
+                <p><font class="bg-color-1" style="color:red">
+                        parent<strong>text1childtext2</strong>
+                </font></p>
+            `),
+        });
     });
 });

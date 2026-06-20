@@ -1,33 +1,28 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
-# 	* web_editor
+# * web_editor
 #
+# Translators:
+# Martin Trigaux, 2018
+# Boško Stojaković <bluesoft83@gmail.com>, 2018
+# Bole <bole@dajmi5.com>, 2018
+# Weblate <noreply-mt-weblate@weblate.org>, 2025, 2026.
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0\n"
+"Project-Id-Version: Odoo Server saas~11.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-08 20:35+0000\n"
-"PO-Revision-Date: 2025-05-08 20:35+0000\n"
-"Last-Translator: \n"
-"Language-Team: \n"
+"POT-Creation-Date: 2026-04-03 18:40+0000\n"
+"PO-Revision-Date: 2026-05-16 08:13+0000\n"
+"Last-Translator: Weblate <noreply-mt-weblate@weblate.org>\n"
+"Language-Team: Bosnian <https://translate.odoo.com/projects/odoo-17/"
+"web_editor/bs/>\n"
+"Language: bs\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
-"Plural-Forms: \n"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
-#, python-format
-msgid "%dpx (Original)"
-msgstr "%dpx (Originalno)"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
-#, python-format
-msgid "%dpx (Suggested)"
-msgstr "%dpx (Predloženo)"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 5.17\n"
 
 #. module: web_editor
 #. odoo-javascript
@@ -38,145 +33,131 @@ msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
+#, python-format
+msgid "%spx (Original)"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
+#, python-format
+msgid "%spx (Suggested)"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/alt_dialog.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid ""
 "'Alt tag' specifies an alternate text for an image, if the image cannot be "
 "displayed (slow connection, missing image, screen reader ...)."
 msgstr ""
-"'Alt tag' specificira alternativni tekst za sliku, ako slika ne može biti "
-"prikazana (spora konekcija, slika nedostaje, screen reader ...)."
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/alt_dialog.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "'Title tag' is shown as a tooltip when you hover the picture."
-msgstr "'Title tag' se prikazuje kao tooltip kada postavite miš preko slike."
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/alt_dialog.xml:0
 #, python-format
 msgid "(ALT Tag)"
 msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/alt_dialog.xml:0
 #, python-format
 msgid "(TITLE Tag)"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.xml:0
 #, python-format
 msgid "(URL or Embed)"
-msgstr "(URL ili ugrađivanje)"
-
-#. module: web_editor
-#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
-msgid "100%"
-msgstr ""
-
-#. module: web_editor
-#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
-msgid "1977"
 msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "1x"
-msgstr "1x"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
 msgid "2 columns"
-msgstr "2 kolone"
-
-#. module: web_editor
-#: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
-msgid "25"
-msgstr "25"
-
-#. module: web_editor
-#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
-msgid "25%"
-msgstr "25%"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "2x"
-msgstr "(YouTube, Vimeo, Vine, Instagram, DailyMotion ili Youku)"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "3 Stars"
-msgstr "3 zvijezdice"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
 msgid "3 columns"
-msgstr "3 kolone"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "3x"
-msgstr "3x"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
 msgid "4 columns"
-msgstr "4 kolone"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "4x"
-msgstr "4x"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "5 Stars"
-msgstr "5 zvijezdica"
-
-#. module: web_editor
-#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
-msgid "50%"
-msgstr "50%"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "5x"
-msgstr "5x"
-
-#. module: web_editor
-#: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
-msgid "90"
-msgstr "90"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
@@ -199,45 +180,73 @@ msgid "<span class=\"me-2\">X</span>"
 msgstr ""
 
 #. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
+msgid "<span class=\"w-100\">Basic</span>"
+msgstr ""
+
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
+msgid "<span class=\"w-100\">Creative</span>"
+msgstr ""
+
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "<span class=\"w-100\">Decorative</span>"
+msgstr ""
+
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "<span class=\"w-100\">Devices</span>"
+msgstr ""
+
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
+msgid "<span class=\"w-100\">Linear</span>"
+msgstr ""
+
+#. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippets
 msgid "<span>Blocks</span>"
-msgstr "<span>Blokovi</span>"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippets
 msgid "<span>Customize</span>"
-msgstr "<span>Prilagodi</span>"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/common/ace.js:0
+#: code:addons/web_editor/static/src/xml/snippets.xml:0
 #, python-format
-msgid ""
-"A server error occured. Please check you correctly signed in and that the "
-"file you are saving is correctly formatted."
+msgid "ACCESS OPTIONS ANYWAY"
 msgstr ""
-"Došlo je do greške servera. Molimo provjerite da li ste ispravno prijavljeni"
-" i da li je datoteka koju čuvate ispravno formatirana."
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#, python-format
+msgid "AI Tools"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Above"
-msgstr "Iznad"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.xml:0
 #, python-format
 msgid "Accepts"
-msgstr "Prihvaća"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/media_dialog.xml:0
+#: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
 #, python-format
 msgid "Add"
 msgstr "Dodaj"
@@ -247,79 +256,57 @@ msgstr "Dodaj"
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Add Column"
-msgstr "Dodaj Kolonu"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Add Row"
-msgstr "Dodaj Red"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/document_selector.js:0
+#: code:addons/web_editor/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid "Add URL"
-msgstr "Dodaj URL"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Add a blockquote section."
-msgstr "Dodajte blockquote sekciju."
+msgid "Add a blockquote section"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Add a button."
-msgstr "Dodajte dugme."
+msgid "Add a button"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Add a code section."
-msgstr "Dodajte code sekciju."
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/editor.xml:0
-#, python-format
-msgid "Add a column left"
-msgstr "Dodaj kolonu lijevo"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/editor.xml:0
-#, python-format
-msgid "Add a column right"
-msgstr "Dodaj kolonu desno"
+msgid "Add a code section"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Add a link."
-msgstr "Dodajte link."
+msgid "Add a link"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/xml/editor.xml:0
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Add a row above"
-msgstr "Dodaj red iznad"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/editor.xml:0
-#, python-format
-msgid "Add a row below"
-msgstr "Dodaj red ispod"
+msgid "Add an emoji"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
@@ -331,81 +318,90 @@ msgstr ""
 msgid "Airy & Zigs"
 msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
+msgid "Airy &amp; Zigs"
+msgstr ""
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/file_selector.js:0
 #, python-format
 msgid "Alert"
-msgstr "Alarm"
+msgstr "Upozorenje"
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Align Center"
-msgstr "Poravnaj Centar"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Align Left"
-msgstr "Poravnaj Lijevo"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Align Right"
-msgstr "Dodaj URL slike"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Alignment"
-msgstr "Poravnavanje"
+msgstr "Poravnanje"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/file_selector.xml:0
 #, python-format
 msgid "All"
-msgstr "Svi"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/ace.xml:0
-#, python-format
-msgid "All SCSS Files"
-msgstr "Sve SCSS Datoteke"
+msgstr "Sve"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/document_selector.js:0
 #, python-format
 msgid "All documents have been loaded"
-msgstr "Svi dokumenti su učitani"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid "All images have been loaded"
-msgstr "Poravnaj u sredinu"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
+#, python-format
+msgid "Allow users to view and edit the field in HTML."
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Alt tag"
-msgstr "Poravnaj lijevo"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/components/media_dialog/image_selector.js:0
+#, python-format
+msgid "An error occurred while fetching the entered URL."
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
 msgid "Angle"
-msgstr "Ugao"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
 #, python-format
 msgid "Animated"
-msgstr "Animirano"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
@@ -413,47 +409,45 @@ msgstr "Animirano"
 msgid "Anonymous"
 msgstr "Anoniman"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Apply"
-msgstr "Primijeni"
+msgstr "Primjeni"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
-msgid "Are you sure you want to delete the snippet: %s ?"
-msgstr "Jeste li sigurni da želite obrisati snippet: %s ?"
+msgid "Are you sure you want to delete the snippet %s?"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/file_selector.js:0
 #, python-format
-msgid "Are you sure you want to delete this file ?"
-msgstr "Jeste li sigurni da želite obrisati ovu datoteku ?"
+msgid "Are you sure you want to delete this file?"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Aspect Ratio"
-msgstr "Alternativno učitavanje"
+msgstr ""
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_web_editor_assets
 msgid "Assets Utils"
-msgstr "Qweb polje monetarno"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_attachment
 msgid "Attachment"
 msgstr "Zakačka"
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_ir_attachment__local_url
 msgid "Attachment URL"
@@ -464,33 +458,31 @@ msgstr "URL Zakačke"
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Autoconvert to relative link"
-msgstr "Automatski konvertuj u relativan link"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.js:0
 #, python-format
 msgid "Autoplay"
-msgstr "Autopokretanje"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Back to one column."
-msgstr "Nazad na jednu kolonu."
+msgid "Back to one column"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 msgid "Background"
 msgstr "Pozadina"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Background Color"
 msgstr "Pozadinska boja"
@@ -498,46 +490,79 @@ msgstr "Pozadinska boja"
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 msgid "Background Position"
-msgstr "Pažnja"
+msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
+msgid "Background Shapes"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#, python-format
+msgid "Banner Danger"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#, python-format
+msgid "Banner Info"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#, python-format
+msgid "Banner Success"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#, python-format
+msgid "Banner Warning"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#, python-format
+msgid "Banners"
+msgstr ""
+
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_base
 msgid "Base"
-msgstr "Osnovica"
+msgstr "Osnova"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
 msgid "Basic blocks"
-msgstr "Veličina pozadinske slike"
-
-#. module: web_editor
-#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
-msgid "Basics"
-msgstr "Osnove"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Below"
-msgstr "Visina pozadine"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
-msgid "Big section heading."
-msgstr "Pozicija pozadine"
+msgid "Big section heading"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 msgid "Blobs"
-msgstr "Ponavljanje pozadine"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
@@ -547,18 +572,21 @@ msgstr "Blokiraj"
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
+msgid "Block &amp; Rainy"
+msgstr ""
+
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 msgid "Blocks & Rainy"
-msgstr "Širina pozadine"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "Blur"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
-#, python-format
 msgid "Bold"
 msgstr "Podebljano"
 
@@ -567,28 +595,28 @@ msgstr "Podebljano"
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Border"
-msgstr "Granica"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Border Color"
-msgstr "Boja Granice"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Border Style"
-msgstr "Stil Granice"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Border Width"
-msgstr "Širina Granice"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
@@ -598,69 +626,71 @@ msgstr ""
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "Brightness"
-msgstr "Svjetlina"
+msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "Brushed"
+msgstr ""
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Bulleted list"
-msgstr "Popis s točkama"
+msgstr ""
 
-# taken from hr.po
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
-#, python-format
-msgid "Button"
-msgstr "Gumb"
-
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#: code:addons/web_editor/static/src/xml/snippets.xml:0
 #, python-format
-msgid "Cancel"
-msgstr "Odustani"
+msgid "Button"
+msgstr "Dugme"
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/common/ace.js:0
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
 #, python-format
-msgid "Careful !"
-msgstr "Pažnja !"
+msgid "CSS Edit"
+msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/components/history_dialog/history_dialog.xml:0
+#: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/chatgpt_alternatives_dialog.xml:0
+#, python-format
+msgid "Cancel"
+msgstr "Otkaži"
+
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
-#, python-format
 msgid "Center"
 msgstr "Centar"
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/wysiwyg/widgets/alt_dialog.js:0
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Change media description and tooltip"
-msgstr "Promjeni opis i tooltip medija"
+msgid "ChatGPT"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Checklist"
-msgstr "Popis stavki za označavanje"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
 #, python-format
 msgid "Choose a record..."
-msgstr "Izaberite zapis..."
+msgstr "Odaberite rekord..."
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/upload_progress_toast/upload_progress_toast.xml:0
@@ -668,18 +698,41 @@ msgstr "Izaberite zapis..."
 msgid "Close"
 msgstr "Zatvori"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Code"
 msgstr "Šifra"
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
+#, python-format
+msgid "Codeview"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
+#, python-format
+msgid "Collaborative edition"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
+#, python-format
+msgid "Collaborative trigger"
+msgstr ""
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_color_widget
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 #, python-format
 msgid "Color"
 msgstr "Boja"
@@ -687,117 +740,119 @@ msgstr "Boja"
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 msgid "Color filter"
-msgstr "Filter boja"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 msgid "Colors"
 msgstr "Boje"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Column"
-msgstr "Kolona"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg_colorpicker.xml:0
 #, python-format
 msgid "Common colors"
-msgstr "Uobičajene boje"
+msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/components/history_dialog/history_dialog.xml:0
+#, python-format
+msgid "Comparison"
+msgstr ""
+
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "Composites"
+msgstr ""
+
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "Composition"
+msgstr ""
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
 msgid "Confirm"
-msgstr "Potvrdi"
+msgstr "Portvrdi"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
+#: code:addons/web_editor/static/src/components/history_dialog/history_dialog.xml:0
 #, python-format
-msgid "Confirmation"
-msgstr "Prikaz koda"
+msgid "Content"
+msgstr "Sadržaj"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Content conflict"
-msgstr "Konflikt sadržaja"
+msgid "Content generated"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "Contrast"
-msgstr "Kontrast"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Convert into 2 columns."
-msgstr "Konvertuj u 2 kolone."
+msgid "Convert into 2 columns"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Convert into 3 columns."
-msgstr "Konvertuj u 3 kolone."
+msgid "Convert into 3 columns"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Convert into 4 columns."
-msgstr "Konvertuj u 4 kolone."
+msgid "Convert into 4 columns"
+msgstr ""
 
-# taken from hr.po
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
-#, python-format
-msgid "Copy Link"
-msgstr "Kopiraj link"
-
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.xml:0
 #, python-format
 msgid "Copy-paste your URL or embed code here"
-msgstr "Kopiraj i zalijepi URL ili ugradbeni kod ovdje"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
-msgid "Could not install module <strong>%s</strong>"
-msgstr "Nije moguće instalirati modul <strong>%s</strong>"
+msgid "Could not install module %s"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/upload_progress_toast/upload_service.js:0
 #, python-format
 msgid "Could not load the file \"%s\"."
-msgstr "Nije moguće učitati datoteku \"%s\"."
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
-#, python-format
 msgid "Cover"
-msgstr "Naslovna slika"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
@@ -809,30 +864,28 @@ msgstr "Kreiraj"
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
-msgid "Create a list with numbering."
-msgstr "Kreirajte listu sa numeriranjem."
+msgid "Create a list with numbering"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
-msgid "Create a simple bulleted list."
-msgstr "Kreirajte jednostavnu listu sa bullet-ima."
+msgid "Create a simple bulleted list"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Create an URL."
-msgstr "Kreirajte URL."
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub__create_uid
 msgid "Created by"
 msgstr "Kreirao"
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub__create_date
 msgid "Created on"
@@ -841,14 +894,18 @@ msgstr "Kreirano"
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Crop Image"
-msgstr "Crop Slika"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/widgets/link.js:0
+#: code:addons/web_editor/static/src/xml/snippets.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
+#: model_terms:ir.ui.view,arch_db:web_editor.snippets
 #, python-format
 msgid "Custom"
 msgstr "Prilagođeno"
@@ -858,7 +915,14 @@ msgstr "Prilagođeno"
 #: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
 #, python-format
 msgid "Custom %s"
-msgstr "Prilagođeni %s"
+msgstr "Custom %s"
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
+#, python-format
+msgid "Custom Button"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -872,12 +936,13 @@ msgstr ""
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Dashed"
-msgstr "Isprekidan"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Default"
 msgstr "Uobičajeno"
@@ -887,14 +952,13 @@ msgstr "Uobičajeno"
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Default + Rounded"
-msgstr "Default + Zaobljen"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
 msgid "Define a custom gradient"
-msgstr "Definiši prilagođeni gradijent"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
@@ -907,33 +971,29 @@ msgstr "Obriši"
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
 msgid "Delete %s"
-msgstr "Obriši %s"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/alt_dialog.xml:0
 #: code:addons/web_editor/static/src/xml/editor.xml:0
-#, python-format
-msgid "Delete current table"
-msgstr "Obriši trenutnu tabelu"
-
-# taken from hr.po
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Description"
 msgstr "Opis"
 
-# taken from hr.po
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Devices"
 msgstr "Uređaji"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/media_dialog.xml:0
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/alt_dialog.xml:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippets
 #, python-format
 msgid "Discard"
 msgstr "Odbaci"
@@ -941,22 +1001,57 @@ msgstr "Odbaci"
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippets
 msgid "Discard record"
-msgstr "Definiraj da li/kako će se pozadinska slika ponavljati"
+msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/components/media_dialog/image_selector.xml:0
+#, python-format
+msgid ""
+"Discover a world of awesomeness in our copyright-free image haven. No legal "
+"drama, just nice images!"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/editor.xml:0
+#, python-format
+msgid "Display 1"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/editor.xml:0
+#, python-format
+msgid "Display 2"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/editor.xml:0
+#, python-format
+msgid "Display 3"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/editor.xml:0
+#, python-format
+msgid "Display 4"
+msgstr ""
+
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub__display_name
 msgid "Display Name"
-msgstr "Naziv prikaza"
+msgstr "Prikazani naziv"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
-msgid "Do you want to install the %s App?"
-msgstr "Da li želite instalirati %s App?"
+msgid "Do you want to install %s App?"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/media_dialog.js:0
@@ -969,210 +1064,197 @@ msgstr "Dokumenti"
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Dotted"
-msgstr "Tačkasto"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Double"
-msgstr "Duplo"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
 msgid "Double-click to edit"
-msgstr "Kliknite dva puta za uređivanje"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
 msgid "Drag and drop the building block."
-msgstr "Drag and drop building blok."
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/snippets.xml:0
 #, python-format
 msgid "Duplicate Container"
-msgstr "Dupliciraj sadržaj"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Dynamic Colors"
-msgstr "Dinamičke Boje"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/backend/html_field.js:0
 #, python-format
 msgid "Dynamic Placeholder"
-msgstr "Dinamički Placeholder"
+msgstr "Dynamic Placeholder"
 
 #. module: web_editor
 #. odoo-python
 #: code:addons/web_editor/controllers/main.py:0
 #, python-format
 msgid "ERROR: couldn't get download urls from media library."
-msgstr "GREŠKA: nije moguće dobiti download urls iz media biblioteke."
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "EarlyBird"
-msgstr "Povuci sliku ovdje"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
-#, python-format
-msgid "Edit Link"
-msgstr "Uredi Link"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 msgid "Edit image"
-msgstr "Povuci za pomjeranje"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Edit media description"
-msgstr "Uredi opis medija"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/ace.xml:0
-#, python-format
-msgid ""
-"Editing a built-in file through this editor is not advised, as it will "
-"prevent it from being updated during future App upgrades."
 msgstr ""
-"Uređivanje built-in datoteke kroz ovaj editor nije preporučeno, jer će "
-"spriječiti da bude ažurirana tokom budućih App upgrade-a."
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Embed Image"
-msgstr "Ugradi Sliku"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Embed Youtube Video"
-msgstr "Ugradi Youtube Video"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Embed the image in the document."
-msgstr "Ugradite sliku u dokument."
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Embed the youtube video in the document."
-msgstr "Ugradite youtube video u dokument."
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#, python-format
+msgid "Emoji"
+msgstr "Emoji"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Empty quote"
-msgstr "Prazan citat"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/common/ace.js:0
+#: code:addons/web_editor/static/src/components/media_dialog/image_selector.js:0
 #, python-format
-msgid "Expected "
-msgstr "Očekivano "
+msgid "Error"
+msgstr "Greška"
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
 msgid "Extend to the closest corner"
-msgstr "Proširi do najbližeg ugla"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
 msgid "Extend to the closest side"
-msgstr "Proširi do najbliže strane"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
 msgid "Extend to the farthest corner"
-msgstr "Proširi do najudaljenijeg ugla"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
 msgid "Extend to the farthest side"
-msgstr "Proširi do najudaljenije strane"
+msgstr ""
+
+#. module: web_editor
+#: model:ir.model,name:web_editor.model_html_field_history_mixin
+msgid "Field html History"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/upload_progress_toast/upload_progress_toast.xml:0
 #, python-format
 msgid "File has been uploaded"
-msgstr "Datoteka je upload-ovana"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Fill"
-msgstr "Popuni"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Fill + Rounded"
-msgstr "Popuni + Zaobljen"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Fill Color"
-msgstr "Boja Popunjavanja"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/ace.xml:0
-#, python-format
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "Filter"
-msgstr "Filtar"
+msgstr "Filter"
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippets
 msgid "First Panel"
-msgstr "Prvi Panel"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Flat"
-msgstr "Datoteka / slika"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/wysiwyg/widgets/image_crop_widget.js:0
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/image_crop.js:0
 #, python-format
 msgid "Flexible"
-msgstr "Fleksibilno"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
@@ -1184,91 +1266,158 @@ msgstr ""
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Flip Horizontal"
-msgstr "Flip Horizontalno"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Flip Vertical"
-msgstr "Flip Vertikalno"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 msgid "Floating shapes"
-msgstr "Plutajući oblici"
+msgstr ""
 
 #. module: web_editor
-#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
-msgid "Floats"
-msgstr "Plutajuće"
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
+#, python-format
+msgid "Focus"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Font Color"
-msgstr "Boja fonta"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Font size"
-msgstr "Ne pluta"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
 msgid "For technical reasons, this block cannot be dropped here"
-msgstr "Pluta desno"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 #, python-format
 msgid "Format"
+msgstr "Format"
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/editor.xml:0
+#, python-format
+msgid "Full screen"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/backend.xml:0
 #, python-format
 msgid "Fullscreen"
-msgstr "Puni zaslon"
+msgstr "Cijeli ekran"
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/components/media_dialog/image_selector.xml:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
-msgid ""
-"Get the perfect image by searching in our library of copyright free photos "
-"and illustrations."
+msgid "Generate or transform content with AI"
 msgstr ""
-"Dobijte savršenu sliku pretragom kroz našu biblioteku slika i ilustracija "
-"bez autorskih prava."
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#, python-format
+msgid "Generate or transform content with AI."
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/chatgpt_alternatives_dialog.xml:0
+#, python-format
+msgid "Generating"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/chatgpt_alternatives_dialog.xml:0
+#, python-format
+msgid "Generating an alternative..."
+msgstr ""
+
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "Geometrics"
+msgstr ""
+
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "Geometrics Panels"
+msgstr ""
+
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "Geometrics Rounded"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/snippets.xml:0
 #, python-format
 msgid "Gradient"
-msgstr "Obitelj fonta"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_http
 msgid "HTTP Routing"
-msgstr "HTTP usmjeravanje"
+msgstr "HTTP rutiranje"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Header 1"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/editor.xml:0
+#, python-format
+msgid "Header 1 Display 1"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/editor.xml:0
+#, python-format
+msgid "Header 1 Display 2"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/editor.xml:0
+#, python-format
+msgid "Header 1 Display 3"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/editor.xml:0
+#, python-format
+msgid "Header 1 Display 4"
 msgstr ""
 
 #. module: web_editor
@@ -1309,48 +1458,56 @@ msgstr ""
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Heading 1"
-msgstr "Naslov 1"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Heading 2"
-msgstr "Naslov 2"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Heading 3"
-msgstr "Naslov 3"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Heading 4"
-msgstr "Naslov 4"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Heading 5"
-msgstr "Naslov 5"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Heading 6"
-msgstr "Naslov 6"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
+#, python-format
 msgid "Height"
 msgstr "Visina"
 
@@ -1358,33 +1515,41 @@ msgstr "Visina"
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.js:0
 #, python-format
-msgid "Hide Dailymotion logo"
-msgstr "Sakrij Dailymotion logo"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/components/media_dialog/video_selector.js:0
-#, python-format
 msgid "Hide fullscreen button"
-msgstr "Sakrij fullscreen dugme"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.js:0
 #, python-format
 msgid "Hide player controls"
-msgstr "Sakrij player kontrole"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/components/media_dialog/video_selector.js:0
+#: code:addons/web_editor/static/src/components/history_dialog/history_dialog.js:0
 #, python-format
-msgid "Hide sharing button"
-msgstr "Sakrij sharing dugme"
+msgid "History"
+msgstr "Istorija"
+
+#. module: web_editor
+#: model:ir.model.fields,field_description:web_editor.field_html_field_history_mixin__html_field_history
+msgid "History data"
+msgstr "Podaci historije"
+
+#. module: web_editor
+#: model:ir.model.fields,field_description:web_editor.field_html_field_history_mixin__html_field_history_metadata
+msgid "History metadata"
+msgstr "Metapodaci historije"
+
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "Horizontal mirror"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/backend/field_html.js:0
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
 #, python-format
 msgid "Html"
 msgstr ""
@@ -1394,63 +1559,61 @@ msgstr ""
 msgid "ID"
 msgstr "ID"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
 msgid "Icon"
-msgstr "Ikona"
+msgstr "Znak"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
 msgid "Icon Formatting"
-msgstr "Sakrij Youtube logo"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Icon size 1x"
-msgstr "Ikona veličina 1x"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Icon size 2x"
-msgstr "Ikona veličina 2x"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Icon size 3x"
-msgstr "Ikona veličina 3x"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Icon size 4x"
-msgstr "Ikona veličina 4x"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Icon size 5x"
-msgstr "Ikona veličina 5x"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/media_dialog.js:0
 #, python-format
 msgid "Icons"
-msgstr "Ikone"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -1460,32 +1623,19 @@ msgid ""
 "If you discard the current edits, all unsaved changes will be lost. You can "
 "cancel to return to edit mode."
 msgstr ""
-"Ako odbacite trenutne izmjene, sve nesačuvane izmjene će biti izgubljene. "
-"Možete otkazati da se vratite u edit režim."
 
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/js/common/ace.js:0
-#, python-format
-msgid ""
-"If you reset this file, all your customizations will be lost as it will be "
-"reverted to the default file."
-msgstr ""
-"Ako resetujete ovu datoteku, sve vaše prilagođavanja će biti izgubljene jer "
-"će biti vraćena na defaultnu datoteku."
-
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/file_selector.xml:0
 #, python-format
 msgid "Illustrations"
-msgstr "Ilustracije"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 #, python-format
 msgid "Image"
 msgstr "Slika"
@@ -1496,22 +1646,17 @@ msgstr "Slika"
 #, python-format
 msgid "Image Formatting"
 msgstr ""
-"Ako resetujete ovu datoteku, sve vaše prilagođavanja će biti izgubljene jer "
-"će biti vraćena na defaultnu datoteku."
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_ir_attachment__image_height
 msgid "Image Height"
 msgstr "Visina slike"
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_ir_attachment__image_src
 msgid "Image Src"
-msgstr "Izvor slike"
+msgstr "Image Src"
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_ir_attachment__image_width
 msgid "Image Width"
@@ -1524,7 +1669,6 @@ msgstr "Širina slike"
 msgid "Image padding"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/media_dialog.js:0
@@ -1544,73 +1688,112 @@ msgstr ""
 msgid "Inline Text"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/chatgpt_alternatives_dialog.xml:0
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/chatgpt_prompt_dialog.xml:0
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
-msgid "Insert a rating over 3 stars."
-msgstr "Unesite ocjenu veću od 3 zvjezdice."
-
-# taken from hr.po
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
-#, python-format
-msgid "Insert a rating over 5 stars."
-msgstr "Unesite ocjenu veću od 5 zvjezdica."
+msgid "Insert"
+msgstr "Insert"
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
-msgid "Insert a table."
+msgid "Insert a Link / Button"
 msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Insert a video."
-msgstr "Umetni horizontalnu liniju"
-
-# taken from hr.po
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
-#, python-format
-msgid "Insert above"
-msgstr "Umetni sliku"
+msgid "Insert a danger banner"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
-msgid "Insert an horizontal rule separator."
-msgstr "Umetni link"
+msgid "Insert a horizontal rule separator"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#, python-format
+msgid "Insert a rating over 3 stars"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#, python-format
+msgid "Insert a rating over 5 stars"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Insert an image."
-msgstr "Umetni video"
+msgid "Insert a success banner"
+msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#, python-format
+msgid "Insert a table"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#, python-format
+msgid "Insert a video"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#, python-format
+msgid "Insert a warning banner"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#, python-format
+msgid "Insert above"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#, python-format
+msgid "Insert an image"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#, python-format
+msgid "Insert an info banner"
+msgstr ""
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Insert below"
-msgstr "Dodaj ispod"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Insert left"
-msgstr "Umetni lijevo"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -1633,29 +1816,27 @@ msgstr ""
 msgid "Insert personalized content"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Insert right"
-msgstr "Umetni desno"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/editor.xml:0
-#, python-format
-msgid "Insert table"
 msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
-msgid "Insert your signature."
+msgid "Insert your signature"
 msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/components/media_dialog/video_selector.xml:0
+#, python-format
+msgid "Instagram"
+msgstr "Instagram"
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
@@ -1668,14 +1849,7 @@ msgstr "Instalacija"
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
 msgid "Install %s"
-msgstr ""
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
-#, python-format
-msgid "Install in progress"
-msgstr ""
+msgstr "Instalirajte %s"
 
 #. module: web_editor
 #. odoo-python
@@ -1696,83 +1870,88 @@ msgstr ""
 #: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
 #, python-format
 msgid "Item"
-msgstr "Stavka"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/ace.xml:0
-#, python-format
-msgid "JS"
-msgstr "JS"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/js/common/ace.js:0
-#, python-format
-msgid "JS file: %s"
 msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#, python-format
+msgid "Label"
+msgstr "Naljepnica"
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Large"
 msgstr "Veliko"
 
-# taken from hr.po
-#. module: web_editor
-#: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub____last_update
-msgid "Last Modified on"
-msgstr "Zadnji put izmijenjeno"
-
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub__write_uid
 msgid "Last Updated by"
-msgstr "Zadnji put ažurirao"
+msgstr "Zadnji ažurirao"
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub__write_date
 msgid "Last Updated on"
-msgstr "Zadnji put ažurirano"
+msgstr "Zadnje ažurirano"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Left"
 msgstr "Lijevo"
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/editor.xml:0
+#, python-format
+msgid "Light"
+msgstr ""
+
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
 msgid "Linear"
 msgstr "Linearno"
 
-# taken from hr.po
-#. module: web_editor
-#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
-msgid "Lines"
-msgstr "Stavke"
-
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/widgets/link.js:0
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
 msgid "Link"
 msgstr "Veza"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Link Label"
-msgstr "Tipkovni prečaci"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#, python-format
+msgid "Link Shape"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#, python-format
+msgid "Link Size"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#, python-format
+msgid "Link Style"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -1781,28 +1960,28 @@ msgstr "Tipkovni prečaci"
 msgid "Link copied to clipboard."
 msgstr ""
 
-# taken from hr.po
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/js/wysiwyg/widgets/link.js:0
-#, python-format
-msgid "Link to"
-msgstr "Poveznica na"
-
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "List"
-msgstr "Visina linije"
+msgstr "Lista"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/file_selector.xml:0
 #, python-format
 msgid "Load more..."
-msgstr "Učitaj više..."
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/chatgpt_alternatives_dialog.xml:0
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/chatgpt_prompt_dialog.xml:0
+#, python-format
+msgid "Loading..."
+msgstr "Učitavam..."
 
 #. module: web_editor
 #. odoo-javascript
@@ -1828,18 +2007,25 @@ msgstr ""
 msgid "Maven"
 msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
+#, python-format
+msgid "Max height"
+msgstr ""
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Media"
-msgstr "Datoteka"
+msgstr "Medij"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Medium"
 msgstr "Medijum"
@@ -1848,7 +2034,14 @@ msgstr "Medijum"
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
-msgid "Medium section heading."
+msgid "Medium section heading"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
+#, python-format
+msgid "Min height"
 msgstr ""
 
 #. module: web_editor
@@ -1858,29 +2051,26 @@ msgstr ""
 msgid "More info about this app."
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Move down"
-msgstr "Pomakni dolje"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Move left"
-msgstr "Pomakni lijevo"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Move right"
-msgstr "Pomakni desno"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -1889,19 +2079,17 @@ msgstr "Pomakni desno"
 msgid "Move up"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/file_selector.xml:0
 #, python-format
 msgid "My Images"
-msgstr "Moje slike"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_web_editor_converter_test_sub__name
 msgid "Name"
-msgstr "Naziv"
+msgstr "Naziv:"
 
 #. module: web_editor
 #. odoo-javascript
@@ -1910,7 +2098,6 @@ msgstr "Naziv"
 msgid "Navigation"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
@@ -1925,21 +2112,26 @@ msgstr "Ne"
 msgid "No URL specified"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/document_selector.xml:0
 #, python-format
 msgid "No documents found."
-msgstr "Nema pronađenih dokumenata."
+msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/components/history_dialog/history_dialog.xml:0
+#, python-format
+msgid "No history"
+msgstr ""
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/image_selector.xml:0
 #, python-format
 msgid "No images found."
-msgstr "Nema pronađenih slika."
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -1955,37 +2147,38 @@ msgstr ""
 msgid "No more records"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/icon_selector.xml:0
 #, python-format
 msgid "No pictograms found."
-msgstr "Nema pronađenih piktograma."
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
+#: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: code:addons/web_editor/static/src/xml/snippets.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 #, python-format
 msgid "None"
 msgstr "Ništa"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 #, python-format
 msgid "Normal"
 msgstr "Normalan"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Numbered list"
-msgstr "Popis s brojevima"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.tests
@@ -1993,40 +2186,19 @@ msgid "Odoo Editor Tests"
 msgstr ""
 
 #. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/ace.xml:0
+#. odoo-python
+#: code:addons/web_editor/controllers/main.py:0
 #, python-format
-msgid "Only Custom SCSS Files"
+msgid "Oops, it looks like our AI is unreachable!"
 msgstr ""
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/ace.xml:0
-#, python-format
-msgid "Only Page SCSS Files"
-msgstr ""
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/ace.xml:0
-#, python-format
-msgid "Only Views"
-msgstr "Ne ponavljaj"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
-#, python-format
-msgid "Open in a new tab"
-msgstr ""
-
-# taken from hr.po
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Open in new window"
-msgstr "Otvori u novom prozoru"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -2038,19 +2210,19 @@ msgstr ""
 #. module: web_editor
 #: model:ir.model.fields,field_description:web_editor.field_ir_attachment__original_id
 msgid "Original (unoptimized, unresized) attachment"
-msgstr "Originalni (neoptimizovani, nepromjenjene veličine) prilog"
+msgstr "Originalni (neoptimizirani, bez promjene veličine) prilog"
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 msgid "Origins"
-msgstr "Izvori"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Outline"
-msgstr "Kontura"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -2059,12 +2231,17 @@ msgstr "Kontura"
 msgid "Outline + Rounded"
 msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
+#, python-format
+msgid "Overlay"
+msgstr "Prekrivač"
+
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
-#, python-format
 msgid "Padding"
-msgstr "Dopunjavanje"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -2074,10 +2251,15 @@ msgid "Page Options"
 msgstr ""
 
 #. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "Panels"
+msgstr ""
+
+#. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
-msgid "Paragraph block."
+msgid "Paragraph block"
 msgstr ""
 
 #. module: web_editor
@@ -2092,27 +2274,33 @@ msgstr ""
 msgid "Patterns"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 msgid "Position"
 msgstr "Pozicija"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.xml:0
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Preview"
 msgstr "Pregled"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/widgets/link.js:0
 #, python-format
 msgid "Primary"
-msgstr "Primarno"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/components/upload_progress_toast/upload_progress_toast.xml:0
+#, python-format
+msgid "Progress bar"
+msgstr "Traka napstavke"
 
 #. module: web_editor
 #: model:ir.model.fields.selection,name:web_editor.selection__web_editor_converter_test__selection_str__c
@@ -2129,16 +2317,15 @@ msgstr ""
 msgid "Qu'il était supposé arriver à Toronto"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "Quality"
-msgstr "Formatiranje paragrafa"
+msgstr "Kvalitet"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Quote"
 msgstr "Ponuda"
@@ -2146,34 +2333,33 @@ msgstr "Ponuda"
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb
 msgid "Qweb"
-msgstr ""
+msgstr "Qweb"
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field
 msgid "Qweb Field"
-msgstr "Qweb polje"
+msgstr "Qweb Field"
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field_contact
 msgid "Qweb Field Contact"
-msgstr "Qweb polje kontakt"
+msgstr "Qweb kontakt na terenu"
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field_date
 msgid "Qweb Field Date"
-msgstr "Qweb polje datum"
+msgstr "Qweb Datum polja"
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field_datetime
 msgid "Qweb Field Datetime"
-msgstr "— ili —"
+msgstr "Qweb polje Datum i vrijeme"
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field_duration
 msgid "Qweb Field Duration"
-msgstr "Qweb polje trajanje"
+msgstr "Trajanje Qweb polja"
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field_float
 msgid "Qweb Field Float"
@@ -2184,7 +2370,6 @@ msgstr "Qweb decimalno polje"
 msgid "Qweb Field HTML"
 msgstr "Qweb polje HTML"
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field_image
 msgid "Qweb Field Image"
@@ -2193,50 +2378,56 @@ msgstr "Qweb polje slika"
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field_integer
 msgid "Qweb Field Integer"
-msgstr "Qweb polje broj"
+msgstr "Qweb Polje Integer"
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field_many2one
 msgid "Qweb Field Many to One"
-msgstr "Qweb polje mnogo-prema-jedan"
+msgstr "Qweb polje Mnogi prema jednom"
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field_monetary
 msgid "Qweb Field Monetary"
-msgstr "Qweb polje monetarno"
+msgstr "Qweb Field Monetary"
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field_relative
 msgid "Qweb Field Relative"
-msgstr "Qweb polje relativno"
+msgstr "Qweb Relativno polje"
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field_selection
 msgid "Qweb Field Selection"
-msgstr "Qweb polje izbor"
+msgstr "Izbor Qweb polja"
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field_text
 msgid "Qweb Field Text"
-msgstr "Qweb polje tekst"
+msgstr "Qweb tekst polja"
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_qweb_field_qweb
 msgid "Qweb Field qweb"
-msgstr "Qweb polje qweb"
+msgstr "Qweb Polje qweb"
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/snippets.xml:0
+#, python-format
+msgid "REPLACE BY NEW VERSION"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
 msgid "Radial"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
 msgid "Readonly field"
-msgstr "Piktogram"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
@@ -2250,67 +2441,45 @@ msgstr ""
 msgid "Remove (DELETE)"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/snippets.xml:0
 #, python-format
 msgid "Remove Block"
-msgstr "Ukloni blok"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Remove Current"
-msgstr "Ukloni trenutno"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
-#, python-format
-msgid "Remove Link"
-msgstr "Ukloni vezu"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
 msgid "Remove Selected Color"
-msgstr "Ukloni odabranu boju"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
 msgid "Remove columns"
-msgstr "Ukloni kolone"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/editor.xml:0
-#, python-format
-msgid "Remove current column"
-msgstr "Ukloni trenutnu kolonu"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/editor.xml:0
-#, python-format
-msgid "Remove current row"
-msgstr "Ukloni trenutni red"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Remove format"
-msgstr "Ukloni formatiranje"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Remove link"
-msgstr "Ukloni stil fonta"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -2322,12 +2491,13 @@ msgstr ""
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 msgid "Repeat pattern"
-msgstr "Ponovi obrazac"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Replace"
 msgstr "Zamijeni"
@@ -2337,12 +2507,12 @@ msgstr "Zamijeni"
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Replace media"
-msgstr "Zamijeni medij"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/xml/ace.xml:0
+#: code:addons/web_editor/static/src/xml/snippets.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Reset"
 msgstr "Resetuj"
@@ -2352,66 +2522,76 @@ msgstr "Resetuj"
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Reset Image"
-msgstr "Resetuj sliku"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Reset Size"
-msgstr "Ponovi oba"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Reset crop"
-msgstr "Resetuj odsjecanje"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Reset transformation"
-msgstr "Ponovi x"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/common/ace.js:0
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
 #, python-format
-msgid "Reseting views is not supported yet"
-msgstr "Ponovi y"
+msgid "Resizable"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Resize Default"
-msgstr "Veličina - zadano"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Resize Full"
-msgstr "Veličina - puna"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Resize Half"
-msgstr "Veličina - polovina"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Resize Quarter"
-msgstr "Veličina - četvrtina"
+msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/components/history_dialog/history_dialog.xml:0
+#, python-format
+msgid "Restore history"
+msgstr ""
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Right"
 msgstr "Desno"
@@ -2421,105 +2601,104 @@ msgstr "Desno"
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Rotate Left"
-msgstr "Rotiraj lijevo"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Rotate Right"
-msgstr "Rotiraj desno"
+msgstr ""
+
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "Rotate left"
+msgstr ""
+
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "Rotate right"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Row"
-msgstr "Red"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/ace.xml:0
-#, python-format
-msgid "SCSS (CSS)"
 msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/common/ace.js:0
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
 #, python-format
-msgid "SCSS file: %s"
-msgstr "SCSS datoteka: %s"
+msgid "Sandboxed preview"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "Saturation"
-msgstr "Zasićenost"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/wysiwyg/dialog.js:0
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/alt_dialog.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippets
 #, python-format
 msgid "Save"
-msgstr "Snimi"
+msgstr "Sačuvaj"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
 msgid "Save and Install"
-msgstr "Sačuvaj i instaliraj"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
 #, python-format
 msgid "Save and Reload"
-msgstr "Sačuvaj i ponovno učitaj"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippets
 msgid "Save record"
-msgstr "Sačuvaj zapis"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/document_selector.js:0
 #, python-format
 msgid "Search a document"
-msgstr "Pretraži dokument"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/icon_selector.js:0
 #, python-format
 msgid "Search a pictogram"
-msgstr "Pronađite piktogram"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid "Search an image"
-msgstr "Pronađite sliku"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippets
 msgid "Search for a block (e.g. numbers, image wall, ...)"
-msgstr "Pretraži blok (npr. brojevi, zid slika, ...)"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
 #, python-format
 msgid "Search for records..."
-msgstr "Pretraži zapise..."
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
@@ -2532,63 +2711,62 @@ msgstr "Traži više..."
 #: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
 #, python-format
 msgid "Search to show more records"
-msgstr "Pretraži da prikaže više zapisa"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/widgets/link.js:0
 #, python-format
 msgid "Secondary"
-msgstr "Pretraži kontakt"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
 msgid "Select a block on your page to style it."
-msgstr "Odaberi blok na stranici koji želite urediti."
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/media_dialog.js:0
 #, python-format
 msgid "Select a media"
-msgstr "Odaberi datoteku"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/chatgpt_prompt_dialog.xml:0
+#, python-format
+msgid "Send a message"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippets
 #, python-format
 msgid "Separator"
-msgstr "Razdjelnik"
+msgstr "Separator"
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "Sepia"
-msgstr "Sepija"
+msgstr ""
 
-# taken from hr.po
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/js/common/ace.js:0
-#, python-format
-msgid "Server error"
-msgstr "Odaberi nadređeni kontejner"
-
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Shadow"
-msgstr "Sjena"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 #, python-format
 msgid "Shape"
 msgstr "Oblik"
@@ -2596,78 +2774,90 @@ msgstr "Oblik"
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Shape: Circle"
-msgstr "Odaberi iz datoteka"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Shape: Rounded"
-msgstr "Oblik: Zaobljeno"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Shape: Thumbnail"
-msgstr "Oblik: Sličica"
+msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "Shapes"
+msgstr ""
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/file_selector.xml:0
 #, python-format
 msgid "Show optimized images"
-msgstr "Prikaži optimizirane slike"
+msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
+msgid "Show/Hide on Mobile"
+msgstr ""
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
 msgid "Signature"
-msgstr "Postaviti početnu poziciju pozadinske slike."
+msgstr "Potpis"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Size"
-msgstr ""
-"Postavlja širinu i visinu pozadinske slike u postotku nadređenog elementa."
+msgstr "Veličina"
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Size 1x"
-msgstr "Veličina 1x"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Size 2x"
-msgstr "Veličina 2x"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Size 3x"
-msgstr "Veličina 3x"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Size 4x"
-msgstr "Veličina 4x"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Size 5x"
-msgstr "Veličina 5x"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Small"
 msgstr "Malo"
@@ -2676,20 +2866,28 @@ msgstr "Malo"
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
-msgid "Small section heading."
-msgstr "Mali naslov sekcije."
+msgid "Small section heading"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
+#, python-format
+msgid "Snippets"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/snippets.xml:0
+#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Solid"
-msgstr "Puna"
+msgstr "Solid"
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Solids"
-msgstr "Pune"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -2699,51 +2897,79 @@ msgid ""
 "Someone with escalated rights previously modified this area, you are "
 "therefore not able to modify it yourself."
 msgstr ""
-"Neko sa povišenim pravima je prethodno modificirao ovu oblast, zbog toga je "
-"niste u mogućnosti modificirati sami."
+
+#. module: web_editor
+#. odoo-python
+#: code:addons/web_editor/controllers/main.py:0
+#, python-format
+msgid "Sorry, we could not generate a response. Please try again later."
+msgstr ""
+
+#. module: web_editor
+#. odoo-python
+#: code:addons/web_editor/controllers/main.py:0
+#, python-format
+msgid "Sorry, your prompt is too long. Try to say it in fewer words."
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Specials"
-msgstr "Posebni"
+msgstr ""
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
+#, python-format
+msgid ""
+"Specify when the collaboration starts. 'Focus' will start the collaboration "
+"session when the user clicks inside the text field (default), 'Start' when "
+"the record is loaded (could impact performance if set)."
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
+#, python-format
+msgid "Start"
+msgstr "Započni"
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
 msgid "Structure"
 msgstr "Struktura"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Style"
 msgstr "Stil"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.xml:0
 #, python-format
 msgid "Suggestions"
-msgstr "Prijedlozi"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Switch direction"
-msgstr "Promijeni smjer"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
-msgid "Switch the text's direction."
-msgstr "Vrti"
+msgid "Switch the text's direction"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -2757,118 +2983,98 @@ msgstr "Sto"
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Table Options"
-msgstr "Opcije tabele"
+msgstr ""
 
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/editor.xml:0
-#, python-format
-msgid "Table tools"
-msgstr "Alati tabele"
-
-# taken from hr.po
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/js/common/ace.js:0
-#, python-format
-msgid "Template ID: %s"
-msgstr "Predložak ID: %s"
-
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: code:addons/web_editor/static/src/xml/snippets.xml:0
 #, python-format
 msgid "Text"
 msgstr "Tekst"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Text Color"
-msgstr "Eksponent"
+msgstr "Boja teksta"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Text align"
-msgstr "Poravnanje teksta"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Text style"
-msgstr "Stil teksta"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/file_selector.xml:0
 #, python-format
 msgid "The URL does not seem to work."
-msgstr "URL ne izgleda kao da radi."
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/file_selector.xml:0
 #, python-format
 msgid "The URL seems valid."
-msgstr "URL izgleda valjan."
+msgstr ""
 
 #. module: web_editor
 #. odoo-python
 #: code:addons/web_editor/models/ir_qweb_fields.py:0
 #, python-format
 msgid "The datetime %s does not match the format %s"
-msgstr "Datum-vrijeme %s ne odgovara formatu %s"
+msgstr ""
 
 #. module: web_editor
 #. odoo-python
-#: code:addons/web_editor/controllers/main.py:0
+#: code:addons/web_editor/tools.py:0
 #, python-format
 msgid ""
 "The document was already saved from someone with a different history for "
 "model %r, field %r with id %r."
 msgstr ""
-"Dokument je već sačuvan od strane nekoga sa drugačijim istorijatom za model "
-"%r, polje %r sa id %r."
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.js:0
 #, python-format
 msgid "The provided url does not reference any supported video"
-msgstr "Formatiranje teksta"
+msgstr ""
 
 #. module: web_editor
 #. odoo-python
 #: code:addons/web_editor/tools.py:0
 #, python-format
 msgid "The provided url is invalid"
-msgstr "Pruženi url je nevaljan"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.js:0
 #, python-format
 msgid "The provided url is not valid"
-msgstr "Tekst za prikaz"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/xml/editor.xml:0
+#: code:addons/web_editor/static/src/js/wysiwyg/conflict_dialog.xml:0
 #, python-format
 msgid ""
 "The version from the database will be used.\n"
-"                    If you need to keep your changes, copy the content below and edit the new document."
+"                            If you need to keep your changes, copy the "
+"content below and edit the new document."
 msgstr ""
-"Verzija iz baze podataka će biti korišćena.\n"
-"                    Ako trebate zadržati vaše promjene, kopirajte sadržaj ispod i uredite novi dokument."
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/snippets.xml:0
@@ -2876,7 +3082,6 @@ msgstr ""
 msgid "Theme"
 msgstr "Tema"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg_colorpicker.xml:0
@@ -2886,10 +3091,17 @@ msgstr "Boje teme"
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/xml/editor.xml:0
+#: code:addons/web_editor/static/src/js/wysiwyg/conflict_dialog.xml:0
 #, python-format
 msgid "There is a conflict between your version and the one in the database."
-msgstr "Postoji konflikt između vaše verzije i one u bazi podataka."
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/chatgpt_prompt_dialog.xml:0
+#, python-format
+msgid "Thinking..."
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -2897,57 +3109,51 @@ msgstr "Postoji konflikt između vaše verzije i one u bazi podataka."
 #, python-format
 msgid "This URL is invalid. Preview couldn't be updated."
 msgstr ""
-"Slika se ne može obrisati jer se koristi na\n"
-"               sljedećim stranicama ili prikazima:"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/snippets.xml:0
 #, python-format
-msgid "This block is outdated"
-msgstr "Ovaj blok je zastario"
+msgid "This block is outdated."
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
 msgid "This document is not saved!"
-msgstr "Dokument nije spremljen!"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/file_selector.js:0
 #, python-format
 msgid "This file is a public view attachment."
-msgstr "Ova datoteka je javni prilog pogleda."
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/file_selector.js:0
 #, python-format
 msgid "This file is attached to the current record."
-msgstr "Ova datoteka je priložena trenutnom zapisu."
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/wysiwyg/widgets/image_crop_widget.js:0
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/image_crop.js:0
 #, python-format
 msgid "This image is an external image"
-msgstr "Ova slika je vanjska slika"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/js/wysiwyg/widgets/image_crop_widget.js:0
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/image_crop.js:0
 #, python-format
 msgid ""
 "This type of image is not supported for cropping.<br/>If you want to crop "
 "it, please first download it from the original source and upload it in Odoo."
 msgstr ""
-"Ovaj tip slike nije podržan za odsjecanje.<br/>Ako želite da je odsječete, "
-"molimo prvo je preuzmi iz originalnog izvora i učitajte u Odoo."
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/snippets.xml:0
@@ -2958,18 +3164,7 @@ msgstr "Naslov"
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Title tag"
-msgstr "Ova datoteka je privitak javnog prikaza"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/snippets.xml:0
-#, python-format
-msgid ""
-"To make changes, drop this block and use the new options in the last "
-"version."
 msgstr ""
-"Da biste napravili promjene, otpustite ovaj blok i koristite nove opcije u "
-"poslednjoj verziji."
 
 #. module: web_editor
 #. odoo-javascript
@@ -2979,114 +3174,107 @@ msgid ""
 "To save a snippet, we need to save all your previous modifications and "
 "reload the page."
 msgstr ""
-"Da biste sačuvali isječak, trebamo sačuvati sve vaše prethodne izmjene i "
-"ponovno učitati stranicu."
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "To-do"
-msgstr "Za napraviti"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "Toaster"
-msgstr "Ovaj tip slike nije podržan za obrezivanje."
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Toggle bold"
-msgstr "Uključi podebljano"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Toggle checklist"
-msgstr "Uključi/isključi listu provjere"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Toggle icon spin"
-msgstr "Uključi/isključi rotaciju ikone"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Toggle italic"
-msgstr "Prebaci kurziv"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Toggle ordered list"
-msgstr "Uključi/isključi uređenu listu"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Toggle strikethrough"
-msgstr "Na koji URL treba voditi ovaj link?"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Toggle underline"
-msgstr "Uključi podcrtavanje"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Toggle unordered list"
-msgstr "Uključi/isključi neuređenu listu"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/alt_dialog.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Tooltip"
-msgstr "Savjet"
+msgstr "Objašnjenje"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
-msgid "Track tasks with a checklist."
-msgstr "Pratite zadatke sa listom provjere."
+msgid "Track tasks with a checklist"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Transform"
-msgstr "Transformiši"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Transform the picture"
-msgstr "Transformiši sliku"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/editor.xml:0
 #, python-format
 msgid "Transform the picture (click twice to reset transformation)"
-msgstr "Transformiši sliku (kliknite dva puta da resetujete transformaciju)"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/backend.xml:0
@@ -3099,80 +3287,69 @@ msgstr "Prevedi"
 #: code:addons/web_editor/static/src/xml/wysiwyg_colorpicker.xml:0
 #, python-format
 msgid "Transparent colors"
-msgstr "Transparentne boje"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/icon_selector.xml:0
 #, python-format
 msgid "Try searching with other keywords."
-msgstr "Pokušajte pretraživati s drugom ključnom riječi."
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.colorpicker
 #, python-format
 msgid "Type"
 msgstr "Tip"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
 #, python-format
 msgid "Type \"/\" for commands"
-msgstr "Unesite \"/\" za naredbe"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "URL or Email"
-msgstr "URL ili Email"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "Unalign"
-msgstr "Otkloni poravnanje"
+msgstr ""
 
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/js/common/ace.js:0
-#, python-format
-msgid "Unexpected "
-msgstr "Transparentno "
-
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/document_selector.js:0
 #, python-format
 msgid "Upload a document"
-msgstr "Učitajte dokument"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid "Upload an image"
-msgstr "Učitaj sliku"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid "Uploaded image's format is not supported. Try with: "
-msgstr "Format učitane slike nije podržan. Pokušajte sa: "
+msgstr ""
 
 #. module: web_editor
 #. odoo-python
 #: code:addons/web_editor/controllers/main.py:0
 #, python-format
 msgid "Uploaded image's format is not supported. Try with: %s"
-msgstr "Format učitane slike nije podržan. Pokušajte sa: %s"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
@@ -3180,54 +3357,50 @@ msgid "Valencia"
 msgstr ""
 
 #. module: web_editor
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+msgid "Vertical mirror"
+msgstr ""
+
+#. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
 msgid "Video"
-msgstr "Neuređena lista"
+msgstr "Video"
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
 #, python-format
 msgid "Video Formatting"
-msgstr "Formatiranje videa"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.xml:0
 #, python-format
 msgid "Video code"
-msgstr "Kod videa"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/media_dialog.js:0
 #, python-format
 msgid "Videos"
-msgstr "Video"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.js:0
 #, python-format
 msgid "Videos are muted when autoplay is enabled"
-msgstr "Videi su utišani kada je omogućeno automatsko pokretanje"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_ui_view
 msgid "View"
-msgstr "Prikaz"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/ace.xml:0
-#, python-format
-msgid "Views and Assets bundles"
-msgstr "Pogledi i paketi resursa"
+msgstr "Pregled"
 
 #. module: web_editor
 #. odoo-javascript
@@ -3243,50 +3416,79 @@ msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/xml/editor.xml:0
+#: code:addons/web_editor/static/src/js/wysiwyg/conflict_dialog.xml:0
 #, python-format
 msgid ""
 "Warning: after closing this dialog, the version you were working on will be "
 "discarded and will never be available anymore."
 msgstr ""
-"Upozorenje: nakon zatvaranja ovog dijaloga, verzija na kojoj ste radili će "
-"biti odbačena i nikada neće biti dostupna ponovo."
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 msgid "Wavy"
-msgstr "Valovito"
+msgstr ""
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_web_editor_converter_test_sub
 msgid "Web Editor Converter Subtest"
-msgstr "Web Editor konverter podtest"
+msgstr ""
 
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_web_editor_converter_test
 msgid "Web Editor Converter Test"
-msgstr "Web Editor konverter test"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
+#, python-format
+msgid "WebGL is not enabled on your browser."
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
+#, python-format
+msgid "WebP compression not supported on this browser"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/odoo-editor/src/OdooEditor.js:0
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
 #, python-format
 msgid "Widgets"
-msgstr "Widgeti"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
-#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
 msgid "Width"
 msgstr "Širina"
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/backend/html_field.js:0
+#, python-format
+msgid ""
+"With the option enabled, all content can only be viewed in a sandboxed "
+"iframe or in the code editor."
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/components/media_dialog/image_selector.xml:0
+#, python-format
+msgid ""
+"Wow, it feels a bit empty in here. Upload from the button in the top right "
+"corner!"
+msgstr ""
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.options.js:0
 #, python-format
 msgid "Write something..."
-msgstr "Napišite nešto..."
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
@@ -3296,18 +3498,10 @@ msgid "XL"
 msgstr "XL"
 
 #. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/ace.xml:0
-#, python-format
-msgid "XML (HTML)"
-msgstr "Vine.co"
-
-#. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "Xpro"
 msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/js/editor/snippets.editor.js:0
@@ -3315,7 +3509,29 @@ msgstr ""
 msgid "Yes"
 msgstr "Da"
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/components/media_dialog/image_selector.js:0
+#, python-format
+msgid ""
+"You can not replace a field by this image. If you want to use this image, "
+"first save it on your computer and then upload it here."
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/components/media_dialog/image_selector.xml:0
+#, python-format
+msgid "You can not use this image in a field"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/xml/snippets.xml:0
+#, python-format
+msgid "You can still access the block options but it might be ineffective."
+msgstr ""
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/document_selector.xml:0
@@ -3324,68 +3540,78 @@ msgid ""
 "You can upload documents with the button located in the top left of the "
 "screen."
 msgstr ""
-"Dokumente možete prenijeti pomoću gumba koji se nalazi u gornjem lijevom "
-"kutu zaslona."
+
+#. module: web_editor
+#. odoo-python
+#: code:addons/web_editor/controllers/main.py:0
+#, python-format
+msgid ""
+"You have reached the maximum number of requests for this service. Try again "
+"later."
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
-#: code:addons/web_editor/static/src/components/media_dialog/image_selector.xml:0
+#: code:addons/web_editor/static/src/xml/snippets.xml:0
 #, python-format
-msgid ""
-"You can upload images with the button located in the top left of the screen."
+msgid "You might not be able to customize it anymore."
 msgstr ""
-"Možete učitati slike pomoću dugmeta koje se nalazi u gornjem lijevom dijelu "
-"ekrana."
 
 #. module: web_editor
 #. odoo-python
 #: code:addons/web_editor/controllers/main.py:0
 #, python-format
 msgid "You need to specify either data or url to create an attachment."
-msgstr "Trebate navesti ili podatke ili url da biste kreirali prilog."
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/components/media_dialog/video_selector.xml:0
-#, python-format
-msgid "Youku"
 msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
+#: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 #, python-format
 msgid "Your URL"
-msgstr "Vaš URL"
+msgstr ""
+
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/wysiwyg.js:0
+#, python-format
+msgid "Your content was successfully generated."
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.xml:0
 #, python-format
 msgid "Youtube"
-msgstr "Xl"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Zoom In"
-msgstr "Uvećaj"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "Zoom Out"
-msgstr "Smanji"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "add"
 msgstr "dodaj"
 
-# taken from hr.po
+#. module: web_editor
+#. odoo-javascript
+#: code:addons/web_editor/static/src/js/wysiwyg/widgets/chatgpt_alternatives_dialog.xml:0
+#, python-format
+msgid "alternatives..."
+msgstr ""
+
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.xml:0
@@ -3395,63 +3621,53 @@ msgstr "i"
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_background_options
-#, python-format
 msgid "auto"
 msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "darken"
-msgstr "zatamni"
-
-#. module: web_editor
-#. odoo-javascript
-#: code:addons/web_editor/static/src/xml/editor.xml:0
-#, python-format
-msgid "default"
-msgstr "zadano"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "exclusion"
-msgstr "isključivanje"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "lighten"
-msgstr "osvijetli"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "multiply"
-msgstr "pomnoži"
+msgstr "umnožiti"
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "overlay"
-msgstr "preklapanje"
+msgstr ""
 
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/xml/wysiwyg.xml:0
 #, python-format
 msgid "px"
-msgstr "px"
+msgstr ""
 
 #. module: web_editor
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options_image_optimization_widgets
 msgid "screen"
 msgstr "ekran"
 
-# taken from hr.po
 #. module: web_editor
 #. odoo-javascript
 #: code:addons/web_editor/static/src/components/media_dialog/video_selector.xml:0
 #, python-format
 msgid "videos"
-msgstr "videe"
+msgstr ""
 
-# taken from hr.po
 #. module: web_editor
 #: model:ir.model,name:web_editor.model_ir_websocket
 msgid "websocket message handling"
@@ -3461,3 +3677,11 @@ msgstr "upravljanje porukama websocketa"
 #: model_terms:ir.ui.view,arch_db:web_editor.snippet_options
 msgid "www.example.com"
 msgstr ""
+
+#, python-format
+#~ msgid "Confirmation"
+#~ msgstr "Potvrda"
+
+#, python-format
+#~ msgid "Template ID: %s"
+#~ msgstr "Predložak ID: %s"

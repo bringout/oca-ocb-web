@@ -6,86 +6,33 @@ import logging
 import re
 import time
 import requests
+import uuid
 import werkzeug.exceptions
 import werkzeug.urls
 from PIL import Image, ImageFont, ImageDraw
 from lxml import etree
 from base64 import b64decode, b64encode
+from datetime import datetime
 from math import floor
+from os.path import join as opj
 
 from odoo.http import request, Response
-from odoo import http, tools, _, SUPERUSER_ID
+from odoo import http, tools, _, SUPERUSER_ID, release
 from odoo.addons.http_routing.models.ir_http import slug, unslug
 from odoo.addons.web_editor.tools import get_video_url_data
-from odoo.exceptions import UserError, MissingError, ValidationError
-from odoo.modules.module import get_resource_path
-from odoo.tools import file_open
+from odoo.exceptions import UserError, MissingError, AccessError
+from odoo.tools.misc import file_open
 from odoo.tools.mimetypes import guess_mimetype
-from odoo.tools.image import image_data_uri, binary_to_image
+from odoo.tools.image import image_data_uri, binary_to_image, get_webp_size
+from odoo.addons.iap.tools import iap_tools
 from odoo.addons.base.models.assetsbundle import AssetsBundle
 
-from ..models.ir_attachment import SUPPORTED_IMAGE_EXTENSIONS, SUPPORTED_IMAGE_MIMETYPES
+from ..models.ir_attachment import SUPPORTED_IMAGE_MIMETYPES
 
 logger = logging.getLogger(__name__)
 DEFAULT_LIBRARY_ENDPOINT = 'https://media-api.odoo.com'
+DEFAULT_OLG_ENDPOINT = 'https://olg.api.odoo.com'
 
-diverging_history_regex = 'data-last-history-steps="([0-9,]+)"'
-
-def ensure_no_history_divergence(record, html_field_name, incoming_history_ids):
-    server_history_matches = re.search(diverging_history_regex, record[html_field_name] or '')
-    # Do not check old documents without data-last-history-steps.
-    if server_history_matches:
-        server_last_history_id = server_history_matches[1].split(',')[-1]
-        if server_last_history_id not in incoming_history_ids:
-            logger.warning('The document was already saved from someone with a different history for model %r, field %r with id %r.', record._name, html_field_name, record.id)
-            raise ValidationError(_('The document was already saved from someone with a different history for model %r, field %r with id %r.', record._name, html_field_name, record.id))
-
-# This method must be called in a context that has write access to the record as
-# it will write to the bus.
-def handle_history_divergence(record, html_field_name, vals):
-    # Do not handle history divergence if the field is not in the values.
-    if html_field_name not in vals:
-        return
-    # Do not handle history divergence if in module installation mode.
-    if record.env.context.get('install_module'):
-        return
-    incoming_html = vals[html_field_name]
-    incoming_history_matches = re.search(diverging_history_regex, incoming_html or '')
-    # When there is no incoming history id, it means that the value does not
-    # comes from the odoo editor or the collaboration was not activated. In
-    # project, it could come from the collaboration pad. In that case, we do not
-    # handle history divergences.
-    if request:
-        channel = (request.db, 'editor_collaboration', record._name, html_field_name, record.id)
-    if incoming_history_matches is None:
-        if request:
-            bus_data = {
-                'model_name': record._name,
-                'field_name': html_field_name,
-                'res_id': record.id,
-                'notificationName': 'html_field_write',
-                'notificationPayload': {'last_step_id': None},
-            }
-            request.env['bus.bus']._sendone(channel, 'editor_collaboration', bus_data)
-        return
-    incoming_history_ids = incoming_history_matches[1].split(',')
-    last_step_id = incoming_history_ids[-1]
-
-    bus_data = {
-        'model_name': record._name,
-        'field_name': html_field_name,
-        'res_id': record.id,
-        'notificationName': 'html_field_write',
-        'notificationPayload': {'last_step_id': last_step_id},
-    }
-    if request:
-        request.env['bus.bus']._sendone(channel, 'editor_collaboration', bus_data)
-
-    if record[html_field_name]:
-        ensure_no_history_divergence(record, html_field_name, incoming_history_ids)
-
-    # Save only the latest id.
-    vals[html_field_name] = incoming_html[0:incoming_history_matches.start(1)] + last_step_id + incoming_html[incoming_history_matches.end(1):]
 
 def get_existing_attachment(IrAttachment, vals):
     """
@@ -295,8 +242,6 @@ class Web_Editor(http.Controller):
                        hide_dm_logo=False, hide_dm_share=False):
         # TODO: In Master, remove the parameter "hide_yt_logo" (the parameter is
         # no longer supported in the YouTube API.)
-        if not request.env.user._is_internal():
-            raise werkzeug.exceptions.Forbidden()
         return get_video_url_data(
             video_url, autoplay=autoplay, loop=loop,
             hide_controls=hide_controls, hide_fullscreen=hide_fullscreen,
@@ -307,11 +252,17 @@ class Web_Editor(http.Controller):
     def add_data(self, name, data, is_image, quality=0, width=0, height=0, res_id=False, res_model='ir.ui.view', **kwargs):
         data = b64decode(data)
         if is_image:
-            format_error_msg = _("Uploaded image's format is not supported. Try with: %s", ', '.join(SUPPORTED_IMAGE_EXTENSIONS))
+            format_error_msg = _("Uploaded image's format is not supported. Try with: %s", ', '.join(SUPPORTED_IMAGE_MIMETYPES.values()))
             try:
                 mimetype = guess_mimetype(data)
                 if mimetype not in SUPPORTED_IMAGE_MIMETYPES:
                     return {'error': format_error_msg}
+                if not name:
+                    name = '%s-%s%s' % (
+                        datetime.now().strftime('%Y%m%d%H%M%S'),
+                        str(uuid.uuid4())[:6],
+                        SUPPORTED_IMAGE_MIMETYPES[mimetype],
+                    )
                 data = tools.image_process(data, size=(width, height), quality=quality, verify_resolution=True)
             except (ValueError, UserError) as e:
                 # When UserError thrown, browser considers file input an
@@ -365,6 +316,7 @@ class Web_Editor(http.Controller):
         """This route is used to determine the original of an attachment so that
         it can be used as a base to modify it again (crop/optimization/filters).
         """
+        self._clean_context()
         attachment = None
         if src.startswith('/web/image'):
             with contextlib.suppress(werkzeug.exceptions.NotFound, MissingError):
@@ -381,7 +333,7 @@ class Web_Editor(http.Controller):
             # snippet images referencing the same image in /static/, so we limit to 1
             attachment = request.env['ir.attachment'].search([
                 '|', ('url', '=like', src), ('url', '=like', '%s?%%' % src),
-                ('mimetype', 'in', SUPPORTED_IMAGE_MIMETYPES),
+                ('mimetype', 'in', list(SUPPORTED_IMAGE_MIMETYPES.keys())),
             ], limit=1)
         if not attachment:
             return {
@@ -484,7 +436,7 @@ class Web_Editor(http.Controller):
             dict: views, scss, js
         """
         # Related views must be fetched if the user wants the views and/or the style
-        views = request.env["ir.ui.view"].with_context(no_primary_children=True, __views_get_original_hierarchy=[]).get_related_views(key, bundles=bundles)
+        views = request.env["ir.ui.view"].with_context(no_primary_children=True, __views_get_original_hierarchy=[], is_customization_code=False).get_related_views(key, bundles=bundles)
         views = views.read(['name', 'id', 'key', 'xml_id', 'arch', 'active', 'inherit_id'])
 
         scss_files_data_by_bundle = []
@@ -505,9 +457,9 @@ class Web_Editor(http.Controller):
         AssetsUtils = request.env['web_editor.assets']
 
         files_data_by_bundle = []
-        resources_type_info = {'t_call_assets_attribute': 't-js', 'mimetype': 'text/javascript'}
+        t_call_assets_attribute = 't-js'
         if file_type == 'scss':
-            resources_type_info = {'t_call_assets_attribute': 't-css', 'mimetype': 'text/scss'}
+            t_call_assets_attribute = 't-css'
 
         # Compile regex outside of the loop
         # This will used to exclude library scss files from the result
@@ -517,7 +469,7 @@ class Web_Editor(http.Controller):
         url_infos = dict()
         for v in views:
             for asset_call_node in etree.fromstring(v["arch"]).xpath("//t[@t-call-assets]"):
-                attr = asset_call_node.get(resources_type_info['t_call_assets_attribute'])
+                attr = asset_call_node.get(t_call_assets_attribute)
                 if attr and not json.loads(attr.lower()):
                     continue
                 asset_name = asset_call_node.get("t-call-assets")
@@ -525,7 +477,7 @@ class Web_Editor(http.Controller):
                 # Loop through bundle files to search for file info
                 files_data = []
                 for file_info in request.env["ir.qweb"]._get_asset_content(asset_name)[0]:
-                    if file_info["atype"] != resources_type_info['mimetype']:
+                    if file_info["url"].rpartition('.')[2] != file_type:
                         continue
                     url = file_info["url"]
 
@@ -599,29 +551,74 @@ class Web_Editor(http.Controller):
         return files_data_by_bundle
 
     @http.route('/web_editor/modify_image/<model("ir.attachment"):attachment>', type="json", auth="user", website=True)
-    def modify_image(self, attachment, res_model=None, res_id=None, name=None, data=None, original_id=None, mimetype=None):
+    def modify_image(self, attachment, res_model=None, res_id=None, name=None, data=None, original_id=None, mimetype=None, alt_data=None):
         """
         Creates a modified copy of an attachment and returns its image_src to be
         inserted into the DOM.
         """
+        self._clean_context()
+        attachment = request.env['ir.attachment'].browse(attachment.id)
+
         fields = {
             'original_id': attachment.id,
             'datas': data,
             'type': 'binary',
             'res_model': res_model or 'ir.ui.view',
             'mimetype': mimetype or attachment.mimetype,
+            'name': name or attachment.name,
+            'res_id': 0,
         }
         if fields['res_model'] == 'ir.ui.view':
             fields['res_id'] = 0
         elif res_id:
             fields['res_id'] = res_id
-        if name:
-            fields['name'] = name
+        if fields['mimetype'] == 'image/webp':
+            fields['name'] = re.sub(r'\.(jpe?g|png)$', '.webp', fields['name'], flags=re.I)
+
         existing_attachment = get_existing_attachment(request.env['ir.attachment'], fields)
         if existing_attachment and not existing_attachment.url:
             attachment = existing_attachment
         else:
-            attachment = attachment.copy(fields)
+            # Restricted editors can handle attachments related to records to
+            # which they have access.
+            # Would user be able to read fields of original record?
+            if attachment.res_model and attachment.res_id:
+                request.env[attachment.res_model].browse(attachment.res_id).check_access_rights('read')
+
+            # Would user be able to write fields of target record?
+            # Rights check works with res_id=0 because browse(0) returns an
+            # empty record set.
+            request.env[fields['res_model']].browse(fields['res_id']).check_access_rights('write')
+
+            # Sudo because restricted editor will not be able to copy the record
+            attachment = attachment.sudo().copy(fields).sudo(False)
+            # Override mimetype with SUPERUSER if it was forced to plain text
+            if attachment.mimetype == 'text/plain' != fields['mimetype']:
+                attachment.with_user(SUPERUSER_ID).mimetype = fields['mimetype']
+
+        if alt_data:
+            for size, per_type in alt_data.items():
+                reference_id = attachment.id
+                if 'image/webp' in per_type:
+                    resized = attachment.create_unique([{
+                        'name': attachment.name,
+                        'description': 'resize: %s' % size,
+                        'datas': per_type['image/webp'],
+                        'res_id': reference_id,
+                        'res_model': 'ir.attachment',
+                        'mimetype': 'image/webp',
+                    }])
+                    reference_id = resized[0]
+                if 'image/jpeg' in per_type:
+                    attachment.create_unique([{
+                        'name': re.sub(r'\.webp$', '.jpg', attachment.name, flags=re.I),
+                        'description': 'format: jpeg',
+                        'datas': per_type['image/jpeg'],
+                        'res_id': reference_id,
+                        'res_model': 'ir.attachment',
+                        'mimetype': 'image/jpeg',
+                    }])
+
         if attachment.url:
             # Don't keep url if modifying static attachment because static images
             # are only served from disk and don't fallback to attachments.
@@ -634,8 +631,10 @@ class Web_Editor(http.Controller):
                 url_fragments = attachment.url.split('/')
                 url_fragments.insert(-1, str(attachment.id))
                 attachment.url = '/'.join(url_fragments)
+
         if attachment.public:
             return attachment.image_src
+
         attachment.generate_access_token()
         return '%s?access_token=%s' % (attachment.image_src, attachment.access_token)
 
@@ -651,11 +650,12 @@ class Web_Editor(http.Controller):
             if attachment:
                 return b64decode(attachment.datas)
             raise werkzeug.exceptions.NotFound()
-        shape_path = get_resource_path(module, 'static', *segments)
-        if not shape_path:
+        shape_path = opj(module, 'static', *segments)
+        try:
+            with file_open(shape_path, 'r', filter_ext=('.svg',)) as file:
+                return file.read()
+        except FileNotFoundError:
             raise werkzeug.exceptions.NotFound()
-        with tools.file_open(shape_path, 'r', filter_ext=('.svg',)) as file:
-            return file.read()
 
     def _update_svg_colors(self, options, svg):
         user_colors = []
@@ -669,7 +669,7 @@ class Web_Editor(http.Controller):
         }
         bundle_css = None
         regex_hex = r'#[0-9A-F]{6,8}'
-        regex_rgba = r'rgba?\(\d{1,3},\d{1,3},\d{1,3}(?:,[0-9.]{1,4})?\)'
+        regex_rgba = r'rgba?\(\d{1,3}, ?\d{1,3}, ?\d{1,3}(?:, ?[0-9.]{1,4})?\)'
         for key, value in options.items():
             colorMatch = re.match('^c([1-5])$', key)
             if colorMatch:
@@ -679,8 +679,7 @@ class Web_Editor(http.Controller):
                     if re.match('^o-color-([1-5])$', css_color_value):
                         if not bundle_css:
                             bundle = 'web.assets_frontend'
-                            files, _ = request.env["ir.qweb"]._get_asset_content(bundle)
-                            asset = AssetsBundle(bundle, files)
+                            asset = request.env["ir.qweb"]._get_asset_bundle(bundle)
                             bundle_css = asset.css().index_content
                         color_search = re.search(r'(?i)--%s:\s+(%s|%s)' % (css_color_value, regex_hex, regex_rgba), bundle_css)
                         if not color_search:
@@ -750,8 +749,11 @@ class Web_Editor(http.Controller):
             return stream.get_response()
 
         image = stream.read()
-        img = binary_to_image(image)
-        width, height = tuple(str(size) for size in img.size)
+        if record.mimetype == "image/webp":
+            width, height = tuple(str(size) for size in get_webp_size(image))
+        else:
+            img = binary_to_image(image)
+            width, height = tuple(str(size) for size in img.size)
         root = etree.fromstring(svg)
 
         if root.attrib.get("data-forced-size"):
@@ -818,8 +820,8 @@ class Web_Editor(http.Controller):
             attachment_data = {
                 'name': name,
                 'mimetype': req.headers['content-type'],
-                'datas': b64encode(req.content),
                 'public': True,
+                'raw': req.content,
                 'res_model': 'ir.ui.view',
                 'res_id': 0,
             }
@@ -827,8 +829,7 @@ class Web_Editor(http.Controller):
             # Need to bypass security check to write image with mimetype image/svg+xml
             # ok because svgs come from whitelisted origin
             if not attachment:
-                context = {'binary_field_real_user': request.env['res.users'].sudo().browse([SUPERUSER_ID])}
-                attachment = IrAttachment.sudo().with_context(context).create(attachment_data)
+                attachment = IrAttachment.with_user(SUPERUSER_ID).create(attachment_data)
             if media[id]['is_dynamic_svg']:
                 colorParams = werkzeug.urls.url_encode(media[id]['dynamic_colors'])
                 attachment['url'] = '/web_editor/shape/illustration/%s?%s' % (slug(attachment), colorParams)
@@ -859,10 +860,24 @@ class Web_Editor(http.Controller):
     def test_suite(self, mod=None, **kwargs):
         return request.render('web_editor.tests')
 
-    @http.route("/web_editor/ensure_common_history", type="json", auth="user")
-    def ensure_common_history(self, model_name, field_name, res_id, history_ids):
-        record = request.env[model_name].browse([res_id])
+    @http.route("/web_editor/generate_text", type="json", auth="user")
+    def generate_text(self, prompt, conversation_history):
         try:
-            ensure_no_history_divergence(record, field_name, history_ids)
-        except ValidationError:
-            return record[field_name]
+            IrConfigParameter = request.env['ir.config_parameter'].sudo()
+            olg_api_endpoint = IrConfigParameter.get_param('web_editor.olg_api_endpoint', DEFAULT_OLG_ENDPOINT)
+            database_id = IrConfigParameter.get_param('database.uuid')
+            response = iap_tools.iap_jsonrpc(olg_api_endpoint + "/api/olg/1/chat", params={
+                'prompt': prompt,
+                'conversation_history': conversation_history or [],
+                'database_id': database_id,
+            }, timeout=30)
+            if response['status'] == 'success':
+                return response['content']
+            elif response['status'] == 'error_prompt_too_long':
+                raise UserError(_("Sorry, your prompt is too long. Try to say it in fewer words."))
+            elif response['status'] == 'limit_call_reached':
+                raise UserError(_("You have reached the maximum number of requests for this service. Try again later."))
+            else:
+                raise UserError(_("Sorry, we could not generate a response. Please try again later."))
+        except AccessError:
+            raise AccessError(_("Oops, it looks like our AI is unreachable!"))

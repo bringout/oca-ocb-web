@@ -1,5 +1,4 @@
-/** @odoo-module alias=web_editor.convertInline */
-'use strict';
+/** @odoo-module */
 
 import { getAdjacentPreviousSiblings, isBlock, rgbToHex, commonParentGet } from '../editor/odoo-editor/src/utils/utils';
 
@@ -10,7 +9,6 @@ import { getAdjacentPreviousSiblings, isBlock, rgbToHex, commonParentGet } from 
 const RE_COL_MATCH = /(^| )col(-[\w\d]+)*( |$)/;
 const RE_COMMAS_OUTSIDE_PARENTHESES = /,(?![^(]*?\))/g;
 const RE_OFFSET_MATCH = /(^| )offset(-[\w\d]+)*( |$)/;
-const RE_PADDING_MATCH = /[ ]*padding[^;]*;/g;
 const RE_PADDING = /([\d.]+)/;
 const RE_WHITESPACE = /[\s\u200b]*/;
 const SELECTORS_IGNORE = /(^\*$|:hover|:before|:after|:active|:link|::|'|\([^(),]+[,(])/;
@@ -36,7 +34,8 @@ export const TABLE_ATTRIBUTES = {
 };
 // Cancel tables default styles.
 export const TABLE_STYLES = {
-    'border-collapse': 'collapse',
+    'border-collapse': 'separate',
+    'border-spacing': '0px',
     'text-align': 'inherit',
     'font-size': 'unset',
     'line-height': 'inherit',
@@ -369,6 +368,7 @@ function cardToTable(editable) {
                 col.append(child);
             }
             const subTable = _createTable();
+            subTable.style.height = '100%';
             const superRow = document.createElement('tr');
             const superCol = document.createElement('td');
             row.append(col);
@@ -447,9 +447,8 @@ function classToStyle($editable, cssRules) {
                 style = `${key}:${value};${style}`;
             }
         };
-
         style = correctBorderAttributes(style);
-        if (_.isEmpty(style)) {
+        if (Object.keys(style || {}).length === 0) {
             writes.push(() => { node.removeAttribute('style'); });
         } else {
             writes.push(() => {
@@ -477,24 +476,7 @@ function classToStyle($editable, cssRules) {
             // Append non-breaking spaces to empty table cells.
             writes.push(() => { node.appendChild(document.createTextNode('\u00A0')); });
         }
-        // Outlook
-        if (node.nodeName === 'A' && node.classList.contains('btn') && !node.classList.contains('btn-link') && !node.children.length) {
-            writes.push(() => {
-                node.before(_createMso(`<table align="center" border="0"
-                    role="presentation" cellpadding="0" cellspacing="0"
-                    style="border-radius: 6px; border-collapse: separate !important;">
-                        <tbody>
-                            <tr>
-                                <td style="${node.style.cssText.replace(RE_PADDING_MATCH, '').replaceAll('"', '&quot;')}" ${
-                                    node.parentElement.style.textAlign === 'center' ? 'align="center" ' : ''
-                                }bgcolor="${rgbToHex(node.style.backgroundColor)}">
-                    `));
-                node.after(_createMso(`</td>
-                        </tr>
-                    </tbody>
-                </table>`));
-            });
-        } else if (node.nodeName === 'IMG' && node.classList.contains('mx-auto') && node.classList.contains('d-block')) {
+        if (node.nodeName === 'IMG' && node.classList.contains('mx-auto') && node.classList.contains('d-block')) {
             writes.push(() => { _wrap(node, 'p', 'o_outlook_hack', 'text-align:center;margin:0'); });
         }
 
@@ -676,6 +658,15 @@ function enforceImagesResponsivity(editable) {
         image.removeAttribute('height');
     }
 }
+
+function fixSNumbersSnippet(editable) {
+    [...editable.querySelectorAll(".s_numbers")].forEach((numbersSnippet) => {
+        const row = numbersSnippet.querySelector(".container > .row");
+        if (row) {
+            row.classList.add("d-flex", "align-items-stretch");
+        }
+    });
+}
 /**
  * Convert the contents of an editable area (as a JQuery element) into content
  * that is widely compatible with email clients. If no CSS Rules are given, they
@@ -687,7 +678,7 @@ function enforceImagesResponsivity(editable) {
  *                                   specificity: number;}>
  * @param {JQuery} [$iframe] the iframe containing the editable, if any
  */
-async function toInline($editable, cssRules, $iframe) {
+export async function toInline($editable, cssRules, $iframe) {
     $editable.removeClass('odoo-editor-editable');
     const editable = $editable.get(0);
     const iframe = $iframe && $iframe.get(0);
@@ -722,10 +713,11 @@ async function toInline($editable, cssRules, $iframe) {
     for (const imgTop of editable.querySelectorAll('.card-img-top')) {
         imgTop.style.setProperty('height', _getHeight(imgTop) + 'px');
     }
-
+    fixSNumbersSnippet(editable);
     attachmentThumbnailToLinkImg($editable);
     fontToImg($editable);
     await svgToPng($editable);
+    await webpToPng($editable);
 
     // Fix img-fluid for Outlook.
     for (const image of editable.querySelectorAll('img.img-fluid')) {
@@ -833,7 +825,7 @@ function flattenBackgroundImages(editable) {
  */
 function fontToImg($editable) {
     const editable = $editable.get(0);
-    const fonts = odoo.__DEBUG__.services["wysiwyg.fonts"];
+    const { fonts } = odoo.loader.modules.get("@web_editor/js/wysiwyg/fonts");
 
     for (const font of editable.querySelectorAll('.fa')) {
         let icon, content;
@@ -1056,7 +1048,7 @@ function formatTables($editable) {
  *                            style: {[styleName]: string};
  *                            specificity: number;}>
  */
-function getCSSRules(doc) {
+export function getCSSRules(doc) {
     const cssRules = [];
     for (const sheet of doc.styleSheets) {
         // try...catch because browser may not able to enumerate rules for cross-domain sheets
@@ -1238,7 +1230,103 @@ function normalizeRem($editable, rootFontSize=16) {
         // The opening tag of `td` is for the others.
         _hideForOutlook(td, 'opening');
     }
+    equalizeCardHeights(editable);
+    applyVmlToButtons(editable);
+ }
+
+/**
+ * Convert image element to an image element with type png
+ *
+ * @param {img} HTMLElement
+ */
+
+async function convertToPng(img) {
+    // Make sure the image is loaded before we convert it.
+    await new Promise(resolve => {
+        img.onload = () => resolve();
+        if (img.complete) {
+            resolve();
+        }
+    });
+    const image = document.createElement('img');
+    const canvas = document.createElement('CANVAS');
+    const width = _getWidth(img);
+    const height = _getHeight(img);
+
+    canvas.setAttribute('width', width);
+    canvas.setAttribute('height', height);
+    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+    for (const attribute of img.attributes) {
+        image.setAttribute(attribute.name, attribute.value);
+    }
+
+    image.setAttribute('src', canvas.toDataURL('png'));
+    image.setAttribute('width', width);
+    image.setAttribute('height', height);
+    return image;
 }
+
+
+function equalizeCardHeights(editable) {
+    for (const td of editable.querySelectorAll(".s_three_columns .align-items-stretch td")) {
+        const cards = [...td.querySelectorAll(":scope > div.o_stacking_wrapper table.card")];
+        if (cards.length < 2) {
+            continue;
+        }
+        const cardBodies = cards.map((card) => card.querySelector("td.card-body"));
+        const heights = cardBodies.map((body) => body.offsetHeight);
+        const maxHeight = Math.max(...heights);
+        for (let i = 0; i < cardBodies.length; i++) {
+            const body = cardBodies[i];
+            if (!body.hasAttribute("height")) {
+                // Set fixed height attribute + valign directly on card-body td
+                // To make the height work for Outlook 2019
+                body.setAttribute("height", maxHeight);
+                body.setAttribute("valign", "top");
+                body.style.setProperty("height", maxHeight + "px");
+            }
+        }
+    }
+}
+
+function applyVmlToButtons(editable) {
+    function computeArcsize(s, heightPx) {
+        const radius = parseFloat(s.borderRadius || s.borderTopLeftRadius) || 0;
+        if (!radius || !heightPx) return 0;
+        return Math.round((radius / heightPx) * 100);
+    }
+
+    editable.querySelectorAll("a.btn").forEach((btn) => {
+        const s = btn.style;
+        const rawBg = s.backgroundColor || s.background;
+        if (!rawBg) return;
+
+        const bg = rgbToHex(rawBg);
+        const arcsize = computeArcsize(s, btn.offsetHeight);
+        const href = btn.getAttribute('href') || '';
+        const target = btn.getAttribute('target') || '_blank';
+        const rel = btn.getAttribute('rel') || 'noopener';
+
+        const msoA = btn.cloneNode(true);
+        msoA.style.removeProperty('background-color');
+        msoA.style.removeProperty('background');
+        msoA.style.removeProperty('border-radius');
+
+        btn.before(_createMso(
+            `<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" ` +
+            `href="${href}" rel="${rel}" target="${target}" ` +
+            `style="mso-wrap-style:none;mso-position-horizontal:center;mso-position-vertical:top;" ` +
+            `arcsize="${arcsize}%" stroke="f" fillcolor="${bg}">` +
+            `<w:anchorlock/><v:textbox inset="0,0,0,0" style="mso-fit-shape-to-text:true;"><center>` +
+            msoA.outerHTML +
+            `</center></v:textbox></v:roundrect>`
+        ));
+
+        _hideForOutlook(btn);
+    });
+}
+
 /**
  * Convert images of type svg to png.
  *
@@ -1246,32 +1334,37 @@ function normalizeRem($editable, rootFontSize=16) {
  */
 async function svgToPng($editable) {
     for (const svg of $editable.find('img[src*=".svg"]')) {
-        // Make sure the svg is loaded before we convert it.
-        await new Promise(resolve => {
-            svg.onload = () => resolve();
-            if (svg.complete) {
-                resolve();
-            }
-        });
-        const image = document.createElement('img');
-        const canvas = document.createElement('CANVAS');
-        const width = _getWidth(svg);
-        const height = _getHeight(svg);
-
-        canvas.setAttribute('width', width);
-        canvas.setAttribute('height', height);
-        canvas.getContext('2d').drawImage(svg, 0, 0, width, height);
-
-        for (const attribute of svg.attributes) {
-            image.setAttribute(attribute.name, attribute.value);
-        }
-
-        image.setAttribute('src', canvas.toDataURL('png'));
-        image.setAttribute('width', width);
-        image.setAttribute('height', height);
-
+        const image = await convertToPng(svg);
         svg.before(image);
         svg.remove();
+    }
+}
+
+/**
+ * Convert images of type webp to png.
+ *
+ * @param {JQuery} $editable
+ */
+async function webpToPng($editable) {
+    for (const webp of $editable.find('img[src*=".webp"]')) {
+        const image = await convertToPng(webp);
+        webp.before(image);
+        webp.remove();
+    }
+
+    for (const webp of $editable.find('[style*="background-image"][style*=".webp"]')) {
+        // Create an image element with the background image and replace the url
+        // with the png converted image url
+        const width = _getWidth(webp);
+        const height = _getHeight(webp);
+        const tempImage = document.createElement("img");
+        tempImage.setAttribute("src", webp.style.backgroundImage.slice(5, -2));
+        tempImage.setAttribute("width", width);
+        tempImage.setAttribute("height", height);
+        webp.before(tempImage);
+        const image = await convertToPng(tempImage);
+        webp.style.backgroundImage = `url(${image.getAttribute("src")})`;
+        tempImage.remove();
     }
 }
 
@@ -1405,7 +1498,7 @@ function _createColumnGrid() {
  * @param {string} content
  * @returns {Comment}
  */
-function _createMso(content='') {
+function _createMso(content = '') {
     // We remove comments having opposite condition from the one we will insert
     // We remove comment tags having the same condition
     const showRegex = /<!--\[if\s+mso\]>([\s\S]*?)<!\[endif\]-->/g;
@@ -1683,7 +1776,12 @@ function _normalizeStyle(style) {
     const normalizedStyle = {};
     for (const styleName of style) {
         const value = style[styleName];
-        if (value && !styleName.includes('animation') && !styleName.includes('-webkit') && _.isString(value)) {
+        if (
+            value &&
+            !styleName.includes("animation") &&
+            !styleName.includes("-webkit") &&
+            typeof value === "string"
+        ) {
             const normalizedStyleName = styleName.replace(/-(.)/g, (a, b) => b.toUpperCase());
             normalizedStyle[styleName] = style[normalizedStyleName];
             if (style.getPropertyPriority(styleName) === 'important') {
@@ -1767,7 +1865,10 @@ function correctBorderAttributes(style) {
         return correctedStyle;
     }
 
-    return style;
+    if (/border-style\s*:/i.test(style)) {
+        return style;
+    }
+    return style.trim().replace(/;?$/, "; border-style: solid;");
 }
 
 export default {

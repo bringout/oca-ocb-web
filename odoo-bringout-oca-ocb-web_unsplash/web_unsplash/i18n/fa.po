@@ -1,31 +1,31 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
 # 	* web_unsplash
-# 
+#
 # Translators:
 # Mohsen Mohammadi <iammohsen.123@gmail.com>, 2023
 # Hamed Mohammadi <hamed@dehongi.com>, 2023
 # Martin Trigaux, 2023
 # Mostafa Barmshory <mostafa.barmshory@gmail.com>, 2024
-# 
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e\n"
+"Project-Id-Version: Odoo Server 17.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-12-15 12:45+0000\n"
-"PO-Revision-Date: 2022-09-22 05:56+0000\n"
+"POT-Creation-Date: 2026-04-24 17:38+0000\n"
+"PO-Revision-Date: 2023-10-26 23:09+0000\n"
 "Last-Translator: Mostafa Barmshory <mostafa.barmshory@gmail.com>, 2024\n"
 "Language-Team: Persian (https://app.transifex.com/odoo/teams/41243/fa/)\n"
+"Language: fa\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
-"Language: fa\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #. module: web_unsplash
 #: model_terms:ir.ui.view,arch_db:web_unsplash.res_config_settings_view_form
-msgid "<i class=\"fa fa-arrow-right\"/> Generate an Access Key"
-msgstr "<i class=\"fa fa-arrow-right\"/> تولید یک کلید دسترسی"
+msgid "<i class=\"oi oi-arrow-right\"/> Generate an Access Key"
+msgstr "<i class=\"oi oi-arrow-right\"/> ایجاد یک کلید دسترسی"
 
 #. module: web_unsplash
 #: model:ir.model.fields,field_description:web_unsplash.field_res_config_settings__unsplash_access_key
@@ -46,11 +46,6 @@ msgstr "شناسه برنامه"
 #, python-format
 msgid "Apply"
 msgstr "اعمال"
-
-#. module: web_unsplash
-#: model:ir.model,name:web_unsplash.model_ir_attachment
-msgid "Attachment"
-msgstr "پیوست"
 
 #. module: web_unsplash
 #: model:ir.model,name:web_unsplash.model_res_config_settings
@@ -144,8 +139,8 @@ msgstr "یک چیزی اشتباه است"
 #: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid ""
-"The max number of searches is exceeded. Please retry in an hour or extend to"
-" a better account."
+"The max number of searches is exceeded. Please retry in an hour or extend to "
+"a better account."
 msgstr ""
 "حداکثر تعداد جستجو تمام شده است. لطفا یک ساعت بعد امتحان کنید یا به یک حسب "
 "بهتر توسعه دهید."
@@ -196,3 +191,6 @@ msgstr "و آن را اینجا بچسبانید:"
 #, python-format
 msgid "here:"
 msgstr "متن اصلی:"
+
+#~ msgid "Attachment"
+#~ msgstr "پیوست"

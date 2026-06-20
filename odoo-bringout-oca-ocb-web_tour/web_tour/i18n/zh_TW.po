@@ -1,27 +1,29 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
 # 	* web_tour
-# 
+#
 # Translators:
-# Martin Trigaux, 2022
-# 
+# Wil Odoo, 2023
+# Tony Ng, 2024
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0\n"
+"Project-Id-Version: Odoo Server 17.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-06 13:32+0000\n"
-"PO-Revision-Date: 2022-09-22 05:56+0000\n"
-"Last-Translator: Martin Trigaux, 2022\n"
-"Language-Team: Chinese (Taiwan) (https://app.transifex.com/odoo/teams/41243/zh_TW/)\n"
+"POT-Creation-Date: 2025-12-29 18:38+0000\n"
+"PO-Revision-Date: 2023-10-26 23:09+0000\n"
+"Last-Translator: Tony Ng, 2024\n"
+"Language-Team: Chinese (Taiwan) (https://app.transifex.com/odoo/teams/41243/"
+"zh_TW/)\n"
+"Language: zh_TW\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
-"Language: zh_TW\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_manager.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_service.js:0
 #, python-format
 msgid ""
 "<strong><b>Good job!</b> You went through all steps of this tour.</strong>"
@@ -29,17 +31,17 @@ msgstr "<strong><b>做得好！</b>您已完成本次導覽的所有步驟。</s
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tip.js:0
-#, python-format
-msgid "Click here to go to the next step."
-msgstr ""
-
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_step_utils.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_utils.js:0
 #, python-format
 msgid "Click on the <i>Home icon</i> to navigate across apps."
 msgstr "按一下 <i> 首頁圖示 </i> 可跨應用程式導航。"
+
+#. module: web_tour
+#. odoo-javascript
+#: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
+#, python-format
+msgid "Close"
+msgstr "關閉"
 
 #. module: web_tour
 #: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__user_id
@@ -66,17 +68,12 @@ msgstr "HTTP 路由"
 #. module: web_tour
 #: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__id
 msgid "ID"
-msgstr "ID"
-
-#. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour____last_update
-msgid "Last Modified on"
-msgstr "最後修改於"
+msgstr "識別號"
 
 #. module: web_tour
 #: model_terms:ir.ui.view,arch_db:web_tour.edit_tour_list
 msgid "Menu"
-msgstr "選單"
+msgstr "功能表"
 
 #. module: web_tour
 #. odoo-javascript
@@ -94,7 +91,7 @@ msgstr "入職導覽"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_step_utils.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_utils.js:0
 #, python-format
 msgid "Open bugger menu."
 msgstr "打開 bugger 選單"
@@ -108,17 +105,24 @@ msgstr "路徑"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tip.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_pointer_state.js:0
 #, python-format
-msgid "Scroll to reach the next step."
-msgstr "滾動來進入下一步"
+msgid "Scroll down to reach the next step."
+msgstr "向下捲動，以進入下一步驟。"
+
+#. module: web_tour
+#. odoo-javascript
+#: code:addons/web_tour/static/src/tour_service/tour_pointer_state.js:0
+#, python-format
+msgid "Scroll up to reach the next step."
+msgstr "向上捲動，以進入下一步驟。"
 
 #. module: web_tour
 #. odoo-javascript
 #: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
 #, python-format
 msgid "Sequence"
-msgstr "序號"
+msgstr "序列號"
 
 #. module: web_tour
 #. odoo-javascript
@@ -137,7 +141,6 @@ msgstr "開始導覽"
 #. module: web_tour
 #. odoo-javascript
 #: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
-#: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
 #, python-format
 msgid "Start tour"
 msgstr "開始導覽"
@@ -151,7 +154,6 @@ msgstr "測試"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
 #: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
 #, python-format
 msgid "Test tour"
@@ -167,7 +169,7 @@ msgstr "測試導覽"
 #. module: web_tour
 #: model_terms:ir.ui.view,arch_db:web_tour.edit_tour_search
 msgid "Tip"
-msgstr "提示"
+msgstr "小費"
 
 #. module: web_tour
 #: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__name
@@ -182,4 +184,4 @@ msgstr "導覽名稱"
 #: model:ir.ui.menu,name:web_tour.menu_tour_action
 #, python-format
 msgid "Tours"
-msgstr "導覽"
+msgstr "遊覽"

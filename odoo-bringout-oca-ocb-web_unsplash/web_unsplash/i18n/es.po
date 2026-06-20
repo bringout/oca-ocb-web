@@ -1,29 +1,30 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
 # 	* web_unsplash
-# 
+#
 # Translators:
-# Martin Trigaux, 2022
-# Wil Odoo, 2024
-# 
+# Wil Odoo, 2023
+# Larissa Manderfeld, 2024
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0\n"
+"Project-Id-Version: Odoo Server 17.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-08 20:35+0000\n"
-"PO-Revision-Date: 2022-09-22 05:56+0000\n"
-"Last-Translator: Wil Odoo, 2024\n"
+"POT-Creation-Date: 2026-04-24 17:38+0000\n"
+"PO-Revision-Date: 2023-10-26 23:09+0000\n"
+"Last-Translator: Larissa Manderfeld, 2024\n"
 "Language-Team: Spanish (https://app.transifex.com/odoo/teams/41243/es/)\n"
+"Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
-"Language: es\n"
-"Plural-Forms: nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;\n"
+"Plural-Forms: nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? "
+"1 : 2;\n"
 
 #. module: web_unsplash
 #: model_terms:ir.ui.view,arch_db:web_unsplash.res_config_settings_view_form
-msgid "<i class=\"fa fa-arrow-right\"/> Generate an Access Key"
-msgstr " <i class=\"fa fa-arrow-right\"/>Generar una Clave de Acceso"
+msgid "<i class=\"oi oi-arrow-right\"/> Generate an Access Key"
+msgstr "<i class=\"oi oi-arrow-right\"/> Generar una clave de acceso"
 
 #. module: web_unsplash
 #: model:ir.model.fields,field_description:web_unsplash.field_res_config_settings__unsplash_access_key
@@ -44,11 +45,6 @@ msgstr "ID de aplicación"
 #, python-format
 msgid "Apply"
 msgstr "Aplicar"
-
-#. module: web_unsplash
-#: model:ir.model,name:web_unsplash.model_ir_attachment
-msgid "Attachment"
-msgstr "Archivo adjunto"
 
 #. module: web_unsplash
 #: model:ir.model,name:web_unsplash.model_res_config_settings
@@ -145,8 +141,8 @@ msgstr "Algo salió mal"
 #: code:addons/web_unsplash/static/src/components/media_dialog/image_selector.js:0
 #, python-format
 msgid ""
-"The max number of searches is exceeded. Please retry in an hour or extend to"
-" a better account."
+"The max number of searches is exceeded. Please retry in an hour or extend to "
+"a better account."
 msgstr ""
 "El máximo número de búsquedas ha sido excedido. Por favor intente en una "
 "hora o extienda a una cuenta mejor."
@@ -197,3 +193,6 @@ msgstr "y péguela aquí:"
 #, python-format
 msgid "here:"
 msgstr "aquí:"
+
+#~ msgid "Attachment"
+#~ msgstr "Archivo adjunto"

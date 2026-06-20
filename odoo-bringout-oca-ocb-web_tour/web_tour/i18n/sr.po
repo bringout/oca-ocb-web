@@ -3,17 +3,17 @@
 # 	* web_tour
 # 
 # Translators:
-# Martin Trigaux, 2022
-# Dragan Vukosavljevic <dragan.vukosavljevic@gmail.com>, 2022
+# Martin Trigaux, 2023
+# Dragan Vukosavljevic <dragan.vukosavljevic@gmail.com>, 2023
 # Milan Bojovic <mbojovic@outlook.com>, 2023
 # コフスタジオ, 2024
 # 
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0\n"
+"Project-Id-Version: Odoo Server 17.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-06 13:32+0000\n"
-"PO-Revision-Date: 2022-09-22 05:56+0000\n"
+"POT-Creation-Date: 2023-10-26 21:56+0000\n"
+"PO-Revision-Date: 2023-10-26 23:09+0000\n"
 "Last-Translator: コフスタジオ, 2024\n"
 "Language-Team: Serbian (https://app.transifex.com/odoo/teams/41243/sr/)\n"
 "MIME-Version: 1.0\n"
@@ -24,7 +24,7 @@ msgstr ""
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_manager.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_service.js:0
 #, python-format
 msgid ""
 "<strong><b>Good job!</b> You went through all steps of this tour.</strong>"
@@ -33,17 +33,17 @@ msgstr ""
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tip.js:0
-#, python-format
-msgid "Click here to go to the next step."
-msgstr ""
-
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_step_utils.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_utils.js:0
 #, python-format
 msgid "Click on the <i>Home icon</i> to navigate across apps."
 msgstr "Click on the <i>Home icon</i> to navigate across apps."
+
+#. module: web_tour
+#. odoo-javascript
+#: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
+#, python-format
+msgid "Close"
+msgstr "Zatvori"
 
 #. module: web_tour
 #: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__user_id
@@ -73,11 +73,6 @@ msgid "ID"
 msgstr "ID"
 
 #. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour____last_update
-msgid "Last Modified on"
-msgstr "Poslednja izmena dana"
-
-#. module: web_tour
 #: model_terms:ir.ui.view,arch_db:web_tour.edit_tour_list
 msgid "Menu"
 msgstr "Meni"
@@ -87,7 +82,7 @@ msgstr "Meni"
 #: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
 #, python-format
 msgid "Name"
-msgstr "Ime"
+msgstr "Naziv"
 
 #. module: web_tour
 #. odoo-javascript
@@ -98,7 +93,7 @@ msgstr "Onboarding tours"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_step_utils.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_utils.js:0
 #, python-format
 msgid "Open bugger menu."
 msgstr "Open bugger menu."
@@ -112,9 +107,16 @@ msgstr "Putanja"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tip.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_pointer_state.js:0
 #, python-format
-msgid "Scroll to reach the next step."
+msgid "Scroll down to reach the next step."
+msgstr ""
+
+#. module: web_tour
+#. odoo-javascript
+#: code:addons/web_tour/static/src/tour_service/tour_pointer_state.js:0
+#, python-format
+msgid "Scroll up to reach the next step."
 msgstr ""
 
 #. module: web_tour

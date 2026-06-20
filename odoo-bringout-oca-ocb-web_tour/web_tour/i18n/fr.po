@@ -1,50 +1,51 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
 # 	* web_tour
-# 
+#
 # Translators:
-# Martin Trigaux, 2022
+# Wil Odoo, 2023
 # Jolien De Paepe, 2023
-# 
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0\n"
+"Project-Id-Version: Odoo Server 17.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-06 13:32+0000\n"
-"PO-Revision-Date: 2022-09-22 05:56+0000\n"
+"POT-Creation-Date: 2025-12-29 18:38+0000\n"
+"PO-Revision-Date: 2023-10-26 23:09+0000\n"
 "Last-Translator: Jolien De Paepe, 2023\n"
 "Language-Team: French (https://app.transifex.com/odoo/teams/41243/fr/)\n"
+"Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
-"Language: fr\n"
-"Plural-Forms: nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;\n"
+"Plural-Forms: nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % "
+"1000000 == 0 ? 1 : 2;\n"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_manager.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_service.js:0
 #, python-format
 msgid ""
 "<strong><b>Good job!</b> You went through all steps of this tour.</strong>"
 msgstr ""
-"<strong><b>Bien joué !</b> Vous venez de terminer toutes les étapes de cette"
-" visite.</strong>"
+"<strong><b>Bien joué !</b> Vous venez de terminer toutes les étapes de cette "
+"visite.</strong>"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tip.js:0
-#, python-format
-msgid "Click here to go to the next step."
-msgstr "Cliquez ici pour passer à l'étape suivante."
-
-#. module: web_tour
-#. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_step_utils.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_utils.js:0
 #, python-format
 msgid "Click on the <i>Home icon</i> to navigate across apps."
 msgstr ""
 "Cliquez sur <i>l'icône d'accueil</i> pour naviguer d'une application à "
 "l'autre."
+
+#. module: web_tour
+#. odoo-javascript
+#: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
+#, python-format
+msgid "Close"
+msgstr "Fermer"
 
 #. module: web_tour
 #: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__user_id
@@ -74,11 +75,6 @@ msgid "ID"
 msgstr "ID"
 
 #. module: web_tour
-#: model:ir.model.fields,field_description:web_tour.field_web_tour_tour____last_update
-msgid "Last Modified on"
-msgstr "Dernière modification le"
-
-#. module: web_tour
 #: model_terms:ir.ui.view,arch_db:web_tour.edit_tour_list
 msgid "Menu"
 msgstr "Menu"
@@ -99,7 +95,7 @@ msgstr "Parcours d'intégration"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tour_step_utils.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_utils.js:0
 #, python-format
 msgid "Open bugger menu."
 msgstr "Ouvrir le menu développeur."
@@ -113,10 +109,17 @@ msgstr "Chemin"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/js/tip.js:0
+#: code:addons/web_tour/static/src/tour_service/tour_pointer_state.js:0
 #, python-format
-msgid "Scroll to reach the next step."
+msgid "Scroll down to reach the next step."
 msgstr "Faites défiler jusqu'à la prochaine étape."
+
+#. module: web_tour
+#. odoo-javascript
+#: code:addons/web_tour/static/src/tour_service/tour_pointer_state.js:0
+#, python-format
+msgid "Scroll up to reach the next step."
+msgstr "Faites défiler vers le haut jusqu'à la prochaine étape."
 
 #. module: web_tour
 #. odoo-javascript
@@ -130,7 +133,7 @@ msgstr "Séquence"
 #: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
 #, python-format
 msgid "Start"
-msgstr "Démarrer"
+msgstr "Lancer"
 
 #. module: web_tour
 #. odoo-javascript
@@ -142,7 +145,6 @@ msgstr "Démarrer la visite"
 #. module: web_tour
 #. odoo-javascript
 #: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
-#: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
 #, python-format
 msgid "Start tour"
 msgstr "Démarrer la visite"
@@ -152,11 +154,10 @@ msgstr "Démarrer la visite"
 #: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
 #, python-format
 msgid "Test"
-msgstr "Test"
+msgstr "Tester"
 
 #. module: web_tour
 #. odoo-javascript
-#: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
 #: code:addons/web_tour/static/src/debug/tour_dialog_component.xml:0
 #, python-format
 msgid "Test tour"
@@ -172,7 +173,7 @@ msgstr "Visites d'essai"
 #. module: web_tour
 #: model_terms:ir.ui.view,arch_db:web_tour.edit_tour_search
 msgid "Tip"
-msgstr "Pourboire"
+msgstr "Conseil"
 
 #. module: web_tour
 #: model:ir.model.fields,field_description:web_tour.field_web_tour_tour__name
