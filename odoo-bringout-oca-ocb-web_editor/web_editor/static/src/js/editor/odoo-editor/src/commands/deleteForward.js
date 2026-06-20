@@ -2,22 +2,20 @@
 import { UNREMOVABLE_ROLLBACK_CODE } from '../utils/constants.js';
 import {
     findNode,
-    isContentTextNode,
-    isVisibleEmpty,
+    isSelfClosingElement,
     nodeSize,
     rightPos,
     getState,
     DIRECTIONS,
     CTYPES,
     leftPos,
-    isFontAwesome,
+    isIconElement,
     rightLeafOnlyNotBlockNotEditablePath,
     rightLeafOnlyPathNotBlockNotEditablePath,
     isNotEditableNode,
     splitTextNode,
     paragraphRelatedElements,
     prepareUpdate,
-    isVisibleStr,
     isInPre,
     fillEmpty,
     setSelection,
@@ -28,6 +26,8 @@ import {
     isVisible,
     isUnbreakable,
     isEmptyBlock,
+    isWhitespace,
+    isVisibleTextNode,
     getOffsetAndCharSize,
     ZERO_WIDTH_CHARS,
 } from '../utils/utils.js';
@@ -49,7 +49,7 @@ export function deleteText(charSize, offset, direction, alreadyMoved) {
 
     // Do remove the character, then restore the state of the surrounding parts.
     const restore = prepareUpdate(parentElement, firstSplitOffset, parentElement, secondSplitOffset);
-    const isSpace = !isVisibleStr(middleNode) && !isInPre(middleNode);
+    const isSpace = isWhitespace(middleNode) && !isInPre(middleNode);
     const isZWS = ZERO_WIDTH_CHARS.includes(middleNode.nodeValue);
     middleNode.remove();
     restore();
@@ -76,6 +76,11 @@ export function deleteText(charSize, offset, direction, alreadyMoved) {
         }
         return;
     }
+    // Intentionally very specific hack to remove empty CODE elements.
+    if (parentElement.tagName === "CODE" && !parentElement.textContent.length) {
+        parentElement.remove();
+        return;
+    }
     fillEmpty(parentElement);
     setSelection(parentElement, firstSplitOffset);
 }
@@ -96,7 +101,7 @@ Text.prototype.oDeleteForward = function (offset, alreadyMoved = false) {
 
 HTMLElement.prototype.oDeleteForward = function (offset) {
     const filterFunc = node =>
-        isVisibleEmpty(node) || isContentTextNode(node) || isNotEditableNode(node);
+        isSelfClosingElement(node) || isVisibleTextNode(node) || isNotEditableNode(node);
 
     const firstLeafNode = findNode(rightLeafOnlyNotBlockNotEditablePath(this, offset), filterFunc);
     if (firstLeafNode &&
@@ -143,15 +148,17 @@ HTMLElement.prototype.oDeleteForward = function (offset) {
         return;
     }
 
-    if (firstLeafNode && (isFontAwesome(firstLeafNode) || isNotEditableNode(firstLeafNode))) {
+    if (firstLeafNode && (isIconElement(firstLeafNode) || isNotEditableNode(firstLeafNode))) {
         const nextSibling = firstLeafNode.nextSibling;
         const nextSiblingText = nextSibling ? nextSibling.textContent : '';
+        const parentEl = firstLeafNode.parentElement;
         firstLeafNode.remove();
         if (isEditorTab(firstLeafNode) && nextSiblingText[0] === '\u200B') {
             // When deleting an editor tab, we need to ensure it's related ZWS
             // il deleted as well.
             nextSibling.textContent = nextSiblingText.replace('\u200B', '');
         }
+        fillEmpty(parentEl);
         return;
     }
     if (
@@ -163,7 +170,20 @@ HTMLElement.prototype.oDeleteForward = function (offset) {
         return;
     }
 
-    const nextSibling = this.nextSibling;
+    let nextSibling = this.nextSibling;
+    while (nextSibling && isWhitespace(nextSibling)) {
+        const index = childNodeIndex(nextSibling);
+        const left = getState(nextSibling, index, DIRECTIONS.LEFT).cType;
+        const right = getState(nextSibling, index, DIRECTIONS.RIGHT).cType;
+        if (left === CTYPES.BLOCK_OUTSIDE && right === CTYPES.BLOCK_OUTSIDE) {
+            // If the next sibling is a whitespace, remove it.
+            nextSibling.remove();
+            nextSibling = this.nextSibling;
+        } else {
+            break;
+        }
+    }
+
     if (
         (
             offset === this.childNodes.length ||

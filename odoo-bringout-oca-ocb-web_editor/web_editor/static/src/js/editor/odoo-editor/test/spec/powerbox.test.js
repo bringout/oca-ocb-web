@@ -1,6 +1,8 @@
+/** @odoo-module */
+
 import { setSelection } from '../../src/OdooEditor.js';
 import { Powerbox } from '../../src/powerbox/Powerbox.js';
-import { BasicEditor, _isMobile, insertText, nextTick, testEditor, triggerEvent } from '../utils.js';
+import { BasicEditor, _isMobile, insertText, testEditor, triggerEvent } from '../utils.js';
 
 const getCurrentCommandNames = powerbox => {
     return [...powerbox.el.querySelectorAll('.oe-powerbox-commandName')].map(c => c.innerText);
@@ -64,20 +66,16 @@ describe('Powerbox', () => {
                 contentAfter: '<h1>ab[]</h1>',
             });
         });
-        it('should not reinsert the selected text after command validation', async () => {
+        it('should execute command and remove term and hot character on Tab', async () => {
             await testEditor(BasicEditor, {
-                contentBefore: '<p>[]<br></p>',
+                contentBefore: '<p>ab[]</p>',
                 stepFunction: async editor => {
-                    await insertText(editor, 'abc');
-                    const p = editor.editable.querySelector('p');
-                    setSelection(p.firstChild, 0, p.lastChild, 1);
-                    await nextTick();
                     await insertText(editor, '/');
-                    window.chai.expect(editor.powerbox.isOpen).to.be.true;
-                    await insertText(editor, 'h1');
-                    await triggerEvent(editor.editable, "keydown", { key: "Enter" });
+                    await insertText(editor, 'head');
+                    await triggerEvent(editor.editable, 'keyup');
+                    await triggerEvent(editor.editable, 'keydown', { key: 'Tab' });
                 },
-                contentAfter: '<h1>[]<br></h1>',
+                contentAfter: '<h1>ab[]</h1>',
             });
         });
         it('should close the powerbox if keyup event is called on other block', async () => {
@@ -110,6 +108,7 @@ describe('Powerbox', () => {
     describe('class', () => {
         it('should properly order default commands and categories', async () => {
             const editable = document.createElement('div');
+            editable.classList.add('odoo-editor-editable');
             document.body.append(editable);
             const powerbox = new Powerbox({
                 categories: [
@@ -143,6 +142,7 @@ describe('Powerbox', () => {
         });
         it('should navigate through commands with arrow keys', async () => {
             const editable = document.createElement('div');
+            editable.classList.add('odoo-editor-editable');
             document.body.append(editable);
             const powerbox = new Powerbox({
                 categories: [],
@@ -191,8 +191,34 @@ describe('Powerbox', () => {
             powerbox.destroy();
             editable.remove();
         });
+        it('should execute command on press Tab', async () => {
+            const editable = document.createElement('div');
+            editable.classList.add('odoo-editor-editable');
+            document.body.append(editable);
+            const powerbox = new Powerbox({
+                categories: [],
+                commands: [
+                    {category: 'a', name: '2', callback: () => editable.innerText = '2'},
+                    {category: 'a', name: '3', callback: () => editable.innerText = '3'},
+                    {category: 'a', name: '1', callback: () => editable.innerText = '1'},
+                ],
+                editable,
+            });
+            setSelection(editable, 0);
+            powerbox.open();
+            window.chai.expect(editable.innerText).to.eql('');
+            await triggerEvent(editable, 'keydown', { key: 'Enter'});
+            window.chai.expect(editable.innerText).to.eql('1');
+            powerbox.open();
+            await triggerEvent(editable, 'keydown', { key: 'ArrowDown'});
+            await triggerEvent(editable, 'keydown', { key: 'Tab'});
+            window.chai.expect(editable.innerText).to.eql('2');
+            powerbox.destroy();
+            editable.remove();
+        });
         it('should filter commands with `commandFilters`', async () => {
             const editable = document.createElement('div');
+            editable.classList.add('odoo-editor-editable');
             document.body.append(editable);
             const powerbox = new Powerbox({
                 categories: [],
@@ -218,6 +244,7 @@ describe('Powerbox', () => {
         });
         it('should filter commands with `isDisabled`', async () => {
             const editable = document.createElement('div');
+            editable.classList.add('odoo-editor-editable');
             document.body.append(editable);
             let disableCommands = false;
             const powerbox = new Powerbox({
@@ -328,6 +355,7 @@ describe('Powerbox', () => {
         });
         it('should close the Powerbox on press Escape', async () => {
             const editable = document.createElement('div');
+            editable.classList.add('odoo-editor-editable');
             document.body.append(editable);
             const powerbox = new Powerbox({
                 categories: [],

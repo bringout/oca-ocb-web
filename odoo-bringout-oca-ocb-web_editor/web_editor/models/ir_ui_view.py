@@ -81,7 +81,11 @@ class IrUiView(models.Model):
                     self._copy_custom_snippet_translations(record, field)
 
         except (ValueError, TypeError):
-            raise ValidationError(_("Invalid field value for %s: %s", Model._fields[field].string, el.text_content().strip()))
+            raise ValidationError(_(
+                "Invalid field value for %(field_name)s: %(value)s",
+                field_name=Model._fields[field].string,
+                value=el.text_content().strip(),
+            ))
 
     def save_oe_structure(self, el):
         self.ensure_one()
@@ -103,7 +107,7 @@ class IrUiView(models.Model):
         vals = {
             'inherit_id': self.id,
             'name': '%s (%s)' % (self.name, el.get('id')),
-            'arch': self._pretty_arch(arch),
+            'arch': etree.tostring(arch, encoding='unicode'),
             'key': '%s_%s' % (self.key, el.get('id')),
             'type': 'qweb',
             'mode': 'extension',
@@ -120,10 +124,14 @@ class IrUiView(models.Model):
         usage of a custom snippet and copy its translations.
         """
         lang_value = record[html_field]
-        if not lang_value:
+        if not lang_value or not lang_value.strip():
             return
 
-        tree = html.fromstring(lang_value)
+        try:
+            tree = html.fromstring(lang_value)
+        except etree.ParserError as e:
+            raise ValidationError(str(e))
+
         for custom_snippet_el in tree.xpath('//*[hasclass("s_custom_snippet")]'):
             custom_snippet_name = custom_snippet_el.get('data-name')
             custom_snippet_view = self.search([('name', '=', custom_snippet_name)], limit=1)
@@ -131,8 +139,8 @@ class IrUiView(models.Model):
                 self._copy_field_terms_translations(custom_snippet_view, 'arch_db', record, html_field)
 
     @api.model
-    def _copy_field_terms_translations(self, record_from, name_field_from, record_to, name_field_to):
-        """ Copy model terms translations from ``record_from.name_field_from``
+    def _copy_field_terms_translations(self, records_from, name_field_from, record_to, name_field_to):
+        """ Copy model terms translations from ``records_from.name_field_from``
         to ``record_to.name_field_to`` for all activated languages if the term
         in ``record_to.name_field_to`` is untranslated (the term matches the
         one in the current language).
@@ -143,15 +151,10 @@ class IrUiView(models.Model):
 
         The method takes care of read and write access of both records/fields.
         """
-        record_to.check_access_rights('write')
-        record_to.check_access_rule('write')
+        record_to.check_access('write')
         record_to.check_field_access_rights('write', [name_field_to])
 
-        # This will also implicitly check for `read` access rights
-        if not record_from[name_field_from] or not record_to[name_field_to]:
-            return
-
-        field_from = record_from._fields[name_field_from]
+        field_from = records_from._fields[name_field_from]
         field_to = record_to._fields[name_field_to]
         error_callable_msg = "'translate' property of field %r is not callable"
         if not callable(field_from.translate):
@@ -161,19 +164,25 @@ class IrUiView(models.Model):
         if not field_to.store:
             raise ValueError("Field %r is not stored" % field_to)
 
+        # This will also implicitly check for `read` access rights
+        if not record_to[name_field_to] or not any(records_from.mapped(name_field_from)):
+            return
+
         lang_env = self.env.lang or 'en_US'
         langs = set(lang for lang, _ in self.env['res.lang'].get_installed())
 
         # 1. Get translations
-        record_from.flush_model([name_field_from])
+        records_from.flush_model([name_field_from])
         existing_translation_dictionary = field_to.get_translation_dictionary(
             record_to[name_field_to],
             {lang: record_to.with_context(prefetch_langs=True, lang=lang)[name_field_to] for lang in langs if lang != lang_env}
         )
-        extra_translation_dictionary = field_from.get_translation_dictionary(
-            record_from[name_field_from],
-            {lang: record_from.with_context(prefetch_langs=True, lang=lang)[name_field_from] for lang in langs if lang != lang_env}
-        )
+        extra_translation_dictionary = {}
+        for record_from in records_from:
+            extra_translation_dictionary.update(field_from.get_translation_dictionary(
+                record_from[name_field_from],
+                {lang: record_from.with_context(prefetch_langs=True, lang=lang)[name_field_from] for lang in langs if lang != lang_env}
+            ))
         for term, extra_translation_values in extra_translation_dictionary.items():
             existing_translation_values = existing_translation_dictionary.setdefault(term, {})
             # Update only default translation values that aren't customized by the user.
@@ -199,11 +208,6 @@ class IrUiView(models.Model):
     @api.model
     def _save_oe_structure_hook(self):
         return {}
-
-    @api.model
-    def _pretty_arch(self, arch):
-        # TODO: Remove this method in 16.3.
-        return etree.tostring(arch, encoding='unicode')
 
     @api.model
     def _are_archs_equal(self, arch1, arch2):
@@ -313,7 +317,7 @@ class IrUiView(models.Model):
         old_arch = etree.fromstring(self.arch.encode('utf-8'))
         if not self._are_archs_equal(old_arch, new_arch):
             self._set_noupdate()
-            self.write({'arch': self._pretty_arch(new_arch)})
+            self.write({'arch': etree.tostring(new_arch, encoding='unicode')})
             self._copy_custom_snippet_translations(self, 'arch_db')
 
     @api.model
@@ -360,17 +364,18 @@ class IrUiView(models.Model):
 
         views_to_return = view
 
-        node = etree.fromstring(view.arch)
-        xpath = "//t[@t-call]"
-        if bundles:
-            xpath += "| //t[@t-call-assets]"
-        for child in node.xpath(xpath):
-            try:
-                called_view = self._view_obj(child.get('t-call', child.get('t-call-assets')))
-            except ValueError:
-                continue
-            if called_view and called_view not in views_to_return and called_view.id not in visited:
-                views_to_return += self._views_get(called_view, get_children=get_children, bundles=bundles, visited=visited + views_to_return.ids)
+        if view.arch and view.arch.strip():
+            node = etree.fromstring(view.arch)
+            xpath = "//t[@t-call]"
+            if bundles:
+                xpath += "| //t[@t-call-assets]"
+            for child in node.xpath(xpath):
+                try:
+                    called_view = self._view_obj(child.get('t-call', child.get('t-call-assets')))
+                except ValueError:
+                    continue
+                if called_view and called_view not in views_to_return and called_view.id not in visited:
+                    views_to_return += self._views_get(called_view, get_children=get_children, bundles=bundles, visited=visited + views_to_return.ids)
 
         if not get_children:
             return views_to_return
@@ -492,10 +497,7 @@ class IrUiView(models.Model):
             'type': 'qweb',
             'arch': """
                 <data inherit_id="%s">
-                    <xpath expr="//div[@id='snippet_custom']" position="attributes">
-                        <attribute name="class" remove="d-none" separator=" "/>
-                    </xpath>
-                    <xpath expr="//div[@id='snippet_custom_body']" position="inside">
+                    <xpath expr="//snippets[@id='snippet_custom']" position="inside">
                         <t t-snippet="%s" t-thumbnail="%s"/>
                     </xpath>
                 </data>

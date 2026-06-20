@@ -6,9 +6,7 @@ import {
     childNodeIndex,
     closestBlock,
     closestElement,
-    closestPath,
     DIRECTIONS,
-    findNode,
     getCursors,
     getDeepRange,
     getInSelection,
@@ -16,15 +14,11 @@ import {
     getSelectedNodes,
     getTraversedNodes,
     insertAndSelectZws,
-    insertText,
     isBlock,
     isColorGradient,
-    isContentTextNode,
     isSelectionFormat,
     isShrunkBlock,
-    isVisible,
-    isVisibleEmpty,
-    isVisibleStr,
+    isSelfClosingElement,
     leftLeafFirstPath,
     preserveCursor,
     rightPos,
@@ -48,13 +42,19 @@ import {
     getDeepestPosition,
     fillEmpty,
     isEmptyBlock,
+    isWhitespace,
+    isVisibleTextNode,
     getCursorDirection,
+    resetOuids,
+    FONT_SIZE_CLASSES,
+    TEXT_STYLE_CLASSES,
     padLinkWithZws,
     isLinkEligibleForZwnbsp,
+    paragraphRelatedElements,
     lastLeaf,
     firstLeaf,
-    paragraphRelatedElements,
     convertList,
+    hasAnyFontSizeClass,
 } from '../utils/utils.js';
 
 const TEXT_CLASSES_REGEX = /\btext-[^\s]*\b/;
@@ -65,7 +65,7 @@ function align(editor, mode) {
     const visitedBlocks = new Set();
     const traversedNode = getTraversedNodes(editor.editable);
     for (const node of traversedNode) {
-        if (isContentTextNode(node) && isVisible(node)) {
+        if (isVisibleTextNode(node)) {
             const block = closestBlock(node);
             if (!visitedBlocks.has(block)) {
                 const hasModifier = getComputedStyle(block).textAlign === mode;
@@ -202,10 +202,10 @@ export const editorCommands = {
         const shouldUnwrap = (node) => (
             [...paragraphRelatedElements, 'LI'].includes(node.nodeName) &&
             block.textContent !== "" && node.textContent !== "" &&
-            (
-                block.nodeName === node.nodeName ||
-                block.nodeName === 'DIV'
-            )
+            [node.nodeName, 'DIV'].includes(block.nodeName) &&
+            // If the selection anchorNode is the editable itself, the content
+            // should not be unwrapped.
+            selection.anchorNode.oid !== 'root'
         );
 
         // Empty block must contain a br element to allow cursor placement.
@@ -225,7 +225,7 @@ export const editorCommands = {
             (
                 ['P', 'LI'].includes(container.firstChild.nodeName) ||
                 shouldUnwrap(container.firstChild)
-            )
+            ) && selection.anchorNode.oid !== 'root'
         ) {
             const p = container.firstElementChild;
             container.replaceChildren(...p.childNodes);
@@ -259,7 +259,7 @@ export const editorCommands = {
         if (startNode.nodeType === Node.ELEMENT_NODE) {
             if (selection.anchorOffset === 0) {
                 const textNode = editor.document.createTextNode('');
-                if (isVisibleEmpty(startNode)) {
+                if (isSelfClosingElement(startNode)) {
                     startNode.parentNode.insertBefore(textNode, startNode);
                 } else {
                     startNode.prepend(textNode);
@@ -283,12 +283,14 @@ export const editorCommands = {
                 reference = child;
             }
         }
+        const lastInsertedNodes = [...containerLastChild.childNodes];
         if (containerLastChild.hasChildNodes()) {
             const toInsert = [...containerLastChild.childNodes]; // Prevent mutation
             _insertAt(currentNode, [...toInsert], insertBefore);
             currentNode = insertBefore ? toInsert[0] : currentNode;
             lastChildNode = toInsert[toInsert.length - 1];
         }
+        const firstInsertedNodes = [...containerFirstChild.childNodes];
         if (containerFirstChild.hasChildNodes()) {
             const toInsert = [...containerFirstChild.childNodes]; // Prevent mutation
             _insertAt(currentNode, [...toInsert], insertBefore);
@@ -318,7 +320,8 @@ export const editorCommands = {
                 while (
                     currentNode.parentElement !== editor.editable &&
                     (!allowsParagraphRelatedElements(currentNode.parentElement) ||
-                        (currentNode.parentElement.nodeName === 'LI' && nodeToInsert.nodeName !== 'TABLE'))
+                        (currentNode.parentElement.nodeName === "LI" &&
+                            !isUnbreakable(nodeToInsert)))
                 ) {
                     if (isUnbreakable(currentNode.parentElement)) {
                         makeContentsInline(container);
@@ -333,15 +336,15 @@ export const editorCommands = {
                         const [left, right] = splitElement(currentNode.parentElement, offset);
                         if (isUnbreakable(nodeToInsert) && container.childNodes.length === 1) {
                             fillEmpty(right);
-                        } else if (isEmptyBlock(right)) {
+                        } else if (isEmptyBlock(right) && !insertBefore) {
                             right.remove();
                         }
-                        currentNode = insertBefore ? right : left;
+                        currentNode = insertBefore && right.isConnected ? right : left;
                     } else {
                         currentNode = currentNode.parentElement;
                     }
                 }
-                if (currentNode.parentElement.nodeName === 'LI' && nodeToInsert.nodeName === 'TABLE') {
+                if (currentNode.parentElement.nodeName === 'LI' && isUnbreakable(nodeToInsert)) {
                     const br = document.createElement('br');
                     currentNode[currentNode.textContent ? 'after' : 'before'](br);
                 }
@@ -351,6 +354,9 @@ export const editorCommands = {
             if (block.nodeName === "LI" && paragraphRelatedElements.includes(nodeToInsert.nodeName)) {
                 setTagName(nodeToInsert, "LI");
             }
+            // Contenteditable false property changes to true after the node is
+            // inserted into DOM.
+            const isNodeToInsertContentEditable = nodeToInsert.isContentEditable;
             if (insertBefore) {
                 currentNode.before(nodeToInsert);
                 insertBefore = false;
@@ -370,6 +376,19 @@ export const editorCommands = {
             if (currentNode.tagName !== 'BR' && isShrunkBlock(currentNode)) {
                 currentNode.remove();
             }
+            // If the first child of editable is contenteditable false element
+            // a chromium bug prevents selecting the container. Prepend a
+            // zero-width space so it's no longer the first child.
+            if (
+                !isNodeToInsertContentEditable &&
+                editor.editable.firstChild === nodeToInsert &&
+                nodeToInsert.nodeType === Node.ELEMENT_NODE &&
+                (nodeToInsert.classList.contains("o_knowledge_behavior_type_template") ||
+                    nodeToInsert.classList.contains("o_editor_banner"))
+            ) {
+                const zws = document.createTextNode("\u200B");
+                nodeToInsert.before(zws);
+            }
             currentNode = convertedList || nodeToInsert;
         }
 
@@ -379,7 +398,8 @@ export const editorCommands = {
             currentNode.nodeName !== 'BR' &&
             currentNode.nextSibling &&
             currentNode.nextSibling.nodeName === 'BR' &&
-            lastLeaf(currentNode.parentNode) === currentNode.nextSibling
+            lastLeaf(currentNode.parentNode) === currentNode.nextSibling &&
+            !closestElement(currentNode, '[t-field],[t-esc],[t-out]')
         ) {
             currentNode.nextSibling.remove();
         }
@@ -395,14 +415,25 @@ export const editorCommands = {
                 ? rightPos(lastLeaf(currentNode))
                 : rightPos(currentNode);
         }
-        if (lastPosition[0] === editor.editable) {
+        if (
+            lastPosition[0].nodeName === "A" &&
+            (lastPosition[1] === nodeSize(lastPosition[0]) || lastPosition[1] === 0) &&
+            isLinkEligibleForZwnbsp(editor.editable, lastPosition[0])
+        ) {
+            // In case the currentNode is different than A but the lastposition is A
+            // we need to pad the link with zws and adjust the selection accordingly
+            padLinkWithZws(editor.editable, lastPosition[0]);
+            currentNode = lastPosition[0].nextSibling;
+            lastPosition = getDeepestPosition(...rightPos(currentNode));
+        }
+        if (!editor.options.allowInlineAtRoot && lastPosition[0] === editor.editable) {
             // Correct the position if it happens to be in the editable root.
             lastPosition = getDeepestPosition(...lastPosition);
         }
         newRange.setStart(lastPosition[0], lastPosition[1]);
         newRange.setEnd(lastPosition[0], lastPosition[1]);
         selection.addRange(newRange);
-        return insertedNodes;
+        return [...firstInsertedNodes, ...insertedNodes, ...lastInsertedNodes];
     },
     insertFontAwesome: (editor, faClass = 'fa fa-star') => {
         const insertedNode = editorCommands.insert(editor, document.createElement('i'))[0];
@@ -416,9 +447,15 @@ export const editorCommands = {
     redo: editor => editor.historyRedo(),
 
     // Change tags
-    setTag(editor, tagName) {
+    setTag(editor, tagName, extraClass = "") {
         const range = getDeepRange(editor.editable, { correctTripleClick: true });
-        const selectedBlocks = [...new Set(getTraversedNodes(editor.editable, range).map(closestBlock))];
+        const selectedBlocks = [
+            ...new Set(
+                getTraversedNodes(editor.editable, range)
+                    .map(closestBlock)
+                    .filter((block) => block.isContentEditable)
+            ),
+        ];
         const deepestSelectedBlocks = selectedBlocks.filter(block => (
             !descendants(block).some(descendant => selectedBlocks.includes(descendant)) &&
             block.isContentEditable
@@ -436,8 +473,24 @@ export const editorCommands = {
                 if (inLI && tagName === "P") {
                     inLI.oToggleList(0);
                 } else {
-                    block.classList.remove('h1', 'h2', 'h3', 'h4', 'h5', 'h6');
-                    setTagName(block, tagName);
+                    const newEl = setTagName(block, tagName);
+                    newEl.classList.remove(
+                        ...FONT_SIZE_CLASSES,
+                        ...TEXT_STYLE_CLASSES,
+                        // We want to be able to edit the case `<h2 class="h3">`
+                        // but in that case, we want to display "Header 2" and
+                        // not "Header 3" as it is more important to display
+                        // the semantic tag being used (especially for h1 ones).
+                        // This is why those are not in `TEXT_STYLE_CLASSES`.
+                        "h1", "h2", "h3", "h4", "h5", "h6"
+                    );
+                    delete newEl.style.fontSize;
+                    if (extraClass) {
+                        newEl.classList.add(extraClass);
+                    }
+                    if (newEl.classList.length === 0) {
+                        newEl.removeAttribute("class");
+                    }
                 }
             } else {
                 // eg do not change a <div> into a h1: insert the h1
@@ -450,10 +503,10 @@ export const editorCommands = {
         }
         const isContextBlock = container => ['TD', 'DIV', 'LI'].includes(container.nodeName);
         if (!startContainer.isConnected || isContextBlock(startContainer)) {
-            startContainer = startContainerChild.parentNode;
+            startContainer = startContainerChild?.parentNode || startContainer;
         }
         if (!endContainer.isConnected || isContextBlock(endContainer)) {
-            endContainer = endContainerChild.parentNode;
+            endContainer = endContainerChild?.parentNode || endContainer;
         }
         const newRange = new Range();
         newRange.setStart(startContainer, startOffset);
@@ -469,6 +522,7 @@ export const editorCommands = {
     underline: editor => formatSelection(editor, 'underline'),
     strikeThrough: editor => formatSelection(editor, 'strikeThrough'),
     setFontSize: (editor, size) => formatSelection(editor, 'fontSize', {applyStyle: true, formatProps: {size}}),
+    setFontSizeClassName: (editor, className) => formatSelection(editor, 'setFontSizeClassName', {applyStyle: true, formatProps: {className}}),
     switchDirection: editor => {
         getDeepRange(editor.editable, { splitText: true, select: true, correctTripleClick: true });
         const selection = editor.document.getSelection();
@@ -513,6 +567,7 @@ export const editorCommands = {
         // created in the middle of the process, which we prevent here.
         editor.historyPauseSteps();
         editor.document.execCommand('removeFormat');
+        let hasFontSizeClass;
         for (const node of getTraversedNodes(editor.editable)) {
             if (node.nodeType === Node.ELEMENT_NODE && node.hasAttribute('color')) {
                 node.removeAttribute('color');
@@ -521,6 +576,15 @@ export const editorCommands = {
             element.style.removeProperty('color');
             element.style.removeProperty('background');
             element.style.removeProperty('-webkit-text-fill-color');
+            if (!hasFontSizeClass && closestElement(node, hasAnyFontSizeClass)) {
+                hasFontSizeClass = true;
+            }
+        }
+        if (hasFontSizeClass) {
+            // Calling `document.execCommand` will not remove font-size
+            // if font-size is applied through a css class. To remove
+            // those styles, font-size classes should be removed.
+            formatSelection(editor, 'setFontSizeClassName', { applyStyle: false });
         }
         textAlignStyles.forEach((textAlign, block) => {
             block.style.setProperty('text-align', textAlign);
@@ -535,27 +599,6 @@ export const editorCommands = {
     justifyFull: editor => align(editor, 'justify'),
 
     // Link
-    createLink: (editor, link, content) => {
-        const sel = editor.document.getSelection();
-        if (content && !sel.isCollapsed) {
-            editor.deleteRange(sel);
-        }
-        if (sel.isCollapsed) {
-            insertText(sel, content || 'link');
-        }
-        const currentLink = closestElement(sel.focusNode, 'a');
-        link = link || prompt('URL or Email', (currentLink && currentLink.href) || 'http://');
-        const res = editor.document.execCommand('createLink', false, link);
-        if (res) {
-            setSelection(sel.anchorNode, sel.anchorOffset, sel.focusNode, sel.focusOffset);
-            const node = findNode(closestPath(sel.focusNode), node => node.tagName === 'A');
-            for (const [param, value] of Object.entries(editor.options.defaultLinkAttributes)) {
-                node.setAttribute(param, `${value}`);
-            }
-            const pos = [node.parentElement, childNodeIndex(node) + 1];
-            setSelection(...pos, ...pos, false);
-        }
-    },
     unlink: editor => {
         const sel = editor.document.getSelection();
         const isCollapsed = sel.isCollapsed;
@@ -629,12 +672,15 @@ export const editorCommands = {
             !descendants(block).some(descendant => selectedBlocks.includes(descendant))
         ));
         for (const node of deepestSelectedBlocks) {
-            if (node.nodeType === Node.TEXT_NODE && !isVisibleStr(node) && closestElement(node).isContentEditable) {
+            let nodeToToggle = closestBlock(node);
+            if (
+                ![...paragraphRelatedElements, 'LI'].includes(nodeToToggle.nodeName) &&
+                node.nodeType === Node.TEXT_NODE && isWhitespace(node) && closestElement(node).isContentEditable
+            ) {
                 node.remove();
             } else {
                 // Ensure nav-item lists are excluded from toggling
                 const isNavItemList = node => node.nodeName === 'LI' && node.classList.contains('nav-item');
-                let nodeToToggle = closestBlock(node);
                 nodeToToggle = isNavItemList(nodeToToggle) ? node : nodeToToggle;
                 if (!['OL', 'UL'].includes(nodeToToggle.tagName) && (nodeToToggle.isContentEditable || nodeToToggle.nodeType === Node.TEXT_NODE)) {
                     const closestLi = closestElement(nodeToToggle, 'li');
@@ -647,7 +693,7 @@ export const editorCommands = {
 
         let target = [...(blocks.size ? blocks : li)];
         if (blocks.size) {
-            // Remove hardcoded padding to have default padding of list element 
+            // Remove hardcoded padding to have default padding of list element
             for (const block of blocks) {
                 if (block.style) {
                     block.style.padding = "";
@@ -696,13 +742,27 @@ export const editorCommands = {
         if (!range) return;
         const restoreCursor = preserveCursor(editor.document);
         // Get the <font> nodes to color
-        const selectionNodes = getSelectedNodes(editor.editable).filter(node => closestElement(node).isContentEditable && node.nodeName !== "T");
+        const selectionNodes = getSelectedNodes(editor.editable).filter(node => closestElement(node).isContentEditable);
         if (isEmptyBlock(range.endContainer)) {
             selectionNodes.push(range.endContainer, ...descendants(range.endContainer));
         }
-        const selectedNodes = mode === "backgroundColor"
+        let selectedNodes = mode === "backgroundColor"
             ? selectionNodes.filter(node => !closestElement(node, 'table.o_selected_table'))
             : selectionNodes;
+        const findTopMostDecoration = (current) => {
+            const decoration = closestElement(current.parentNode, "s, u");
+            return decoration?.textContent === current.textContent
+                ? findTopMostDecoration(decoration)
+                : current;
+        };
+        selectedNodes = selectedNodes.map((node) => {
+            return findTopMostDecoration(node);
+        });
+
+        const selectedFieldNodes = new Set(getSelectedNodes(editor.editable)
+                .map(n => closestElement(n, "*[t-field],*[t-out],*[t-esc]"))
+                .filter(Boolean));
+
         function getFonts(selectedNodes) {
             return selectedNodes.flatMap(node => {
                 let font = closestElement(node, 'font') || closestElement(node, 'span');
@@ -744,18 +804,16 @@ export const editorCommands = {
                     } else {
                         font = [];
                     }
-                } else if (
-                    (node.nodeType === Node.TEXT_NODE && isVisibleStr(node)) ||
-                    (node.nodeName === 'BR' && isEmptyBlock(node.parentNode)) ||
-                    (node.nodeType === Node.ELEMENT_NODE &&
-                    node.nodeName !== 'FIGURE' &&
-                    ['inline', 'inline-block'].includes(getComputedStyle(node).display) &&
-                    isVisibleStr(node.textContent) &&
-                    !node.classList.contains('btn') &&
-                    !node.querySelector('font')) &&
-                    node.nodeName !== 'A' &&
-                    !(node.nodeName === 'SPAN' && node.style['fontSize'])
-                ) {
+                } else if ((node.nodeType === Node.TEXT_NODE && !isWhitespace(node) && node.textContent !== '\ufeff')
+                        || (node.nodeName === 'BR' && isEmptyBlock(node.parentNode))
+                        || (node.nodeType === Node.ELEMENT_NODE &&
+                            node.nodeName !== 'FIGURE' &&
+                            ['inline', 'inline-block'].includes(getComputedStyle(node).display) &&
+                            !isWhitespace(node.textContent) &&
+                            !node.classList.contains('btn') &&
+                            !node.querySelector('font')) &&
+                            node.nodeName !== 'A' &&
+                            !(node.nodeName === 'SPAN' && node.style['fontSize'])) {
                     // Node is a visible text or inline node without font nor a button:
                     // wrap it in a <font>.
                     const previous = node.previousSibling;
@@ -792,6 +850,10 @@ export const editorCommands = {
             });
         }
 
+        for (const fieldNode of selectedFieldNodes) {
+            colorElement(fieldNode, color, mode);
+        }
+
         let fonts = getFonts(selectedNodes);
         // Dirty fix as the previous call could have unconnected elements
         // because of the `splitAroundUntil`. Another call should provide he
@@ -799,6 +861,7 @@ export const editorCommands = {
         if (!fonts.every((font) => font.isConnected)) {
             fonts = getFonts(selectedNodes);
         }
+
         // Color the selected <font>s and remove uncolored fonts.
         const fontsSet = new Set(fonts);
         for (const font of fontsSet) {
@@ -840,7 +903,7 @@ export const editorCommands = {
             const newPosition = rightPos(newAnchorNode);
             setSelection(...newPosition, ...newPosition, false);
         }
-        const [table] = editorCommands.insert(editor, parseHTML(tableHtml));
+        const [table] = editorCommands.insert(editor, parseHTML(editor.document, tableHtml));
         setCursorStart(table.querySelector('p'));
     },
     addColumn: (editor, beforeOrAfter, referenceCell) => {
@@ -983,10 +1046,7 @@ export const editorCommands = {
                 for (const column of columns) {
                     const columnContents = unwrapContents(column);
                     for (const node of columnContents) {
-                        node.ouid = undefined; // Allow move out of unbreakable
-                        for (const descendant of descendants(node)) {
-                            descendant.ouid = undefined; // Allow move out of unbreakable
-                        }
+                        resetOuids(node);
                     }
                 }
             }
@@ -1003,10 +1063,7 @@ export const editorCommands = {
             row.classList.add('row');
             container.append(row);
             const block = closestBlock(anchor);
-            block.ouid = undefined; // Allow move out of unbreakable
-            for (const descendant of descendants(block)) {
-                descendant.ouid = undefined; // Allow move out of unbreakable
-            }
+            resetOuids(block);
             const columnSize = Math.floor(12 / numberOfColumns);
             const columns = [];
             for (let i = 0; i < numberOfColumns; i++) {
@@ -1058,17 +1115,14 @@ export const editorCommands = {
                 // Remove superfluous columns.
                 const restore = preserveCursor(editor.document);
                 for (const column of columns) {
-                    column.className = column.className.replace(REGEX_BOOTSTRAP_COLUMN, `col-${columnSize}`);
+                    column.className = column.className.replace(REGEX_BOOTSTRAP_COLUMN, `col$1-${columnSize}`);
                 }
                 const contents = [];
                 for (let i = diff; i < 0; i++) {
                     const column = columns.pop();
                     const columnContents = unwrapContents(column);
                     for (const node of columnContents) {
-                        node.ouid = undefined; // Allow move out of unbreakable
-                        for (const descendant of descendants(node)) {
-                            descendant.ouid = undefined; // Allow move out of unbreakable
-                        }
+                        resetOuids(node);
                     }
                     contents.unshift(...columnContents);
                 }
@@ -1080,10 +1134,7 @@ export const editorCommands = {
     insertHorizontalRule(editor) {
         const selection = editor.document.getSelection();
         const range = selection.getRangeAt(0);
-        const element = closestElement(
-            range.startContainer,
-            'P, PRE, H1, H2, H3, H4, H5, H6, BLOCKQUOTE',
-        );
+        const element = closestElement(range.startContainer, paragraphRelatedElements) || closestBlock(range.startContainer);
 
         if (element && ancestors(element).includes(editor.editable)) {
             element.before(editor.document.createElement('hr'));

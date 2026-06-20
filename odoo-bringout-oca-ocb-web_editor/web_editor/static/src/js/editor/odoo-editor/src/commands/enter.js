@@ -3,7 +3,6 @@ import { UNBREAKABLE_ROLLBACK_CODE } from '../utils/constants.js';
 
 import {
     childNodeIndex,
-    clearEmpty,
     fillEmpty,
     isBlock,
     isUnbreakable,
@@ -14,7 +13,10 @@ import {
     splitTextNode,
     toggleClass,
     isVisible,
+    descendants,
+    isVisibleTextNode,
     nodeSize,
+    getTraversedNodes,
     setSelection,
 } from '../utils/utils.js';
 
@@ -57,13 +59,13 @@ HTMLElement.prototype.oEnter = function (offset, firstSplit = true) {
     }
 
     // First split the node in two and move half the children in the clone.
-    const splitEl = this.cloneNode(false);
+    let splitEl = this.cloneNode(false);
     while (offset < this.childNodes.length) {
         splitEl.appendChild(this.childNodes[offset]);
     }
     if (isBlock(this) || splitEl.hasChildNodes()) {
         this.after(splitEl);
-        if (isVisible(splitEl)) {
+        if (isBlock(splitEl) || isVisible(splitEl) || splitEl.textContent === '\u200B') {
             didSplit = true;
         } else {
             splitEl.remove();
@@ -87,14 +89,22 @@ HTMLElement.prototype.oEnter = function (offset, firstSplit = true) {
     if (firstSplit && didSplit) {
         restore();
 
-        fillEmpty(clearEmpty(this));
+        let node = this;
+        while (!isBlock(node) && !isVisible(node)) {
+            const toRemove = node;
+            node = node.parentNode;
+            toRemove.remove();
+        }
+        fillEmpty(node);
         fillEmpty(splitEl);
-
-        const focusToElement =
-            splitEl.nodeType === Node.ELEMENT_NODE && splitEl.tagName === 'A'
-                ? clearEmpty(splitEl)
-                : splitEl;
-        setCursorStart(focusToElement);
+        if (splitEl.tagName === 'A') {
+            while (!isBlock(splitEl) && !isVisible(splitEl)) {
+                const toRemove = splitEl;
+                splitEl = splitEl.parentNode;
+                toRemove.remove();
+            }
+        }
+        setCursorStart(splitEl);
     }
     return splitEl;
 };
@@ -106,7 +116,7 @@ HTMLElement.prototype.oEnter = function (offset, firstSplit = true) {
  */
 HTMLHeadingElement.prototype.oEnter = function () {
     const newEl = HTMLElement.prototype.oEnter.call(this, ...arguments);
-    if (newEl && [...newEl.textContent].every(char => char === '\u200B')) { // empty or all invisible
+    if (newEl && !descendants(newEl).some(isVisibleTextNode)) {
         const node = setTagName(newEl, 'P');
         node.replaceChildren(document.createElement('br'));
         setCursorStart(node);
@@ -156,7 +166,9 @@ HTMLQuoteElement.prototype.oEnter = HTMLHeadingElement.prototype.oEnter;
  */
 HTMLLIElement.prototype.oEnter = function () {
     // If not empty list item, regular block split
-    if (this.textContent || this.querySelector('table')) {
+    const traverseNodes = getTraversedNodes(this);
+    const isContainUnbreakable = traverseNodes.some(isUnbreakable);
+    if (this.textContent || isContainUnbreakable) {
         const node = HTMLElement.prototype.oEnter.call(this, ...arguments);
         if (node.classList.contains('o_checked')) {
             toggleClass(node, 'o_checked');
