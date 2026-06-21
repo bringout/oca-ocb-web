@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 from odoo import _, http, tools, SUPERUSER_ID
 from odoo.addons.html_editor.tools import get_video_url_data
 from odoo.exceptions import UserError, MissingError, AccessError
+from odoo.fields import Domain
 from odoo.http import request
 from odoo.tools.image import image_process, image_data_uri, binary_to_image, get_webp_size
 from odoo.tools.mimetypes import guess_mimetype
@@ -34,10 +35,10 @@ DEFAULT_OLG_ENDPOINT = 'https://olg.api.odoo.com'
 # regex patterns in Python are slightly different from those in JavaScript.
 
 CSS_ANIMATION_RULE_REGEX = (
-        r"(?P<declaration>animation(-duration)?: .*?)"
-        + r"(?P<value>(\d+(\.\d+)?)|(\.\d+))"
-        + r"(?P<unit>ms|s)"
-        + r"(?P<separator>\s|;|\"|$)"
+        r"(?P<declaration>animation(-duration)?:\s*.*?)"
+        r"(?P<value>(\d+(\.\d+)?)|(\.\d+))"
+        r"(?P<unit>ms|s)"
+        r"(?P<separator>\s|;|\"|$)"
 )
 SVG_DUR_TIMECOUNT_VAL_REGEX = (
         r"(?P<attribute_name>\sdur=\"\s*)"
@@ -205,7 +206,7 @@ class HTML_Editor(http.Controller):
             )
         else:
             regex = r"<svg .*>"
-            declaration = f"--animation-ratio: {ratio}"
+            declaration = f"--animation_ratio: {ratio}"
             subst = ("\\g<0>\n\t<style>\n\t\t:root { \n\t\t\t" +
                      declaration +
                      ";\n\t\t}\n\t</style>")
@@ -333,10 +334,22 @@ class HTML_Editor(http.Controller):
         if not attachment:
             # Find attachment by url. There can be multiple matches because of default
             # snippet images referencing the same image in /static/, so we limit to 1
-            attachment = request.env['ir.attachment'].search([
-                '|', ('url', '=like', src), ('url', '=like', '%s?%%' % src),
-                ('mimetype', 'in', list(SUPPORTED_IMAGE_MIMETYPES.keys())),
-            ], limit=1)
+            attachment = request.env['ir.attachment'].search(
+                Domain.AND([
+                    Domain.OR([
+                        Domain('url', '=like', src),
+                        Domain('url', '=like', '%s?%%' % src),
+                    ]),
+                    Domain.OR([
+                        Domain('mimetype', 'in', list(SUPPORTED_IMAGE_MIMETYPES.keys())),
+                        # Add mimetype with optional parameters:
+                        # e.g: `image/svg+xml; charset=utf-8`
+                        *[
+                            Domain('mimetype', '=like', image_mimetype + ';%')
+                            for image_mimetype in SUPPORTED_IMAGE_MIMETYPES
+                        ],
+                    ]),
+                ]), limit=1)
         if not attachment:
             return {
                 'attachment': False,
@@ -398,6 +411,8 @@ class HTML_Editor(http.Controller):
         """
         self._clean_context()
         attachment = request.env['ir.attachment'].browse(attachment.id)
+        if not data and attachment.datas:
+            data = attachment.datas
 
         fields = {
             'original_id': attachment.id,
@@ -430,10 +445,11 @@ class HTML_Editor(http.Controller):
             # empty record set.
             request.env[fields['res_model']].browse(fields['res_id']).check_access('write')
 
-            # Sudo and SUPERUSER_ID because restricted editor will not be able
-            # to copy the record and the mimetype will be forced to plain text.
-            attachment = attachment.with_user(SUPERUSER_ID).sudo().copy(fields)
-            attachment = attachment.with_user(request.env.user.id).sudo(False)
+            # Sudo because restricted editor will not be able to copy the record
+            attachment = attachment.sudo().copy(fields).sudo(False)
+            # Override mimetype with SUPERUSER if it was forced to plain text
+            if attachment.mimetype == 'text/plain' != fields['mimetype']:
+                attachment.with_user(SUPERUSER_ID).mimetype = fields['mimetype']
 
         if alt_data:
             for size, per_type in alt_data.items():
@@ -550,6 +566,13 @@ class HTML_Editor(http.Controller):
                 ], limit=1)
                 if not attachment:
                     raise werkzeug.exceptions.NotFound()
+
+            if not re.match(r'^image\/svg\+xml(;.*)?$', attachment.mimetype):
+                return request.make_response(attachment.raw, [
+                    ('Content-type', attachment.mimetype),
+                    ('Cache-control', 'max-age=%s' % http.STATIC_CACHE_LONG),
+                ])
+
             svg = attachment.raw.decode('utf-8')
         else:
             # Used for compatibility
@@ -701,9 +724,9 @@ class HTML_Editor(http.Controller):
                 action_type = action.type
                 if action_type != 'ir.actions.act_window':
                     return {'other_error_msg': _("Action %s is not a window action, link preview is not available", action_name)}
-                action = request.env[action_type].browse(action.id)
+                action_sudo = request.env[action_type].sudo().browse(action.id)
 
-                model = request.env[action.res_model].with_context(context)
+                model = request.env[action_sudo.res_model].with_context(context)
 
             record = model.browse(record_id)
 

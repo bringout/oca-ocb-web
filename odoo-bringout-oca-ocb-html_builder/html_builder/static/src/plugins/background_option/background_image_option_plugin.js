@@ -9,6 +9,13 @@ import { BuilderAction } from "@html_builder/core/builder_action";
 import { StyleAction } from "@html_builder/core/core_builder_action_plugin";
 import { withSequence } from "@html_editor/utils/resource";
 
+/**
+ * @typedef {((editingElement: HTMLElement) => void)[]} on_bg_image_hide_handlers
+ *
+ * @typedef {((editingElement: HTMLElement) => HTMLElement)[]} background_filter_target_providers
+ * @typedef {((el: HTMLElement) => HTMLElement)[]} get_target_element_providers
+ */
+
 export class BackgroundImageOptionPlugin extends Plugin {
     static id = "backgroundImageOption";
     static dependencies = ["builderActions", "media", "style"];
@@ -17,15 +24,19 @@ export class BackgroundImageOptionPlugin extends Plugin {
         "setImageBackground",
         "loadReplaceBackgroundImage",
         "applyReplaceBackgroundImage",
+        "removeBackgroundImage",
     ];
+    /** @type {import("plugins").BuilderResources} */
     resources = {
         builder_actions: {
             SelectFilterColorAction,
             ToggleBgImageAction,
+            RemoveBgImageAction,
             ReplaceBgImageAction,
             DynamicColorAction,
         },
-        force_not_editable_selector: ".o_we_bg_filter",
+        content_not_editable_selectors: ".o_we_bg_filter",
+        system_node_selectors: ".o_we_bg_filter",
         get_target_element_providers: withSequence(5, (el) => el),
     };
     /**
@@ -52,7 +63,7 @@ export class BackgroundImageOptionPlugin extends Plugin {
         // target as its image source will be deleted.
         oldEditingEl.classList.remove("o_modified_image_to_save");
         const filterColorAction = this.dependencies.builderActions.getAction("selectFilterColor");
-        const editingElement = this.getResource("get_target_element_providers")[0](oldEditingEl);
+        const editingElement = this.getTargetElement(oldEditingEl);
         const filter = filterColorAction.getValue({ editingElement });
         this.setImageBackground(oldEditingEl, "");
         if (filter) {
@@ -112,7 +123,7 @@ export class BackgroundImageOptionPlugin extends Plugin {
         if (backgroundURL) {
             el.classList.add("oe_img_bg", "o_bg_img_center", "o_bg_img_origin_border_box");
         } else {
-            const editingElement = this.getResource("get_target_element_providers")[0](el);
+            const editingElement = this.getTargetElement(el);
             this.dependencies.builderActions
                 .getAction("selectFilterColor")
                 .apply({ editingElement });
@@ -129,6 +140,31 @@ export class BackgroundImageOptionPlugin extends Plugin {
         // removed too.
         this.dependencies.style.setBackgroundImageUrl(el, backgroundURL);
     }
+    /**
+     * Remove the current background image and notify listeners.
+     *
+     * @param {Object} context
+     * @param {HTMLElement} context.editingElement
+     * @param {Object} [context.params]
+     */
+    removeBackgroundImage({ editingElement, params }) {
+        this.getTargetElement(editingElement).querySelector(":scope > .o_we_bg_filter")?.remove();
+        this.applyReplaceBackgroundImage({
+            editingElement,
+            loadResult: "",
+            params: { ...params, forceClean: true },
+        });
+        this.dispatchTo("on_bg_image_hide_handlers", editingElement);
+    }
+
+    getTargetElement(el) {
+        for (const fn of this.getResource("get_target_element_providers")) {
+            const targetEl = fn(el);
+            if (targetEl) {
+                return targetEl;
+            }
+        }
+    }
 }
 
 export class SelectFilterColorAction extends StyleAction {
@@ -138,6 +174,10 @@ export class SelectFilterColorAction extends StyleAction {
         // Find the filter element.
         let filterEl = editingElement.querySelector(":scope > .o_we_bg_filter");
 
+        // If no value is provided, use the current one if any.
+        if (filterEl && value === undefined) {
+            value = filterEl.style.backgroundImage || filterEl.style.backgroundColor;
+        }
         // If the filter would be transparent, remove it / don't create it.
         const rgba = value && convertCSSColorToRgba(value);
         if (!value || (rgba && rgba.opacity < 0.001)) {
@@ -198,13 +238,16 @@ export class ToggleBgImageAction extends BuilderAction {
     isApplied({ editingElement }) {
         return !!getBgImageURLFromEl(editingElement);
     }
-    clean({ editingElement }) {
-        this.dependencies.backgroundImageOption.applyReplaceBackgroundImage({
-            editingElement: editingElement,
-            loadResult: "",
-            params: { forceClean: true },
-        });
-        this.dispatchTo("on_bg_image_hide_handlers", editingElement);
+    clean(context) {
+        this.dependencies.backgroundImageOption.removeBackgroundImage(context);
+    }
+}
+
+export class RemoveBgImageAction extends BuilderAction {
+    static id = "removeBgImage";
+    static dependencies = ["backgroundImageOption"];
+    apply(context) {
+        this.dependencies.backgroundImageOption.removeBackgroundImage(context);
     }
 }
 

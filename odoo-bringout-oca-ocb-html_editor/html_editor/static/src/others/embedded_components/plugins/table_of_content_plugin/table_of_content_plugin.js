@@ -6,18 +6,14 @@ import {
     TableOfContentManager,
 } from "@html_editor/others/embedded_components/core/table_of_content/table_of_content_manager";
 import { isHtmlContentSupported } from "@html_editor/core/selection_plugin";
-import { fixNonEditableFirstChild } from "@html_editor/utils/dom";
+import { withSequence } from "@html_editor/utils/resource";
+import { closestElement } from "@html_editor/utils/dom_traversal";
+import { DISABLED_NAMESPACE } from "@html_editor/main/toolbar/toolbar_plugin";
 
 export class TableOfContentPlugin extends Plugin {
     static id = "tableOfContent";
-    static dependencies = [
-        "dom",
-        "selection",
-        "embeddedComponents",
-        "link",
-        "history",
-        "baseContainer",
-    ];
+    static dependencies = ["dom", "selection", "embeddedComponents", "link", "history"];
+    /** @type {import("plugins").EditorResources} */
     resources = {
         user_commands: [
             {
@@ -46,6 +42,17 @@ export class TableOfContentPlugin extends Plugin {
         clean_for_save_handlers: this.cleanForSave.bind(this),
         mount_component_handlers: this.setupNewToc.bind(this),
 
+        toolbar_namespace_providers: withSequence(70, (targetedNodes) => {
+            if (
+                targetedNodes.length &&
+                targetedNodes.every((node) =>
+                    closestElement(node, `[data-embedded="tableOfContent"]`)
+                )
+            ) {
+                return DISABLED_NAMESPACE;
+            }
+        }),
+
         system_classes: ["o_embedded_toc_header_highlight"],
     };
 
@@ -59,11 +66,6 @@ export class TableOfContentPlugin extends Plugin {
     insertTableOfContent() {
         const tableOfContentBlueprint = renderToElement("html_editor.TableOfContentBlueprint");
         this.dependencies.dom.insert(tableOfContentBlueprint);
-        fixNonEditableFirstChild(
-            this.editable,
-            tableOfContentBlueprint,
-            this.dependencies.baseContainer.getDefaultNodeName()
-        );
         this.dependencies.history.addStep();
     }
 
@@ -83,7 +85,14 @@ export class TableOfContentPlugin extends Plugin {
 
     delayedUpdateTableOfContents(element) {
         const selector = HEADINGS.join(",");
-        if (!(!element || element.querySelector(selector) || element.closest(selector))) {
+        if (
+            !(
+                !element ||
+                this.manager.structure.headings.length ||
+                element.querySelector(selector) ||
+                element.closest(selector)
+            )
+        ) {
             return;
         }
         if (this.updateTimeout) {
